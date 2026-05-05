@@ -21,12 +21,12 @@ import {
   deleteProfile,
   reorderProfiles,
   upsertProfile
-} from "../../api/profilesApi";
+} from "../../features/profiles/api/profilesApi";
 import {
   testProfileRead,
   verifyOfficialCliAuthorization
 } from "../../api/profileReadApi";
-import type { ImProfile, Platform, WechatCandidate } from "../../types";
+import type { ImProfile, Platform, WechatCandidate } from "../../features/profiles/model/types";
 import { AboutModal } from "../../components/AboutModal";
 import { FloatingNotice, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
 import { PagedTextBlock } from "../../components/shared/PagedTextBlock";
@@ -49,12 +49,12 @@ import {
   findDuplicateAccountIdentity,
   readBoundAccountIdentity,
   withAccountIdentity
-} from "./accountIdentity";
+} from "../../features/profiles/model/accountIdentity";
 import {
   buildOriginalWechatCandidate,
   buildOriginalWechatDeployment,
   buildWechatProfile
-} from "./profileBuilders";
+} from "../../features/profiles/model/profileBuilders";
 import {
   findMatchingWechatInstance,
   getConfigString,
@@ -62,8 +62,8 @@ import {
   isWindowsRuntime,
   latestWechatDbDir,
   usesWindowsWechatRuntime
-} from "./profilePathUtils";
-import { useProfileDragOrdering } from "./useProfileDragOrdering";
+} from "../../features/profiles/model/profilePathUtils";
+import { useProfileDragOrdering } from "../../features/profiles/hooks/useProfileDragOrdering";
 
 const COMMAND_COPIED_RESET_MS = 1800;
 const MODAL_COMPOSITION_ENTER_GUARD_MS = 120;
@@ -131,6 +131,9 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   const selectedProfiles = orderedProfiles.filter((profile) => selectedProfileIds.has(profile.id));
   const selectedProfileCount = selectedProfiles.length;
   const isAllProfilesSelected = orderedProfiles.length > 0 && selectedProfileCount === orderedProfiles.length;
+  const enabledProfileCount = orderedProfiles.filter((profile) => profile.enabled).length;
+  const disabledProfileCount = orderedProfiles.length - enabledProfileCount;
+  const batchStatusAction: "enable" | "pause" = disabledProfileCount > enabledProfileCount ? "enable" : "pause";
   const isBulkDeleteConfirming = pendingBulkDeleteIds.length > 0;
   const profileNoticeVariant: FloatingNoticeVariant = profileMessageIsError
     ? "error"
@@ -1088,9 +1091,9 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
               deletingProfileId={deletingProfileId}
               bulkDeleteId={BULK_DELETE_ID}
               bulkDeleteButtonLabel={bulkDeleteButtonLabel()}
+              batchStatusAction={batchStatusAction}
               onToggleAll={toggleAllProfilesSelected}
-              onPauseSelected={() => setSelectedProfilesEnabled(false)}
-              onEnableSelected={() => setSelectedProfilesEnabled(true)}
+              onBatchStatusChange={() => setSelectedProfilesEnabled(batchStatusAction === "enable")}
               onTestSelectedRead={testSelectedProfilesRead}
               onBulkDelete={handleBulkDeleteProfiles}
             />

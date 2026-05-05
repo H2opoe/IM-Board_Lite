@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, DiagnosticExport } from "../types";
+import type { AppSettings, DiagnosticExport } from "../features/app-settings/model/types";
 import { isTauri, requireTauri } from "./tauri";
 
 export async function setThemeDockIcon(theme: "light" | "dark"): Promise<void> {

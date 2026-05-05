@@ -1,4 +1,4 @@
-import type { DashboardData } from "../../types";
+import type { DashboardData } from "../../features/dashboard/model/types";
 import { EMPTY_STATE_MESSAGES } from "../../constants/messages";
 import { CountUpNumber, dashboardIntroClassName, useDashboardViewportIntro } from "./dashboardAnimations";
 

@@ -1,7 +1,7 @@
 import { Check, ExternalLink, RotateCcw, Settings } from "lucide-react";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { EMPTY_STATE_MESSAGES } from "../../constants/messages";
-import type { ActionItem, DashboardData } from "../../types";
+import type { ActionItem, DashboardData } from "../../features/dashboard/model/types";
 import { formatRelativeDateTime } from "../../utils/dates";
 import { CountUpNumber, dashboardIntroClassName, useDashboardViewportIntro } from "./dashboardAnimations";
 

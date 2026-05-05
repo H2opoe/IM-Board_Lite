@@ -13,7 +13,7 @@ import {
 } from "../../api/aiApi";
 import { FloatingNotice, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
 import { APP_MESSAGES } from "../../constants/messages";
-import type { AiConfig, LocalModelDownloadProgress, LocalModelStatus } from "../../types";
+import type { AiConfig, LocalModelDownloadProgress, LocalModelStatus } from "../../features/ai/model/types";
 import { userErrorMessage } from "../../utils/errors";
 import {
   defaultAnalysisBatchSize,

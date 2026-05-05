@@ -1,8 +1,8 @@
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { PlatformCliDeploymentProgress, PlatformCliVersionStatus, PlatformDeployment } from "../../../api/bridgeApi";
 import { OFFICIAL_CLI_MESSAGES } from "../../../constants/messages";
-import type { Platform } from "../../../types";
-import { OfficialCliBindModal } from "../../../pages/Profiles/OfficialCliBindModal";
+import type { Platform } from "../model/types";
+import { OfficialCliBindModal } from "./OfficialCliBindModal";
 
 interface WechatOfficialBindModalProps {
   deployment: PlatformDeployment | null;

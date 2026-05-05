@@ -1,9 +1,9 @@
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { CheckCircle2, Clipboard, Info, RefreshCw, Save, Settings2, Terminal, X } from "lucide-react";
-import type { PlatformCliDeploymentProgress, PlatformCliVersionStatus, PlatformDeployment } from "../../api/bridgeApi";
-import { APP_MESSAGES, OFFICIAL_CLI_MESSAGES } from "../../constants/messages";
-import type { Platform } from "../../types";
-import { commandLineToolName, formatCliVersion } from "./profilePathUtils";
+import type { PlatformCliDeploymentProgress, PlatformCliVersionStatus, PlatformDeployment } from "../../../api/bridgeApi";
+import { APP_MESSAGES, OFFICIAL_CLI_MESSAGES } from "../../../constants/messages";
+import type { Platform } from "../model/types";
+import { commandLineToolName, formatCliVersion } from "../model/profilePathUtils";
 
 interface OfficialCliSharedProps {
   platform: Platform;

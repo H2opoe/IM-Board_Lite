@@ -1,7 +1,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { Save, X } from "lucide-react";
 import { APP_MESSAGES } from "../../../constants/messages";
-import type { ImProfile } from "../../../types";
+import type { ImProfile } from "../model/types";
 
 interface GenericProfileConfigModalProps {
   profile: ImProfile;

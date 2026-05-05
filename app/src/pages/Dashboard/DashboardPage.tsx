@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Clock3, RotateCcw, RefreshCw, Sparkles, StopCircle } from "lucide-react";
-import { getDashboard, markActionItem } from "../../api/dashboardApi";
-import type { SyncProgressNotice, SyncUiState } from "../../hooks/useSyncController";
+import { getDashboard, markActionItem } from "../../features/dashboard/api/dashboardApi";
+import type { SyncProgressNotice, SyncUiState } from "../../features/sync/hooks/useSyncController";
 import { ActivityChartCard } from "../../components/cards/ActivityChartCard";
 import { ActionListCard } from "../../components/cards/ActionListCard";
 import { ChatRankCard } from "../../components/cards/ChatRankCard";
@@ -12,9 +12,10 @@ import { TopicCard } from "../../components/cards/TopicCard";
 import { WordCloudCard } from "../../components/cards/WordCloudCard";
 import { FloatingNotice, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
 import { PagedTextBlock } from "../../components/shared/PagedTextBlock";
-import type { ActionItem, DashboardData, ImProfile } from "../../types";
+import type { ActionItem, DashboardData } from "../../features/dashboard/model/types";
+import type { ImProfile } from "../../features/profiles/model/types";
 import { profileDisplayName } from "../../utils/profiles";
-import { isSyncMessageError } from "../../utils/syncMessages";
+import { isSyncMessageError } from "../../features/sync/messages/syncMessages";
 
 interface Props {
   data: DashboardData;

@@ -1,10 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import { platformLabel } from "../constants/platforms";
-import { APP_CACHE_ROOT, APP_SUPPORT_ROOT } from "../constants/storage";
-import { demoProfiles } from "../demo/demoData";
-import type { ImProfile, Platform } from "../types";
-import { isDemoMode } from "./demoMode";
-import { isTauri, requireTauri } from "./tauri";
+import { platformLabel } from "../../../constants/platforms";
+import { APP_CACHE_ROOT, APP_SUPPORT_ROOT } from "../../../constants/storage";
+import { demoProfiles } from "../../../demo/demoData";
+import { isDemoMode } from "../../../api/demoMode";
+import { isTauri, requireTauri } from "../../../api/tauri";
+import type { ImProfile, Platform } from "../model/types";
 
 export async function listProfiles(): Promise<ImProfile[]> {
   if (isDemoMode()) return [...demoProfiles].sort((left, right) => left.sortOrder - right.sortOrder);

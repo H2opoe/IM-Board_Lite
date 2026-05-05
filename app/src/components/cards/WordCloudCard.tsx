@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import { EMPTY_STATE_MESSAGES } from "../../constants/messages";
-import type { DashboardData } from "../../types";
+import type { DashboardData } from "../../features/dashboard/model/types";
 import { keywordSourcesTitle } from "../../utils/sources";
 import { dashboardIntroClassName, useDashboardViewportIntro } from "./dashboardAnimations";
 

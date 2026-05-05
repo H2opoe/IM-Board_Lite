@@ -1,4 +1,4 @@
-import type { Platform } from "../types";
+import type { Platform } from "../features/profiles/model/types";
 import { PLATFORM_LABELS } from "./platforms";
 
 export const EMPTY_STATE_MESSAGES = {

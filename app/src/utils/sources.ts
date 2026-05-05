@@ -1,4 +1,4 @@
-import type { SourceStat } from "../types";
+import type { SourceStat } from "../features/dashboard/model/types";
 
 export function sourceStatsTitle(sources?: SourceStat[], emptyText = "暂无平台统计") {
   if (!sources?.length) return emptyText;

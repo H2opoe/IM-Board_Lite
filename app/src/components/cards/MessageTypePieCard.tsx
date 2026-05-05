@@ -1,6 +1,6 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { EMPTY_STATE_MESSAGES } from "../../constants/messages";
-import type { DashboardData } from "../../types";
+import type { DashboardData } from "../../features/dashboard/model/types";
 import { sourceStatsTitle } from "../../utils/sources";
 import { CountUpNumber, chartIntroAnimationDuration, dashboardIntroClassName, useDashboardViewportIntro } from "./dashboardAnimations";
 

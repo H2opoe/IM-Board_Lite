@@ -1,4 +1,4 @@
-import type { AiConfig } from "../../types";
+import type { AiConfig } from "../../features/ai/model/types";
 
 export const defaultAnalysisPrompt = `你是一个本地即时通讯工作助理。请只根据输入的聊天消息识别真正需要用户处理的事项。
 

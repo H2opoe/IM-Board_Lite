@@ -1,7 +1,7 @@
-import type { PlatformDeployment } from "../../api/bridgeApi";
-import { PLATFORM_LABELS } from "../../constants/platforms";
-import type { ImProfile, WechatCandidate } from "../../types";
-import { profileRemark } from "../../utils/profiles";
+import type { PlatformDeployment } from "../../../api/bridgeApi";
+import { PLATFORM_LABELS } from "../../../constants/platforms";
+import { profileRemark } from "../../../utils/profiles";
+import type { ImProfile, WechatCandidate } from "./types";
 
 export function latestWechatDbDir(candidate?: WechatCandidate): string {
   const sorted = [...(candidate?.candidateDbDirs ?? [])].sort((left, right) =>

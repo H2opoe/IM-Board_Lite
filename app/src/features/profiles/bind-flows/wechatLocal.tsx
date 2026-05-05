@@ -1,8 +1,8 @@
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { AlertTriangle, ExternalLink, FolderSearch, KeyRound, RefreshCw, Save, Search, Settings2, ShieldCheck, X } from "lucide-react";
 import { APP_MESSAGES } from "../../../constants/messages";
-import type { WechatCandidate } from "../../../types";
-import { formatWechatDbTime, wechatDbFolderName } from "../../../pages/Profiles/profilePathUtils";
+import type { WechatCandidate } from "../model/types";
+import { formatWechatDbTime, wechatDbFolderName } from "../model/profilePathUtils";
 
 interface WechatLocalBindModalProps {
   candidates: WechatCandidate[];

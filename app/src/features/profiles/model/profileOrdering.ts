@@ -1,4 +1,4 @@
-import type { ImProfile } from "../../types";
+import type { ImProfile } from "./types";
 
 export type ProfileDragPlacement = "before" | "after";
 

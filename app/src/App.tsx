@@ -2,11 +2,11 @@ import { Suspense, lazy, useState } from "react";
 import { isDemoMode } from "./api/demoMode";
 import { AppShell } from "./components/layout/AppShell";
 import type { AppView } from "./appTypes";
-import { useDashboardStore } from "./hooks/useDashboardStore";
-import { useProfilesStore } from "./hooks/useProfilesStore";
-import { useSyncController } from "./hooks/useSyncController";
+import { useDashboardStore } from "./features/dashboard/hooks/useDashboardStore";
+import { useProfilesStore } from "./features/profiles/hooks/useProfilesStore";
+import { useSyncController } from "./features/sync/hooks/useSyncController";
 import { useThemeController } from "./hooks/useThemeController";
-import type { ActionItem } from "./types";
+import type { ActionItem } from "./features/dashboard/model/types";
 
 const DashboardPage = lazy(() => import("./pages/Dashboard/DashboardPage").then((module) => ({ default: module.DashboardPage })));
 const ProfilesPage = lazy(() => import("./pages/Profiles/ProfilesPage").then((module) => ({ default: module.ProfilesPage })));

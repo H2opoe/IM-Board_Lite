@@ -1,8 +1,8 @@
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import type { SyncResult } from "../types";
-import { isDemoMode } from "./demoMode";
-import { isTauri, requireTauri } from "./tauri";
+import { isDemoMode } from "../../../api/demoMode";
+import { isTauri, requireTauri } from "../../../api/tauri";
+import type { SyncResult } from "../model/types";
 
 const SYNC_PROGRESS_EVENT = "sync-progress";
 

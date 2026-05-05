@@ -1,5 +1,5 @@
 import { MessageSquare, Send, SquareCheckBig, Users } from "lucide-react";
-import type { DashboardMetric } from "../../types";
+import type { DashboardMetric } from "../../features/dashboard/model/types";
 import { sourceStatsTitle } from "../../utils/sources";
 import { CountUpNumber, dashboardIntroClassName, useDashboardViewportIntro } from "./dashboardAnimations";
 

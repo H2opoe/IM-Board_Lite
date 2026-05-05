@@ -1,4 +1,5 @@
-import type { ActionItem, DashboardData, ImProfile, Platform, SourceStat } from "../types";
+import type { ActionItem, DashboardData, SourceStat } from "../features/dashboard/model/types";
+import type { ImProfile, Platform } from "../features/profiles/model/types";
 
 const now = new Date();
 const iso = (hour: number, minute = 0) => {

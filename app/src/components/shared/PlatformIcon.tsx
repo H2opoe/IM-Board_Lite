@@ -1,4 +1,4 @@
-import type { Platform } from "../../types";
+import type { Platform } from "../../features/profiles/model/types";
 import dingtalkIcon from "../../assets/platform-icons/dingtalk.png";
 import feishuIcon from "../../assets/platform-icons/feishu.png";
 import wechatIcon from "../../assets/platform-icons/wechat.png";

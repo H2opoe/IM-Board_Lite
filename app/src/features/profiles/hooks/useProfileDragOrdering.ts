@@ -1,5 +1,5 @@
 import { type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
-import type { ImProfile } from "../../types";
+import type { ImProfile } from "../model/types";
 import {
   captureProfileDragRects,
   profileDragRowShift as calculateProfileDragRowShift,
@@ -10,7 +10,7 @@ import {
   type ProfileDragRect,
   type ProfileDragTarget,
   type ProfileDragVisualState
-} from "./profileOrdering";
+} from "../model/profileOrdering";
 
 const PROFILE_DRAG_ROW_GAP = 8;
 

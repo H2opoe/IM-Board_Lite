@@ -1,19 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { getDashboard } from "../api/dashboardApi";
-import type { DashboardData } from "../types";
+import type { DashboardData } from "../model/types";
 
 export function useDashboardStore(activeProfileId: string, isDashboardActive: boolean) {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [dashboardProfileId, setDashboardProfileId] = useState("");
 
+  const setDashboardForProfile = useCallback(
+    (nextDashboard: DashboardData, profileId = activeProfileId) => {
+      setDashboard(nextDashboard);
+      setDashboardProfileId(profileId);
+    },
+    [activeProfileId]
+  );
+
   const refreshDashboard = useCallback(
     async (profileId = activeProfileId) => {
       const nextDashboard = await getDashboard(profileId);
-      setDashboard(nextDashboard);
-      setDashboardProfileId(profileId);
+      setDashboardForProfile(nextDashboard, profileId);
       return nextDashboard;
     },
-    [activeProfileId]
+    [activeProfileId, setDashboardForProfile]
   );
 
   useEffect(() => {
@@ -23,18 +30,17 @@ export function useDashboardStore(activeProfileId: string, isDashboardActive: bo
     setDashboard(null);
     getDashboard(activeProfileId).then((nextDashboard) => {
       if (isCancelled) return;
-      setDashboard(nextDashboard);
-      setDashboardProfileId(activeProfileId);
+      setDashboardForProfile(nextDashboard, activeProfileId);
     });
     return () => {
       isCancelled = true;
     };
-  }, [activeProfileId, isDashboardActive]);
+  }, [activeProfileId, isDashboardActive, setDashboardForProfile]);
 
   return {
     dashboard,
     dashboardProfileId,
-    setDashboard,
+    setDashboard: setDashboardForProfile,
     refreshDashboard
   };
 }

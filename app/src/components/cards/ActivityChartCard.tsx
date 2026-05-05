@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { DashboardData } from "../../types";
+import type { DashboardData } from "../../features/dashboard/model/types";
 import { sourceStatsTitle } from "../../utils/sources";
 import { chartIntroAnimationDuration, dashboardIntroClassName, useAnimatedNumber, useDashboardViewportIntro } from "./dashboardAnimations";
 

@@ -1,4 +1,4 @@
-import { userErrorMessage } from "./errors";
+import { userErrorMessage } from "../../../utils/errors";
 
 export type SyncMaintenanceAction = "retry-analysis" | "full-resync";
 type SyncMessageState = "idle" | "syncing" | "analyzing" | "done" | "failed";

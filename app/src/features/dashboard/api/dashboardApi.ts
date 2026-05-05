@@ -1,8 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import { demoDashboard, updateDemoAction } from "../demo/demoData";
-import type { DashboardData } from "../types";
-import { isDemoMode } from "./demoMode";
-import { isTauri, requireTauri } from "./tauri";
+import { demoDashboard, updateDemoAction } from "../../../demo/demoData";
+import { isDemoMode } from "../../../api/demoMode";
+import { isTauri, requireTauri } from "../../../api/tauri";
+import type { DashboardData } from "../model/types";
 
 export async function getDashboard(profileId?: string): Promise<DashboardData> {
   if (isDemoMode()) return demoDashboard(profileId);

@@ -1,6 +1,6 @@
-import type { PlatformDeployment } from "../../api/bridgeApi";
-import { APP_CACHE_ROOT, APP_SUPPORT_ROOT } from "../../constants/storage";
-import type { ImProfile, WechatCandidate } from "../../types";
+import type { PlatformDeployment } from "../../../api/bridgeApi";
+import { APP_CACHE_ROOT, APP_SUPPORT_ROOT } from "../../../constants/storage";
+import type { ImProfile, WechatCandidate } from "./types";
 import { isOriginalWechatCli, joinNativePath } from "./profilePathUtils";
 
 export function buildWechatProfile(

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listProfiles } from "../api/profilesApi";
-import type { ImProfile } from "../types";
+import type { ImProfile } from "../model/types";
 
 export function useProfilesStore() {
   const [profiles, setProfiles] = useState<ImProfile[]>([]);

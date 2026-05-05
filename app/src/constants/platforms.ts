@@ -1,4 +1,4 @@
-import type { Platform } from "../types";
+import type { Platform } from "../features/profiles/model/types";
 
 export interface PlatformBindingOption {
   id: Platform;

@@ -1,5 +1,5 @@
 import { RankList } from "./ChatRankCard";
-import type { DashboardData } from "../../types";
+import type { DashboardData } from "../../features/dashboard/model/types";
 import { dashboardIntroClassName, useDashboardViewportIntro } from "./dashboardAnimations";
 
 export function SpeakerTopCard({ data }: { data: DashboardData["speakerTop"] }) {

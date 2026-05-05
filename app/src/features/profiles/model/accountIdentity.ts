@@ -1,5 +1,5 @@
-import { getDingtalkIdentity, getOfficialCliAccountIdentity } from "../../api/profileReadApi";
-import type { AccountIdentity, ImProfile, Platform } from "../../types";
+import { getDingtalkIdentity, getOfficialCliAccountIdentity } from "../../../api/profileReadApi";
+import type { AccountIdentity, ImProfile, Platform } from "./types";
 
 type SupportedIdentityPlatform = Extract<Platform, "feishu" | "dingtalk">;
 

@@ -1,4 +1,4 @@
-import type { ImProfile } from "../types";
+import type { ImProfile } from "../features/profiles/model/types";
 import { platformLabel } from "../constants/platforms";
 
 export function profileRemark(profile: ImProfile) {

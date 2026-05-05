@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { ImProfile, Platform, WechatCandidate } from "../types";
+import type { ImProfile, Platform, WechatCandidate } from "../features/profiles/model/types";
 import { isTauri, requireTauri } from "./tauri";
 
 const PLATFORM_CLI_DEPLOYMENT_PROGRESS_EVENT = "platform-cli-deployment-progress";

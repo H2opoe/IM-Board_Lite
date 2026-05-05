@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import type { AiConfig, LocalModelDownloadProgress, LocalModelStatus } from "../types";
+import type { AiConfig, LocalModelDownloadProgress, LocalModelStatus } from "../features/ai/model/types";
 import { isTauri, requireTauri } from "./tauri";
 
 const LOCAL_MODEL_PROGRESS_EVENT = "local-model-download-progress";

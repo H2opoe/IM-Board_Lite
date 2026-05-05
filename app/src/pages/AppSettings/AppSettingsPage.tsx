@@ -5,7 +5,7 @@ import { AboutModal } from "../../components/AboutModal";
 import { DeveloperFeedbackModal } from "../../components/DeveloperFeedbackModal";
 import { FloatingNotice } from "../../components/shared/FloatingNotice";
 import { APP_MESSAGES } from "../../constants/messages";
-import type { AppSettings } from "../../types";
+import type { AppSettings } from "../../features/app-settings/model/types";
 import { userErrorMessage } from "../../utils/errors";
 
 const defaultSettings: AppSettings = {

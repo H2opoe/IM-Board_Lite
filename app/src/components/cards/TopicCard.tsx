@@ -1,5 +1,5 @@
 import { EMPTY_STATE_MESSAGES } from "../../constants/messages";
-import type { DashboardData } from "../../types";
+import type { DashboardData } from "../../features/dashboard/model/types";
 import { sourceChatsTitle } from "../../utils/sources";
 import { Settings } from "lucide-react";
 import { CountUpNumber, dashboardIntroClassName, useDashboardViewportIntro } from "./dashboardAnimations";

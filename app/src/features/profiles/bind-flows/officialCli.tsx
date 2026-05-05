@@ -1,11 +1,11 @@
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { PlatformCliDeploymentProgress, PlatformCliVersionStatus, PlatformDeployment } from "../../../api/bridgeApi";
 import { OFFICIAL_CLI_MESSAGES } from "../../../constants/messages";
-import type { AccountIdentity, ImProfile, Platform } from "../../../types";
+import type { AccountIdentity, ImProfile, Platform } from "../model/types";
 import { profileDisplayName } from "../../../utils/profiles";
-import { formatAccountIdentity } from "../../../pages/Profiles/accountIdentity";
-import { OfficialCliBindModal } from "../../../pages/Profiles/OfficialCliBindModal";
-import { buildDingtalkProfile, buildFeishuProfile, buildWecomProfile } from "../../../pages/Profiles/profileBuilders";
+import { formatAccountIdentity } from "../model/accountIdentity";
+import { buildDingtalkProfile, buildFeishuProfile, buildWecomProfile } from "../model/profileBuilders";
+import { OfficialCliBindModal } from "./OfficialCliBindModal";
 
 export type OfficialCliBindPlatform = Extract<Platform, "wecom" | "feishu" | "dingtalk">;
 export type OfficialCliIdentityMode = "none" | "optional" | "required";

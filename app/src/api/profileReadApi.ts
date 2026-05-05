@@ -1,4 +1,4 @@
-import type { AccountIdentity, DingtalkIdentity, ImProfile } from "../types";
+import type { AccountIdentity, DingtalkIdentity, ImProfile } from "../features/profiles/model/types";
 import { runBridgeCommand } from "./bridgeApi";
 import { isTauri, requireTauri } from "./tauri";
 

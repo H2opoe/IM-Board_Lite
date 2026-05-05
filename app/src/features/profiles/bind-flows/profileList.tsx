@@ -4,10 +4,10 @@ import { CheckCircle2, GripVertical, Info, Pause, Search, Settings2, Trash2 } fr
 import { PlatformIcon } from "../../../components/shared/PlatformIcon";
 import { APP_MESSAGES, EMPTY_STATE_MESSAGES, PROFILE_MESSAGES } from "../../../constants/messages";
 import { PLATFORM_BINDING_OPTIONS, PROFILE_STATUS_LABELS } from "../../../constants/platforms";
-import type { ImProfile, Platform } from "../../../types";
+import type { ImProfile, Platform } from "../model/types";
 import { profileDisplayName } from "../../../utils/profiles";
-import { profileAccountSubtitle, profilePlatformLabel } from "../../../pages/Profiles/profilePathUtils";
-import type { ProfileDragPlacement, ProfileDragVisualState } from "../../../pages/Profiles/profileOrdering";
+import { profileAccountSubtitle, profilePlatformLabel } from "../model/profilePathUtils";
+import type { ProfileDragPlacement, ProfileDragVisualState } from "../model/profileOrdering";
 
 interface PlatformEntryPanelProps {
   orderedProfiles: ImProfile[];
@@ -22,9 +22,9 @@ interface ProfileBatchToolbarProps {
   deletingProfileId: string;
   bulkDeleteId: string;
   bulkDeleteButtonLabel: string;
+  batchStatusAction: "enable" | "pause";
   onToggleAll: () => void;
-  onPauseSelected: () => void;
-  onEnableSelected: () => void;
+  onBatchStatusChange: () => void;
   onTestSelectedRead: () => void;
   onBulkDelete: () => void;
 }
@@ -90,12 +90,13 @@ export function ProfileBatchToolbar({
   deletingProfileId,
   bulkDeleteId,
   bulkDeleteButtonLabel,
+  batchStatusAction,
   onToggleAll,
-  onPauseSelected,
-  onEnableSelected,
+  onBatchStatusChange,
   onTestSelectedRead,
   onBulkDelete
 }: ProfileBatchToolbarProps) {
+  const isBatchEnableAction = batchStatusAction === "enable";
   return (
     <div className="profile-batch-toolbar">
       <label className="profile-batch-select-all">
@@ -103,13 +104,9 @@ export function ProfileBatchToolbar({
         <span>全选</span>
       </label>
       <span className="profile-batch-count">已选{selectedProfileCount}个</span>
-      <button className="secondary-button" onClick={onPauseSelected} disabled={selectedProfileCount === 0}>
-        <Pause size={16} />
-        批量暂停
-      </button>
-      <button className="secondary-button" onClick={onEnableSelected} disabled={selectedProfileCount === 0}>
-        <CheckCircle2 size={16} />
-        批量启用
+      <button className="secondary-button" onClick={onBatchStatusChange} disabled={selectedProfileCount === 0}>
+        {isBatchEnableAction ? <CheckCircle2 size={16} /> : <Pause size={16} />}
+        {isBatchEnableAction ? "批量启用" : "批量暂停"}
       </button>
       <button className="secondary-button" onClick={onTestSelectedRead} disabled={selectedProfileCount === 0}>
         <Search size={16} />

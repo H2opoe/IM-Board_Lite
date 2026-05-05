@@ -1,6 +1,6 @@
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { PlatformCliDeploymentProgress, PlatformCliVersionStatus, PlatformDeployment } from "../../../api/bridgeApi";
-import type { Platform, WechatCandidate } from "../../../types";
+import type { Platform, WechatCandidate } from "../model/types";
 import type { OfficialCliBindState } from "./officialCli";
 import { OfficialCliBindFlowModal } from "./officialCli";
 import { WechatLocalBindModal } from "./wechatLocal";
