@@ -5,29 +5,25 @@ IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整�
 ## CLI Components
 
 ### @wecom/cli
-- Version: 0.1.7
 - License: MIT
 - Source: https://github.com/WecomTeam/wecom-cli
 - Distribution: hot-updated into the application support directory when needed; not bundled in the base installer.
 
 ### @larksuite/cli
-- Version: 1.0.23
 - License: MIT
 - Source: https://github.com/larksuite/cli
 - Distribution: hot-updated into the application support directory when needed; not bundled in the base installer.
 
 ### @DingTalk-Real-AI/dingtalk-workspace-cli
-- Version: 1.0.18
 - License: Apache-2.0
 - Source: https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli
 - Distribution: hot-updated into the application support directory when needed; not bundled in the base installer.
 
 ### @canghe_ai/wechat-cli
 
-- Version: 0.2.4
 - License: Apache-2.0
 - Source: https://github.com/huohuoer/wechat-cli
-- Distribution: app-managed Python install for Windows original WeChat CLI flows; macOS WeChat uses the built-in app bridge resources instead.
+- Distribution: app-managed resources for WeChat integration; the built-in macOS bridge is adapted from the same wechat-cli codebase.
 
 ## Optional Hot-Updated AI Models
 
@@ -42,13 +38,6 @@ IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整�
 - License: MIT.
 - Source: https://github.com/ggml-org/llama.cpp
 - Distribution: bundled inside the IM-Board app package; used to launch the local OpenAI-compatible inference service for GGUF models.
-
-## Development Tooling
-
-### OpenAI Codex
-- License: Apache-2.0
-- Source: https://github.com/openai/codex
-- Distribution: used as a development assistant; not bundled in IM-Board.
 
 ## Application Dependencies
 

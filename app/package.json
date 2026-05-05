@@ -10,8 +10,8 @@
     "prepare:windows-deps": "node scripts/prepare-windows-deps.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "tauri": "tauri",
-    "tauri:build:windows": "npm run prepare:windows-deps && tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle",
-    "tauri:dev:real": "/bin/zsh -lc '. \"$HOME/.cargo/env\" && IM_BOARD_BRIDGE_ROOT=\"$PWD/bridges\" tauri dev'",
+    "tauri:build:windows": "npm run prepare:windows-deps && npm exec tauri -- build --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle",
+    "tauri:dev:real": "/bin/zsh -lc '. \"$HOME/.cargo/env\" && IM_BOARD_BRIDGE_ROOT=\"$PWD/bridges\" npm exec tauri -- dev'",
     "debug:wechat:discover": "bridges/wechat/bridge_main discover --format json",
     "debug:env": "/bin/zsh -lc '. \"$HOME/.cargo/env\" && node scripts/check-debug-env.mjs'"
   },

@@ -82,8 +82,7 @@ export function AboutModal({ onClose }: Props) {
         <section className="about-section compact-about-section">
           <strong>调用的开源组件</strong>
           <ul className="license-summary-list">
-            <li>微信（macOS）：内置桥接资源</li>
-            <li>微信（Windows）：@canghe_ai/wechat-cli（Apache-2.0）</li>
+            <li>微信：@canghe_ai/wechat-cli（Apache-2.0）</li>
             <li>企业微信：@wecom/cli（MIT）</li>
             <li>飞书：@larksuite/cli（MIT）</li>
             <li>钉钉：@DingTalk-Real-AI/dingtalk-workspace-cli（Apache-2.0）</li>
