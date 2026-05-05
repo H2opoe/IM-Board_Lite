@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDisplayName</key>
+  <string>IM-Board</string>
+  <key>CFBundleName</key>
+  <string>IM-Board</string>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>IM-Board需要控制微信以完成本机微信账号绑定和只读消息同步。</string>
+  <key>NSRemovableVolumesUsageDescription</key>
+  <string>IM-Board需要访问你选择放在外部磁盘上的应用资源或数据缓存，用于完成本机消息同步。</string>
+  <key>NSNetworkVolumesUsageDescription</key>
+  <string>IM-Board需要访问你选择放在网络磁盘上的应用资源或数据缓存，用于完成本机消息同步。</string>
+</dict>
+</plist>

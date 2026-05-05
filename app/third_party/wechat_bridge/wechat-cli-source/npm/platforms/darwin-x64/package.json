@@ -1,0 +1,12 @@
+{
+  "name": "@canghe_ai/wechat-cli-darwin-x64",
+  "version": "0.2.0",
+  "description": "wechat-cli binary for macOS x64",
+  "os": ["darwin"],
+  "cpu": ["x64"],
+  "files": ["bin/"],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  }
+}

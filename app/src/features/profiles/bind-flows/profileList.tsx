@@ -1,0 +1,294 @@
+import { createPortal } from "react-dom";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, RefObject } from "react";
+import { CheckCircle2, GripVertical, Info, Pause, Search, Settings2, Trash2 } from "lucide-react";
+import { PlatformIcon } from "../../../components/shared/PlatformIcon";
+import { APP_MESSAGES, EMPTY_STATE_MESSAGES, PROFILE_MESSAGES } from "../../../constants/messages";
+import { PLATFORM_BINDING_OPTIONS, PROFILE_STATUS_LABELS } from "../../../constants/platforms";
+import type { ImProfile, Platform } from "../../../types";
+import { profileDisplayName } from "../../../utils/profiles";
+import { profileAccountSubtitle, profilePlatformLabel } from "../../../pages/Profiles/profilePathUtils";
+import type { ProfileDragPlacement, ProfileDragVisualState } from "../../../pages/Profiles/profileOrdering";
+
+interface PlatformEntryPanelProps {
+  orderedProfiles: ImProfile[];
+  onAddProfile: (platform: Platform) => void;
+  onOpenAbout: () => void;
+}
+
+interface ProfileBatchToolbarProps {
+  isAllProfilesSelected: boolean;
+  selectedProfileCount: number;
+  isBulkDeleteConfirming: boolean;
+  deletingProfileId: string;
+  bulkDeleteId: string;
+  bulkDeleteButtonLabel: string;
+  onToggleAll: () => void;
+  onPauseSelected: () => void;
+  onEnableSelected: () => void;
+  onTestSelectedRead: () => void;
+  onBulkDelete: () => void;
+}
+
+interface ProfileAccountListProps {
+  orderedProfiles: ImProfile[];
+  visibleProfiles: ImProfile[];
+  selectedProfileIds: Set<string>;
+  isBatchManaging: boolean;
+  draggedProfileId: string;
+  dragTargetProfileId: string;
+  dragPlacement: ProfileDragPlacement;
+  draggedProfile: ImProfile | null;
+  dragVisualState: ProfileDragVisualState | null;
+  pendingDeleteId: string;
+  deletingProfileId: string;
+  tableRef: RefObject<HTMLDivElement>;
+  profileDragRowStyle: (profileId: string) => CSSProperties | undefined;
+  onStartProfilePointerDrag: (profileId: string, event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onStartProfileRowPointerDrag: (profileId: string, event: ReactPointerEvent<HTMLDivElement>) => void;
+  onToggleProfileSelection: (profileId: string) => void;
+  onToggleProfile: (profile: ImProfile) => void;
+  onEditProfile: (profile: ImProfile) => void;
+  onTestRead: (profile: ImProfile) => void;
+  onRemoveProfile: (profile: ImProfile) => void;
+  onCancelDelete: () => void;
+  onConfirmRemoveProfile: (profile: ImProfile) => void;
+}
+
+export function ProfilePlatformEntryPanel({ orderedProfiles, onAddProfile, onOpenAbout }: PlatformEntryPanelProps) {
+  return (
+    <article className="panel profile-bind-panel">
+      <header className="panel-header">
+        <div>
+          <strong>绑定平台</strong>
+          <span>绑定新账号</span>
+        </div>
+        <button className="icon-button about-entry-button" onClick={onOpenAbout} aria-label="关于IM-Board">
+          <Info size={17} />
+        </button>
+      </header>
+      <div className="bind-grid">
+        {PLATFORM_BINDING_OPTIONS.map((platform) => {
+          const boundCount = orderedProfiles.filter((profile) => profile.platform === platform.id).length;
+          return (
+            <button className="bind-card" key={platform.id} onClick={() => onAddProfile(platform.id)}>
+              <span className="bind-count-badge">已绑定{boundCount}个</span>
+              <PlatformIcon platform={platform.id} className="platform-icon-lg" />
+              <strong>{platform.label}</strong>
+              <span>{platform.auth}</span>
+            </button>
+          );
+        })}
+      </div>
+    </article>
+  );
+}
+
+export function ProfileBatchToolbar({
+  isAllProfilesSelected,
+  selectedProfileCount,
+  isBulkDeleteConfirming,
+  deletingProfileId,
+  bulkDeleteId,
+  bulkDeleteButtonLabel,
+  onToggleAll,
+  onPauseSelected,
+  onEnableSelected,
+  onTestSelectedRead,
+  onBulkDelete
+}: ProfileBatchToolbarProps) {
+  return (
+    <div className="profile-batch-toolbar">
+      <label className="profile-batch-select-all">
+        <input type="checkbox" checked={isAllProfilesSelected} onChange={onToggleAll} />
+        <span>全选</span>
+      </label>
+      <span className="profile-batch-count">已选{selectedProfileCount}个</span>
+      <button className="secondary-button" onClick={onPauseSelected} disabled={selectedProfileCount === 0}>
+        <Pause size={16} />
+        批量暂停
+      </button>
+      <button className="secondary-button" onClick={onEnableSelected} disabled={selectedProfileCount === 0}>
+        <CheckCircle2 size={16} />
+        批量启用
+      </button>
+      <button className="secondary-button" onClick={onTestSelectedRead} disabled={selectedProfileCount === 0}>
+        <Search size={16} />
+        测试读取
+      </button>
+      <button
+        className="danger-button"
+        onClick={onBulkDelete}
+        disabled={deletingProfileId === bulkDeleteId || (!isBulkDeleteConfirming && selectedProfileCount === 0)}
+      >
+        {!isBulkDeleteConfirming && <Trash2 size={16} />}
+        {bulkDeleteButtonLabel}
+      </button>
+    </div>
+  );
+}
+
+export function ProfileAccountList({
+  orderedProfiles,
+  visibleProfiles,
+  selectedProfileIds,
+  isBatchManaging,
+  draggedProfileId,
+  dragTargetProfileId,
+  dragPlacement,
+  draggedProfile,
+  dragVisualState,
+  pendingDeleteId,
+  deletingProfileId,
+  tableRef,
+  profileDragRowStyle,
+  onStartProfilePointerDrag,
+  onStartProfileRowPointerDrag,
+  onToggleProfileSelection,
+  onToggleProfile,
+  onEditProfile,
+  onTestRead,
+  onRemoveProfile,
+  onCancelDelete,
+  onConfirmRemoveProfile
+}: ProfileAccountListProps) {
+  return (
+    <div className={`profile-table ${draggedProfileId ? "dragging" : ""}`.trim()} ref={tableRef}>
+      {orderedProfiles.length === 0 ? (
+        <div className="empty-state">{EMPTY_STATE_MESSAGES.noProfiles}</div>
+      ) : (
+        visibleProfiles.map((profile) => {
+          const rowClasses = [
+            "profile-row",
+            isBatchManaging ? "batch-mode" : "",
+            selectedProfileIds.has(profile.id) ? "selected" : "",
+            draggedProfileId === profile.id ? "dragging" : "",
+            dragTargetProfileId === profile.id ? `drag-over-${dragPlacement}` : ""
+          ]
+            .filter(Boolean)
+            .join(" ");
+          return (
+            <div
+              className={rowClasses}
+              key={profile.id}
+              data-profile-row="true"
+              data-profile-id={profile.id}
+              style={profileDragRowStyle(profile.id)}
+              onPointerDown={(event) => onStartProfileRowPointerDrag(profile.id, event)}
+            >
+              {isBatchManaging && (
+                <label className="profile-select">
+                  <input
+                    type="checkbox"
+                    checked={selectedProfileIds.has(profile.id)}
+                    onChange={() => onToggleProfileSelection(profile.id)}
+                    aria-label={`选择${profileDisplayName(profile)}`}
+                  />
+                </label>
+              )}
+              <div className="profile-platform">
+                <PlatformIcon platform={profile.platform} className="platform-icon-md" />
+                <div>
+                  <strong>{profilePlatformLabel(profile)}</strong>
+                  <span>{profileAccountSubtitle(profile)}</span>
+                </div>
+              </div>
+              <span className={`profile-status ${profile.status}`}>{PROFILE_STATUS_LABELS[profile.status] ?? profile.status}</span>
+              {isBatchManaging ? (
+                <button
+                  type="button"
+                  className="profile-sort-handle"
+                  title="按住拖拽排序"
+                  aria-label={`拖拽排序${profileDisplayName(profile)}`}
+                  onPointerDown={(event) => onStartProfilePointerDrag(profile.id, event)}
+                >
+                  <GripVertical size={17} />
+                  <span>拖拽排序</span>
+                </button>
+              ) : (
+                <div className="profile-actions">
+                  <button
+                    className="secondary-button"
+                    onClick={() => onToggleProfile(profile)}
+                    title={profile.enabled ? "暂停同步" : "启用同步"}
+                  >
+                    {profile.enabled ? <Pause size={16} /> : <CheckCircle2 size={16} />}
+                    <span className="profile-action-label">{profile.enabled ? "暂停同步" : "启用同步"}</span>
+                  </button>
+                  <button className="icon-button" onClick={() => onEditProfile(profile)} aria-label="修改配置">
+                    <Settings2 size={16} />
+                  </button>
+                  <button className="secondary-button" onClick={() => onTestRead(profile)} title="测试读取">
+                    <Search size={16} />
+                    <span className="profile-action-label">测试读取</span>
+                  </button>
+                  <button className="icon-button danger" onClick={() => onRemoveProfile(profile)} aria-label="删除账号配置">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
+              {pendingDeleteId === profile.id && (
+                <div className="profile-delete-confirm">
+                  <span>{PROFILE_MESSAGES.deleteImpact}</span>
+                  <button className="secondary-button" onClick={onCancelDelete} disabled={deletingProfileId === profile.id}>
+                    {APP_MESSAGES.cancel}
+                  </button>
+                  <button className="danger-button" onClick={() => onConfirmRemoveProfile(profile)} disabled={deletingProfileId === profile.id}>
+                    {deletingProfileId === profile.id ? APP_MESSAGES.deleteInProgress : APP_MESSAGES.confirmDelete}
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })
+      )}
+      <ProfileDragFloating
+        draggedProfile={draggedProfile}
+        dragVisualState={dragVisualState}
+        isSelected={Boolean(draggedProfile && selectedProfileIds.has(draggedProfile.id))}
+      />
+    </div>
+  );
+}
+
+function ProfileDragFloating({
+  draggedProfile,
+  dragVisualState,
+  isSelected
+}: {
+  draggedProfile: ImProfile | null;
+  dragVisualState: ProfileDragVisualState | null;
+  isSelected: boolean;
+}) {
+  if (!dragVisualState || !draggedProfile) return null;
+  const themeMode = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+  const floatingStyle: CSSProperties = {
+    width: dragVisualState.width,
+    minHeight: dragVisualState.height,
+    transform: `translate3d(${dragVisualState.pointerX - dragVisualState.offsetX}px, ${
+      dragVisualState.pointerY - dragVisualState.offsetY
+    }px, 0) scale(1.025)`
+  };
+
+  return createPortal(
+    <div className={`profile-drag-floating-layer theme-${themeMode}`}>
+      <div className={`profile-row batch-mode profile-drag-floating ${isSelected ? "selected" : ""}`} style={floatingStyle} aria-hidden="true">
+        <span className="profile-select profile-select-preview">
+          <span className={`profile-checkbox-preview ${isSelected ? "checked" : ""}`} />
+        </span>
+        <div className="profile-platform">
+          <PlatformIcon platform={draggedProfile.platform} className="platform-icon-md" />
+          <div>
+            <strong>{profilePlatformLabel(draggedProfile)}</strong>
+            <span>{profileAccountSubtitle(draggedProfile)}</span>
+          </div>
+        </div>
+        <span className={`profile-status ${draggedProfile.status}`}>{PROFILE_STATUS_LABELS[draggedProfile.status] ?? draggedProfile.status}</span>
+        <div className="profile-sort-handle">
+          <GripVertical size={17} />
+          <span>拖拽排序</span>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}

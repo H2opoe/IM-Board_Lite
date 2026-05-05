@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: wechat-cli
+Version: 0.2.4
+Summary: WeChat data query CLI for LLMs
+Requires-Python: >=3.10
+License-File: LICENSE
+Requires-Dist: click<9,>=8.1
+Requires-Dist: pycryptodome<4,>=3.19
+Requires-Dist: zstandard<1,>=0.22
+Dynamic: license-file

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BridgeResult",
+  "type": "object",
+  "required": ["ok", "meta"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "data": {},
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "recoverable": { "type": "boolean" }
+      }
+    },
+    "meta": { "type": "object" }
+  }
+}
