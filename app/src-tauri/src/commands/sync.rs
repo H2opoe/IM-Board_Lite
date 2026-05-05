@@ -5,6 +5,7 @@ use tauri::State;
 use crate::daily_cache::{self, RolloverResult};
 use crate::storage::models::SyncResult;
 use crate::storage::AppState;
+use crate::sync::job::SyncJobMode;
 
 #[tauri::command]
 pub fn detect_day_rollover(state: State<'_, AppState>) -> Result<RolloverResult, String> {
@@ -16,6 +17,16 @@ pub fn detect_day_rollover(state: State<'_, AppState>) -> Result<RolloverResult,
 pub fn cancel_sync(state: State<'_, AppState>) -> Result<bool, String> {
     state.sync_cancel_requested.store(true, Ordering::SeqCst);
     crate::sync::job::terminate_tracked_sync_bridges(&state)
+}
+
+#[tauri::command]
+pub async fn run_sync_job(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    profile_id: String,
+    mode: SyncJobMode,
+) -> Result<SyncResult, String> {
+    crate::sync::orchestrator::run_sync_job(app, state, profile_id, mode).await
 }
 
 #[tauri::command]

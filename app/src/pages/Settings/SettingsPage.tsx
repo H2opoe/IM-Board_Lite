@@ -11,7 +11,7 @@ import {
   testAiConnection,
   watchLocalModelDownloadProgress
 } from "../../api/aiApi";
-import { FloatingNotice, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
+import { FloatingNotice, FloatingNoticeStack, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
 import { APP_MESSAGES } from "../../constants/messages";
 import type { AiConfig, LocalModelDownloadProgress, LocalModelStatus } from "../../features/ai/model/types";
 import { userErrorMessage } from "../../utils/errors";
@@ -406,12 +406,15 @@ export function SettingsPage() {
     if (!message) return null;
     const variant: FloatingNoticeVariant = status === "error" ? "error" : successSettingsMessages.has(message) ? "success" : "info";
     return (
-      <FloatingNotice
-        message={message}
-        variant={variant}
-        autoCloseMs={variant === "success" ? undefined : false}
-        onClose={() => setMessage("")}
-      />
+      <FloatingNoticeStack>
+        <FloatingNotice
+          message={message}
+          variant={variant}
+          withinLayer
+          autoCloseMs={variant === "success" ? undefined : false}
+          onClose={() => setMessage("")}
+        />
+      </FloatingNoticeStack>
     );
   }
 

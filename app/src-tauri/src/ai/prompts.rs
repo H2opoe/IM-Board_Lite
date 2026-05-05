@@ -1,6 +1,4 @@
-import type { AiConfig } from "../../features/ai/model/types";
-
-export const defaultAnalysisPrompt = `你是一个本地即时通讯工作助理。请只根据输入的聊天消息识别真正需要用户处理的事项。
+pub const DEFAULT_ANALYSIS_PROMPT: &str = r#"你是一个本地即时通讯工作助理。请只根据输入的聊天消息识别真正需要用户处理的事项。
 
 事项识别规则：
 1. 待我回复：对方直接向用户提问、催办、请求确认、需要用户表态；如果后续已经看到用户回复或处理，也要返回 type=reply，但 status=done，用于留痕且不计入未完成。
@@ -46,9 +44,23 @@ export const defaultAnalysisPrompt = `你是一个本地即时通讯工作助理
       "contextIncomplete": false
     }
   ]
-}`;
+}"#;
 
-export const defaultSummaryPrompt = `你是一个本地即时通讯工作助理。请根据输入的聊天消息生成看板话题。
+pub(crate) const BATCH_DEDUP_PROMPT: &str = r#"批内去重与历史参考规则：
+- 分析批次会尽量保证同一 chatId 的本轮新增消息在同一批 messages 中；请优先基于同一聊天的完整上下文判断。
+- existingActionItems 是当前分析范围内已有待回复/待办，包含 status=open/done/ignored，只用于判断是否已经记录、完成或忽略；不要因为历史中已有同一事项而重复输出。
+- 对方提出需要回复的问题，即使后续已经看到用户回复或处理，也要返回 type=reply 且 status=done。
+- 新增消息如果继续推进 existingActionItems 中同一 status=open 的未完成事项，请返回 existingActionItemId；否则留空。
+- 当前批次如果多条消息继续推进同一件事项，请在 actionItems 中只输出 1 条更新后的事项，sourceMessageIds 放入所有关键消息 id。
+- done/ignored 事项只作去重参考，除非新增消息明确提出新的处理要求，否则不要重新创建。"#;
+
+pub(crate) const MANAGEMENT_RISK_PROMPT: &str = r#"管理介入/情绪风险规则：
+- 默认假设用户是管理者，很多项目群由下属跟进；即使没有 @我，只要出现投诉、生气、不满、抱怨、质疑、催促升级、语气激烈、推诿扯皮、公开冲突、对交付/服务/价格/质量失望，也要作为需要用户介入的 task 识别。
+- title 使用“介入……沟通风险/情绪风险/投诉处理”；description 说明谁对什么不满、为什么需要介入；evidenceSummary 保留关键事实。
+- 客户/合作方投诉、公开群内冲突、影响交付/收款/合作关系为 high；内部轻微不满但可能扩散为 medium；玩笑、调侃、已当场安抚解决的不生成事项。
+- 如果情绪风险与已有事项明显属于同一风险点，请在本次输出中只保留 1 条更新后的事项。"#;
+
+pub const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个本地即时通讯工作助理。请根据输入的聊天消息生成看板话题。
 
 话题规则：
 1. existingTopics 是当前分析范围内已经汇总好的热门话题，candidateTopics 只包含本次尚未汇总的新消息候选；不要要求更多上下文，不要把历史或旧候选重新计数。
@@ -81,122 +93,14 @@ export const defaultSummaryPrompt = `你是一个本地即时通讯工作助理�
       ]
     }
   ]
-}`;
+}"#;
 
-export const providerDefaults: Record<string, { baseUrl: string; model: string }> = {
-  本地DeepSeek: { baseUrl: "http://127.0.0.1:11434/v1", model: "deepseek-r1-distill-qwen-7b-q4_k_m" },
-  "DeepSeek API": { baseUrl: "https://api.deepseek.com", model: "deepseek-v4-flash" },
-  OpenRouter: { baseUrl: "https://openrouter.ai/api/v1", model: "deepseek/deepseek-v3.2" },
-  火山方舟: { baseUrl: "https://ark.cn-beijing.volces.com/api/v3", model: "doubao-seed-1-6-251015" },
-  其他本地模型: { baseUrl: "http://127.0.0.1:11434/v1", model: "" }
-};
+pub(crate) const LOCAL_MODEL_OUTPUT_PROMPT: &str = r#"本地小模型输出约束：
+- 不要输出思考过程，不要输出 <think>，不要解释。
+- 只返回一个 JSON 对象；无法确定时返回空数组。
+- 字段值保持短句，避免长段落。"#;
 
-export const providerOptions = ["本地DeepSeek", "火山方舟", "DeepSeek API", "OpenRouter", "其他本地模型"];
-export const localDeepseekDisplayName = "DeepSeek-R1-Distill-Qwen-7B Q4_K_M";
-export const localDeepseekEnablePendingKey = "imboard:local-deepseek-enable-pending";
-export const localDeepseekDefaultBatchSize = 20;
-
-const legacyLocalDeepseekModels = new Set(["deepseek-r1-distill-qwen-1.5b-q4_k_m"]);
-const minAnalysisBatchSize = 10;
-const localDeepseekMaxBatchSize = 30;
-const legacyOtherModelDefaultBatchSize = 50;
-const otherModelDefaultBatchSize = 100;
-const otherModelMaxBatchSize = 300;
-
-export const emptyConfig: AiConfig = {
-  provider: "本地DeepSeek",
-  apiKey: "",
-  baseUrl: providerDefaults["本地DeepSeek"].baseUrl,
-  model: providerDefaults["本地DeepSeek"].model,
-  userPrompt: "",
-  analysisPrompt: defaultAnalysisPrompt,
-  summaryPrompt: defaultSummaryPrompt,
-  analysisPromptCustom: false,
-  summaryPromptCustom: false,
-  analysisBatchSize: localDeepseekDefaultBatchSize,
-  enabled: true,
-  testStatus: "untested"
-};
-
-export const successSettingsMessages = new Set([
-  "AI配置已保存。",
-  "本地DeepSeek模型已开始后台下载，离开AI配置页也会继续。",
-  "API连接测试通过，模型已返回响应。",
-  "本地DeepSeek已启用，后续AI分析不再要求云端API Key。",
-  "本地DeepSeek模型下载已取消，临时下载文件已清除。",
-  "本地DeepSeek模型文件和运行时部署已清除。",
-  "本地DeepSeek模型存储路径已复制。",
-  "本地DeepSeek模型已下载完成。",
-  "本地DeepSeek已下载并启用，后续AI分析不再要求云端API Key。"
-]);
-
-function isKnownDefaultAnalysisPrompt(prompt: string): boolean {
-  const trimmed = prompt.trim();
-  // 旧默认提示词把消息限定成“今天”，已保存旧默认值时需要迁移到新的分析范围表述。
-  return trimmed === defaultAnalysisPrompt.trim()
-    || trimmed.startsWith("你是一个本地即时通讯工作助理。")
-    && containsStrictJsonInstruction(trimmed)
-    && (
-      trimmed.includes("今天聊天消息")
-      || trimmed.includes("尚未分析的今天消息")
-      || trimmed.includes("今天已有的待回复/待办")
-      || trimmed.includes("所有输出字段必须使用简体中文")
-      || !trimmed.includes("主要语言")
-    );
-}
-
-function isKnownDefaultSummaryPrompt(prompt: string): boolean {
-  const trimmed = prompt.trim();
-  // 只迁移旧默认话题提示词，避免误改用户完全自定义的提示词。
-  return trimmed === defaultSummaryPrompt.trim()
-    || trimmed.startsWith("你是一个本地即时通讯工作助理。")
-    && containsStrictJsonInstruction(trimmed)
-    && trimmed.includes("candidateTopics")
-    && (
-      trimmed.includes("今天聊天消息")
-      || trimmed.includes("今天已经汇总好的热门话题")
-      || trimmed.includes("群聊当天总消息数")
-      || !trimmed.includes("主要语言")
-    );
-}
-
-function containsStrictJsonInstruction(prompt: string): boolean {
-  return /请返回严格\s*JSON/.test(prompt);
-}
-
-export function normalizeConfig(config: AiConfig): AiConfig {
-  const normalizedProvider = config.provider === "火山引擎" ? "火山方舟" : config.provider;
-  const provider = normalizedProvider === "本地模型" ? "其他本地模型" : providerOptions.includes(normalizedProvider) ? normalizedProvider : "本地DeepSeek";
-  const defaults = providerDefaults[provider];
-  const providerChanged = provider !== config.provider;
-
-  // 旧版本保存过 1.5B 本地模型、50 条默认分批和带日期限定的默认提示词；归一化只迁移默认值，不改变用户自定义提示词。
-  const model = providerChanged || !config.model.trim() || (provider === "本地DeepSeek" && legacyLocalDeepseekModels.has(config.model)) ? defaults.model : config.model;
-  const analysisPromptCustom = config.analysisPromptCustom && !isKnownDefaultAnalysisPrompt(config.analysisPrompt);
-  const summaryPromptCustom = config.summaryPromptCustom && !isKnownDefaultSummaryPrompt(config.summaryPrompt);
-  return {
-    ...config,
-    provider,
-    apiKey: provider.includes("本地") ? "" : config.apiKey,
-    baseUrl: providerChanged || !config.baseUrl.trim() ? defaults.baseUrl : config.baseUrl,
-    model,
-    analysisPrompt: analysisPromptCustom ? config.analysisPrompt : defaultAnalysisPrompt,
-    summaryPrompt: summaryPromptCustom ? config.summaryPrompt : defaultSummaryPrompt,
-    analysisPromptCustom,
-    summaryPromptCustom,
-    analysisBatchSize: normalizeAnalysisBatchSize(provider, config.analysisBatchSize),
-    enabled: config.enabled
-  };
-}
-
-export function defaultAnalysisBatchSize(provider: string): number {
-  return provider === "本地DeepSeek" ? localDeepseekDefaultBatchSize : otherModelDefaultBatchSize;
-}
-
-function normalizeAnalysisBatchSize(provider: string, value: number): number {
-  const fallback = defaultAnalysisBatchSize(provider);
-  const max = provider === "本地DeepSeek" ? localDeepseekMaxBatchSize : otherModelMaxBatchSize;
-  if (provider !== "本地DeepSeek" && value === legacyOtherModelDefaultBatchSize) return fallback;
-  const requested = Number.isFinite(value) && value > 0 ? value : fallback;
-  return Math.max(minAnalysisBatchSize, Math.min(max, requested));
-}
+pub(crate) const PRIMARY_LANGUAGE_OUTPUT_PROMPT: &str = r#"输出语言规则：
+- 先判断输入聊天记录的主要语言，再用该主要语言填写所有用户可见字段。
+- 聊天记录主要是中文时，必须使用简体中文。
+- 不要因为 JSON 字段名、系统提示或少量外文内容，把 title、description、suggestedReply、evidenceSummary、summary 写成英文。"#;

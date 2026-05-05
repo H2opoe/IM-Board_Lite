@@ -1,6 +1,6 @@
 use std::fs;
 use std::io::{Cursor, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
 use tauri::{Manager, State};
@@ -51,8 +51,11 @@ pub fn save_app_settings(
 }
 
 #[tauri::command]
-pub fn export_diagnostic_package(state: State<'_, AppState>) -> Result<DiagnosticExport, String> {
-    export_diagnostic_package_impl(&state).map_err(|error| error.to_string())
+pub fn export_diagnostic_package(
+    state: State<'_, AppState>,
+    file_path: String,
+) -> Result<DiagnosticExport, String> {
+    export_diagnostic_package_impl(&state, file_path).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -134,15 +137,15 @@ fn open_macos_privacy_settings_impl(
     Ok(())
 }
 
-fn export_diagnostic_package_impl(state: &State<'_, AppState>) -> anyhow::Result<DiagnosticExport> {
+fn export_diagnostic_package_impl(
+    state: &State<'_, AppState>,
+    file_path: String,
+) -> anyhow::Result<DiagnosticExport> {
     let exported_at = chrono::Local::now();
-    let file_name = format!(
-        "IM-Board-diagnostics-{}.zip",
-        exported_at.format("%Y%m%d-%H%M%S")
-    );
-    let export_dir = dirs::desktop_dir().unwrap_or_else(|| state.app_dir.join("Diagnostics"));
-    fs::create_dir_all(&export_dir)?;
-    let file_path = export_dir.join(file_name);
+    let file_path = normalize_diagnostic_export_path(file_path)?;
+    if let Some(parent) = file_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
 
     let conn = state
         .db
@@ -172,6 +175,19 @@ fn export_diagnostic_package_impl(state: &State<'_, AppState>) -> anyhow::Result
     Ok(DiagnosticExport {
         file_path: file_path.display().to_string(),
     })
+}
+
+fn normalize_diagnostic_export_path(file_path: String) -> anyhow::Result<PathBuf> {
+    let trimmed = file_path.trim();
+    if trimmed.is_empty() {
+        anyhow::bail!("诊断包保存路径无效。");
+    }
+
+    let path = PathBuf::from(trimmed);
+    if path.exists() && path.is_dir() {
+        anyhow::bail!("请选择具体的诊断包文件名，不能直接保存到文件夹。");
+    }
+    Ok(path)
 }
 
 fn add_zip_text<W: Write + std::io::Seek>(
@@ -501,11 +517,8 @@ fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), St
 
 #[cfg(target_os = "windows")]
 fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), String> {
-    let icon = tauri::image::Image::from_path(desktop_icon_path(
-        &app,
-        theme_icon_file_name(theme),
-    ))
-    .map_err(|error| format!("读取应用图标失败：{error}"))?;
+    let icon = tauri::image::Image::from_path(desktop_icon_path(&app, theme_icon_file_name(theme)))
+        .map_err(|error| format!("读取应用图标失败：{error}"))?;
 
     // Windows 的 exe 与快捷方式图标来自安装包静态资源；运行中同步窗口任务栏图标与后台托盘图标。
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {

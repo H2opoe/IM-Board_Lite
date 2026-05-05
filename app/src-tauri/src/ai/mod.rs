@@ -7,8 +7,29 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::error::Error;
 use std::fmt;
 
-use crate::security::sanitize_log;
+#[cfg(test)]
 use crate::storage::models::AiConfig;
+
+mod config;
+mod prompts;
+mod request;
+
+pub(crate) use config::analysis_batch_token_budget;
+#[cfg(test)]
+pub(crate) use config::normalize_config;
+pub use config::{
+    get_config, is_configured, is_local_provider, save_config, with_provider_headers,
+};
+pub(crate) use prompts::{
+    BATCH_DEDUP_PROMPT, LOCAL_MODEL_OUTPUT_PROMPT, MANAGEMENT_RISK_PROMPT,
+    PRIMARY_LANGUAGE_OUTPUT_PROMPT,
+};
+pub use prompts::{DEFAULT_ANALYSIS_PROMPT, DEFAULT_SUMMARY_PROMPT};
+#[cfg(test)]
+pub(crate) use request::merge_incremental_summary_topics;
+pub(crate) use request::{
+    describe_request_error, request_profile_analysis, request_profile_summary,
+};
 
 pub const LOCAL_DEEPSEEK_ANALYSIS_BATCH_SIZE: i64 = 20;
 pub const OTHER_MODEL_DEFAULT_ANALYSIS_BATCH_SIZE: i64 = 100;
@@ -34,107 +55,6 @@ pub(crate) const MIN_KEYWORD_CLOUD_COUNT: i64 = 3;
 pub const LOCAL_DEEPSEEK_PROVIDER: &str = "本地DeepSeek";
 pub const LOCAL_DEEPSEEK_MODEL: &str = "deepseek-r1-distill-qwen-7b-q4_k_m";
 pub const OPENROUTER_PROVIDER: &str = "OpenRouter";
-
-pub const DEFAULT_ANALYSIS_PROMPT: &str = r#"你是一个本地即时通讯工作助理。请只根据输入的聊天消息识别真正需要用户处理的事项。
-
-事项识别规则：
-1. 待我回复：对方直接向用户提问、催办、请求确认、需要用户表态；如果后续已经看到用户回复或处理，也要返回 type=reply，但 status=done，用于留痕且不计入未完成。
-2. 待办事项：聊天里明确出现需要用户执行、跟进、提交、安排、确认、交付、付款、预约、发送资料的任务，且不是泛泛闲聊；如果后续已经看到用户完成，也可以返回 status=done。
-3. 如果证据不足，不要臆测；可通过 contextIncomplete=true 请求系统补读同聊天历史，不要把内部补读状态写入用户可见文案。
-4. 群聊里只有明确 @我、点名、分配给我、或语义上明显由我负责时才生成事项。
-5. 忽略公众号、广告、系统通知、寒暄、普通情绪表达、没有后续动作的信息。
-6. 输入的 messages 只包含本轮新增且尚未分析的消息；如果 historicalMessages 非空，请只把它当作同聊天的历史上下文证据，不要从历史消息本身新增事项。
-7. 所有输出字段必须使用简体中文，尤其是 title、description、suggestedReply、evidenceSummary；不要把聊天内容总结成英文。
-
-管理介入/情绪风险规则：
-1. 默认假设用户是管理者，很多项目群由下属直接跟进。即使没有 @我 或直接分配给我，只要出现客户、合作方、同事、下属之间的明显负面情绪或沟通氛围异常，也要识别为需要用户介入的 task。
-2. 需要识别的信号包括：投诉、生气、不满、抱怨、质疑、催促升级、语气激烈、互相指责、推诿扯皮、反复追问未解决、对交付/服务/价格/质量表达失望、群内公开冲突。
-3. 这类事项的 title 用“介入……沟通风险/情绪风险/投诉处理”这类管理动作；description 说明谁对什么不满、当前氛围为什么需要介入；evidenceSummary 摘要关键原话或事实。
-4. priority 规则：客户/合作方投诉、公开群内冲突、影响交付/收款/合作关系为 high；内部轻微不满但可能扩散为 medium；单句玩笑、已被当场安抚解决、明显调侃不生成事项。
-5. 如果负面情绪与 existingActionItems 中 status=open 的已有事项明显属于同一风险点，请返回 existingActionItemId 并更新该事项；如果是新的风险点，则新建 task。
-
-批内去重与历史参考规则：
-1. 分析批次会尽量保证同一 chatId 的本轮新增消息在同一批 messages 中；请优先基于同一聊天的完整上下文判断。
-2. existingActionItems 是当前分析范围内已有的待回复/待办，包含 status=open/done/ignored，只用于判断是否已经记录、完成或忽略；不要因为历史中已有同一事项而重复输出。
-3. 新增消息如果是在补充、催促、改时间、改数量、确认进展、追加证据、继续讨论同一件 status=open 的未完成事项，请返回 existingActionItemId，不要新建重复事项。
-4. 已完成/忽略事项只作为参考：除非新增消息明确提出新的处理要求，否则不要重新创建。
-5. 判断同一事项优先看：同一 chatId、同一办理对象、同一交付物/问题、同一时间窗口、同一责任人；标题措辞不同但目标相同也要视为同一事项。
-6. 不要合并的情况：不同客户/群聊、不同项目、不同交付物、一个是回复义务另一个是实际执行任务、旧事项已经被用户明确完成/拒绝/无需处理。
-7. 待我回复的额外规则：同一 chatId 里只有确认为同一问题、同一对象、同一处理目标的多条消息才建议合并；不能只因为来自同一聊天就合并。
-8. priority 规则：必须尽快处理或对方催促/影响交付为 high；需要跟进但不紧急为 medium；可顺手处理或信息补充为 low。
-
-请返回严格 JSON，不要 Markdown，不要解释：
-{
-  "actionItems": [
-    {
-      "type": "reply" | "task",
-      "status": "open | done，未处理填 open；已回复/已完成填 done",
-      "priority": "high" | "medium" | "low",
-      "title": "不超过20字",
-      "description": "说明为什么需要处理",
-      "suggestedReply": "仅待回复需要，可为空",
-      "chatId": "必须来自输入",
-      "profileId": "必须来自输入；跨平台证据取主要待处理消息所属 profileId",
-      "existingActionItemId": "如果是 existingActionItems 中同一未完成事项则填对应 id，否则为空",
-      "sourceMessageIds": ["必须来自输入"],
-      "evidenceSummary": "引用关键事实，避免泄露无关内容",
-      "contextIncomplete": false
-    }
-  ]
-}"#;
-
-const BATCH_DEDUP_PROMPT: &str = r#"批内去重与历史参考规则：
-- 分析批次会尽量保证同一 chatId 的本轮新增消息在同一批 messages 中；请优先基于同一聊天的完整上下文判断。
-- existingActionItems 是当前分析范围内已有待回复/待办，包含 status=open/done/ignored，只用于判断是否已经记录、完成或忽略；不要因为历史中已有同一事项而重复输出。
-- 对方提出需要回复的问题，即使后续已经看到用户回复或处理，也要返回 type=reply 且 status=done。
-- 新增消息如果继续推进 existingActionItems 中同一 status=open 的未完成事项，请返回 existingActionItemId；否则留空。
-- 当前批次如果多条消息继续推进同一件事项，请在 actionItems 中只输出 1 条更新后的事项，sourceMessageIds 放入所有关键消息 id。
-- done/ignored 事项只作去重参考，除非新增消息明确提出新的处理要求，否则不要重新创建。"#;
-
-const MANAGEMENT_RISK_PROMPT: &str = r#"管理介入/情绪风险规则：
-- 默认假设用户是管理者，很多项目群由下属跟进；即使没有 @我，只要出现投诉、生气、不满、抱怨、质疑、催促升级、语气激烈、推诿扯皮、公开冲突、对交付/服务/价格/质量失望，也要作为需要用户介入的 task 识别。
-- title 使用“介入……沟通风险/情绪风险/投诉处理”；description 说明谁对什么不满、为什么需要介入；evidenceSummary 保留关键事实。
-- 客户/合作方投诉、公开群内冲突、影响交付/收款/合作关系为 high；内部轻微不满但可能扩散为 medium；玩笑、调侃、已当场安抚解决的不生成事项。
-- 如果情绪风险与已有事项明显属于同一风险点，请在本次输出中只保留 1 条更新后的事项。"#;
-
-pub const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个本地即时通讯工作助理。请根据输入的聊天消息生成看板话题。
-
-话题规则：
-1. existingTopics 是当前分析范围内已经汇总好的热门话题，candidateTopics 只包含本次尚未汇总的新消息候选；不要要求更多上下文，不要把历史或旧候选重新计数。
-2. 如果 candidateTopics 与 existingTopics 中同一 id 的话题是同一具体对象、项目、客户、交付物、采购单、商品或同一聊天里的连续上下文，请沿用 existingTopics 的 id、title、sourceMessageIds，在其基础上追加新消息 id 并更新 summary/count。
-3. 如果 candidateTopics 是全新话题，请生成新的 id、title、summary、sourceMessageIds 和 sourceChats。
-4. 返回更新后的完整 topics：包括未变化的 existingTopics，以及合并/新增后的话题；最多返回 12 个。
-5. 话题表示多人或多轮围绕同一主题的讨论，不要按群名/联系人名简单排行。
-6. 普通寒暄、表情、单条孤立消息不要形成热门话题。
-7. 图片、视频、语音、文件、链接等媒介分享本身不是话题；只有 snippets 明确展示了图片/文件内容，并且多人围绕该具体内容讨论时，才可归纳成内容话题，标题不能写“图片分享/文件分享/链接分享”。
-8. “微信版本不支持展示内容”“当前版本不支持”“请升级微信查看”等客户端兼容性或系统提示不是用户讨论，不要形成话题，也不要写入 summary。
-9. count 表示相关有效消息条数，必须等于去重后的 sourceMessageIds 数量；sourceMessageIds 只能来自 existingTopics.sourceMessageIds 和 candidateTopics.sourceMessageIds，不要估算，不要使用群聊总消息数。
-10. sourceChats 只能使用 existingTopics 或 candidateTopics 中的 chatName，同一 chatName 只出现一次。
-11. summary 要反映当前进展，不要写入对话名/群聊名/联系人名。
-12. 投诉、生气、不满、抱怨、公开冲突、交付/服务/价格/质量争议等沟通氛围异常，应优先形成话题，标题体现风险主题，summary 说明情绪和争议焦点。
-13. 合并候选时不能只因为共享“买”“采购”“东西”“确认”“处理”“安排”等泛动作词就合并。
-14. 如果不同 sourceChats 的 snippets 只表现出相似动作、但人物关系、业务场景或办理对象不同，必须拆成不同话题。例如“女朋友让我买东西”和“公司群讨论采购是否已买”不能合并。
-
-请返回严格 JSON，不要 Markdown，不要解释：
-{
-  "topics": [
-    {
-      "id": "稳定话题id",
-      "title": "话题名",
-      "summary": "一句话摘要",
-      "count": 1,
-      "sourceMessageIds": ["必须来自输入 existingTopics 或 candidateTopics 的 sourceMessageIds"],
-      "sourceChats": [
-        { "chatName": "必须来自输入", "isGroup": false }
-      ]
-    }
-  ]
-}"#;
-
-const LOCAL_MODEL_OUTPUT_PROMPT: &str = r#"本地小模型输出约束：
-- 不要输出思考过程，不要输出 <think>，不要解释。
-- 只返回一个 JSON 对象；无法确定时返回空数组。
-- 字段值保持短句，避免长段落。"#;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -386,243 +306,6 @@ struct AiActionItem {
     evidence_summary: String,
     #[serde(default)]
     context_incomplete: bool,
-}
-
-pub fn get_config(conn: &rusqlite::Connection) -> anyhow::Result<AiConfig> {
-    let row = conn
-        .query_row(
-            "select provider, api_key, base_url, model, user_prompt, analysis_prompt, summary_prompt, analysis_prompt_custom, summary_prompt_custom, analysis_batch_size, enabled, test_status from ai_config where id = 1",
-            [],
-            |row| {
-                let analysis_prompt: String = row.get(5)?;
-                let summary_prompt: String = row.get(6)?;
-                let analysis_prompt_custom: Option<i64> = row.get(7)?;
-                let summary_prompt_custom: Option<i64> = row.get(8)?;
-                Ok(normalize_config(AiConfig {
-                    provider: row.get(0)?,
-                    api_key: row.get(1)?,
-                    base_url: row.get(2)?,
-                    model: row.get(3)?,
-                    user_prompt: row.get(4)?,
-                    analysis_prompt_custom: infer_prompt_custom(
-                        analysis_prompt_custom,
-                        &analysis_prompt,
-                        is_known_default_analysis_prompt,
-                    ),
-                    summary_prompt_custom: infer_prompt_custom(
-                        summary_prompt_custom,
-                        &summary_prompt,
-                        is_known_default_summary_prompt,
-                    ),
-                    analysis_prompt,
-                    summary_prompt,
-                    analysis_batch_size: row.get(9)?,
-                    enabled: row.get::<_, i64>(10)? == 1,
-                    test_status: row.get(11)?,
-                }))
-            },
-        )
-        .optional()?;
-
-    Ok(row.unwrap_or_else(|| {
-        normalize_config(AiConfig {
-            provider: LOCAL_DEEPSEEK_PROVIDER.to_owned(),
-            api_key: String::new(),
-            base_url: "http://127.0.0.1:11434/v1".to_owned(),
-            model: LOCAL_DEEPSEEK_MODEL.to_owned(),
-            user_prompt: String::new(),
-            analysis_prompt: DEFAULT_ANALYSIS_PROMPT.to_owned(),
-            summary_prompt: DEFAULT_SUMMARY_PROMPT.to_owned(),
-            analysis_prompt_custom: false,
-            summary_prompt_custom: false,
-            analysis_batch_size: LOCAL_DEEPSEEK_ANALYSIS_BATCH_SIZE,
-            enabled: true,
-            test_status: "untested".to_owned(),
-        })
-    }))
-}
-
-pub fn save_config(conn: &rusqlite::Connection, config: AiConfig) -> anyhow::Result<AiConfig> {
-    let normalized = normalize_config(config);
-    conn.execute(
-        "insert into ai_config(id, provider, api_key, base_url, model, user_prompt, analysis_prompt, summary_prompt, analysis_prompt_custom, summary_prompt_custom, analysis_batch_size, enabled, test_status, updated_at)
-         values(1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
-         on conflict(id) do update set
-           provider = excluded.provider,
-           api_key = excluded.api_key,
-           base_url = excluded.base_url,
-           model = excluded.model,
-           user_prompt = excluded.user_prompt,
-           analysis_prompt = excluded.analysis_prompt,
-           summary_prompt = excluded.summary_prompt,
-           analysis_prompt_custom = excluded.analysis_prompt_custom,
-           summary_prompt_custom = excluded.summary_prompt_custom,
-           analysis_batch_size = excluded.analysis_batch_size,
-           enabled = excluded.enabled,
-           test_status = excluded.test_status,
-           updated_at = excluded.updated_at",
-        params![
-            &normalized.provider,
-            &normalized.api_key,
-            &normalized.base_url,
-            &normalized.model,
-            &normalized.user_prompt,
-            &normalized.analysis_prompt,
-            &normalized.summary_prompt,
-            if normalized.analysis_prompt_custom { 1 } else { 0 },
-            if normalized.summary_prompt_custom { 1 } else { 0 },
-            normalized.analysis_batch_size,
-            if normalized.enabled { 1 } else { 0 },
-            &normalized.test_status,
-            Local::now().to_rfc3339()
-        ],
-    )?;
-    Ok(normalized)
-}
-
-fn normalize_config(config: AiConfig) -> AiConfig {
-    // 默认提示词跟随软件版本升级；只有用户真实编辑过的提示词才按自定义内容保存。
-    let analysis_prompt_custom =
-        config.analysis_prompt_custom && !is_known_default_analysis_prompt(&config.analysis_prompt);
-    let summary_prompt_custom =
-        config.summary_prompt_custom && !is_known_default_summary_prompt(&config.summary_prompt);
-    let analysis_prompt = if analysis_prompt_custom {
-        config.analysis_prompt.clone()
-    } else {
-        DEFAULT_ANALYSIS_PROMPT.to_owned()
-    };
-    let summary_prompt = if summary_prompt_custom {
-        config.summary_prompt.clone()
-    } else {
-        DEFAULT_SUMMARY_PROMPT.to_owned()
-    };
-    let analysis_batch_size = normalize_analysis_batch_size(&config);
-    AiConfig {
-        user_prompt: config.user_prompt.trim().to_owned(),
-        analysis_prompt,
-        summary_prompt,
-        analysis_prompt_custom,
-        summary_prompt_custom,
-        analysis_batch_size,
-        ..config
-    }
-}
-
-fn normalize_analysis_batch_size(config: &AiConfig) -> i64 {
-    let requested = if config.analysis_batch_size <= 0 {
-        default_analysis_batch_size(config)
-    } else {
-        config.analysis_batch_size
-    };
-    requested.clamp(
-        MIN_ANALYSIS_BATCH_MESSAGES,
-        max_analysis_batch_messages(config),
-    )
-}
-
-fn default_analysis_batch_size(config: &AiConfig) -> i64 {
-    if is_managed_local_deepseek(config) {
-        LOCAL_DEEPSEEK_ANALYSIS_BATCH_SIZE
-    } else {
-        OTHER_MODEL_DEFAULT_ANALYSIS_BATCH_SIZE
-    }
-}
-
-fn max_analysis_batch_messages(config: &AiConfig) -> i64 {
-    if is_managed_local_deepseek(config) {
-        LOCAL_DEEPSEEK_MAX_ANALYSIS_BATCH_MESSAGES
-    } else {
-        OTHER_MODEL_MAX_ANALYSIS_BATCH_MESSAGES
-    }
-}
-
-fn is_managed_local_deepseek(config: &AiConfig) -> bool {
-    config.provider == LOCAL_DEEPSEEK_PROVIDER
-}
-
-pub(crate) fn analysis_batch_token_budget(config: &AiConfig) -> usize {
-    if is_managed_local_deepseek(config) {
-        LOCAL_DEEPSEEK_ANALYSIS_BATCH_ESTIMATED_TOKENS
-    } else {
-        OTHER_MODEL_ANALYSIS_BATCH_ESTIMATED_TOKENS
-    }
-}
-
-pub fn is_local_provider(config: &AiConfig) -> bool {
-    config.provider.contains("本地")
-        || config.base_url.contains("127.0.0.1")
-        || config.base_url.contains("localhost")
-}
-
-pub fn with_provider_headers(
-    request: reqwest::RequestBuilder,
-    config: &AiConfig,
-    base_url: &str,
-) -> reqwest::RequestBuilder {
-    if is_openrouter_config(config, base_url) {
-        return request.header("X-OpenRouter-Title", "IM-Board");
-    }
-    request
-}
-
-fn is_openrouter_config(config: &AiConfig, base_url: &str) -> bool {
-    config.provider == OPENROUTER_PROVIDER || base_url.contains("openrouter.ai")
-}
-
-pub fn is_configured(config: &AiConfig) -> bool {
-    if !config.enabled || config.model.trim().is_empty() {
-        return false;
-    }
-    is_local_provider(config) || !config.api_key.trim().is_empty()
-}
-
-fn infer_prompt_custom(
-    stored_flag: Option<i64>,
-    value: &str,
-    is_known_default: fn(&str) -> bool,
-) -> bool {
-    match stored_flag {
-        Some(flag) => flag == 1 && !is_known_default(value),
-        None => !value.trim().is_empty() && !is_known_default(value),
-    }
-}
-
-fn is_known_default_analysis_prompt(value: &str) -> bool {
-    let trimmed = value.trim();
-    let is_old_default = value.contains("话题识别和计数规则")
-        && value.contains("关键词词云识别和计数规则")
-        && value.contains("openActionItems");
-    let missing_language_constraint = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && !value.contains("所有输出字段必须使用简体中文");
-    let date_limited_default = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && (value.contains("今天聊天消息")
-            || value.contains("尚未分析的今天消息")
-            || value.contains("今天已有的待回复/待办"));
-    trimmed.is_empty()
-        || trimmed == DEFAULT_ANALYSIS_PROMPT.trim()
-        || is_old_default
-        || missing_language_constraint
-        || date_limited_default
-}
-
-fn is_known_default_summary_prompt(value: &str) -> bool {
-    let trimmed = value.trim();
-    let old_frontend_default = trimmed
-        .starts_with("你是一个本地即时通讯工作助理。请根据输入的今天聊天消息生成看板话题。")
-        && value.contains("existingTopics是今天已经汇总好的热门话题")
-        && value.contains("sourceChats只能使用existingTopics或candidateTopics中的chatName");
-    let date_limited_default = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && value.contains("candidateTopics")
-        && (value.contains("今天聊天消息")
-            || value.contains("今天已经汇总好的热门话题")
-            || value.contains("群聊当天总消息数"));
-    trimmed.is_empty()
-        || trimmed == DEFAULT_SUMMARY_PROMPT.trim()
-        || old_frontend_default
-        || date_limited_default
 }
 
 pub(crate) fn load_analysis_messages(
@@ -1324,281 +1007,6 @@ fn is_call_record_text(msg_type: &str, content: &str) -> bool {
         )
 }
 
-pub(crate) async fn request_profile_analysis(
-    config: &AiConfig,
-    day: &str,
-    profile_id: &str,
-    messages: &[AnalysisMessage],
-    context: &AnalysisContext,
-) -> anyhow::Result<AiAnalysisResult> {
-    let payload = serde_json::json!({
-        "day": day,
-        "profileId": profile_id,
-        "messageCount": messages.len(),
-        "analysisMode": "incremental",
-        "userPrompt": config.user_prompt.trim(),
-        "existingActionItems": context.existing_action_items,
-        "historicalMessages": context.historical_messages,
-        "messages": messages,
-    });
-    let base_prompt = if config.analysis_prompt.trim().is_empty() {
-        DEFAULT_ANALYSIS_PROMPT
-    } else {
-        config.analysis_prompt.trim()
-    };
-    let mut prompt = base_prompt.to_owned();
-    if !prompt.contains("批内去重") && !prompt.contains("同一批 messages") {
-        prompt.push_str("\n\n");
-        prompt.push_str(BATCH_DEDUP_PROMPT);
-    }
-    if !prompt.contains("沟通氛围") && !prompt.contains("情绪风险") {
-        prompt.push_str("\n\n");
-        prompt.push_str(MANAGEMENT_RISK_PROMPT);
-    }
-    if is_local_provider(config) && !prompt.contains("不要输出 <think>") {
-        prompt.push_str("\n\n");
-        prompt.push_str(LOCAL_MODEL_OUTPUT_PROMPT);
-    }
-    let output = request_analysis(
-        config,
-        "AI分析",
-        ANALYSIS_REQUEST_TIMEOUT_SECS,
-        &prompt,
-        &payload,
-        if is_local_provider(config) {
-            1536
-        } else {
-            2048
-        },
-    )
-    .await?;
-    let json = extract_json_object(&output.content)
-        .map_err(|err| AiCallError::new(err.to_string(), Some(output.diagnostics.clone())))?;
-    let mut analysis: AiAnalysis = serde_json::from_str(&json).map_err(|err| {
-        AiCallError::new(
-            format!(
-                "AI返回JSON解析失败：{}；片段：{}",
-                err,
-                truncate_text(json.replace('\n', " "), 360)
-            ),
-            Some(output.diagnostics.clone()),
-        )
-    })?;
-    analysis.topics.clear();
-    analysis.keywords.clear();
-    Ok(AiAnalysisResult {
-        analysis,
-        diagnostics: output.diagnostics,
-    })
-}
-
-pub(crate) async fn request_profile_summary(
-    config: &AiConfig,
-    day: &str,
-    profile_id: &str,
-    existing_topics: &[SummaryTopicContext],
-    candidates: &[SummaryCandidate],
-) -> anyhow::Result<AiSummaryResult> {
-    let payload = serde_json::json!({
-        "day": day,
-        "profileId": profile_id,
-        "summaryMode": "incremental",
-        "existingTopics": existing_topics,
-        "candidateCount": candidates.len(),
-        "userPrompt": config.user_prompt.trim(),
-        "candidateTopics": candidates,
-    });
-    let base_prompt = if config.summary_prompt.trim().is_empty() {
-        DEFAULT_SUMMARY_PROMPT
-    } else {
-        config.summary_prompt.trim()
-    };
-    let mut prompt = base_prompt.to_owned();
-    if is_local_provider(config) {
-        prompt.push_str("\n\n");
-        prompt.push_str(LOCAL_MODEL_OUTPUT_PROMPT);
-    }
-    let output = request_analysis(
-        config,
-        "热门话题汇总",
-        SUMMARY_REQUEST_TIMEOUT_SECS,
-        &prompt,
-        &payload,
-        if is_local_provider(config) {
-            1536
-        } else {
-            3072
-        },
-    )
-    .await?;
-    let json = extract_json_object(&output.content)
-        .map_err(|err| AiCallError::new(err.to_string(), Some(output.diagnostics.clone())))?;
-    let mut summary: AiSummary = serde_json::from_str(&json).map_err(|err| {
-        AiCallError::new(
-            format!(
-                "AI返回汇总JSON解析失败：{}；片段：{}",
-                err,
-                truncate_text(json.replace('\n', " "), 360)
-            ),
-            Some(output.diagnostics.clone()),
-        )
-    })?;
-    merge_incremental_summary_topics(&mut summary, existing_topics, candidates);
-    Ok(AiSummaryResult {
-        summary,
-        diagnostics: output.diagnostics,
-    })
-}
-
-fn merge_incremental_summary_topics(
-    summary: &mut AiSummary,
-    existing_topics: &[SummaryTopicContext],
-    candidates: &[SummaryCandidate],
-) {
-    let mut valid_message_ids = existing_topics
-        .iter()
-        .flat_map(|topic| topic.source_message_ids.iter().cloned())
-        .collect::<HashSet<_>>();
-    valid_message_ids.extend(
-        candidates
-            .iter()
-            .flat_map(|candidate| candidate.source_message_ids.iter().cloned()),
-    );
-    let existing_by_id = existing_topics
-        .iter()
-        .map(|topic| (topic.id.clone(), topic))
-        .collect::<HashMap<_, _>>();
-    for topic in &mut summary.topics {
-        let Some(object) = topic.as_object_mut() else {
-            continue;
-        };
-        let id = object
-            .get("id")
-            .and_then(|value| value.as_str())
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-            .map(str::to_owned)
-            .unwrap_or_else(|| {
-                let title = object
-                    .get("title")
-                    .and_then(|value| value.as_str())
-                    .unwrap_or_default();
-                let summary = object
-                    .get("summary")
-                    .and_then(|value| value.as_str())
-                    .unwrap_or_default();
-                summary_topic_id(title, summary)
-            });
-        let mut source_message_ids = existing_by_id
-            .get(&id)
-            .map(|existing| {
-                existing
-                    .source_message_ids
-                    .iter()
-                    .cloned()
-                    .collect::<BTreeSet<_>>()
-            })
-            .unwrap_or_default();
-        source_message_ids.extend(
-            object
-                .get("sourceMessageIds")
-                .and_then(|value| value.as_array())
-                .map(|items| {
-                    items
-                        .iter()
-                        .filter_map(|item| item.as_str())
-                        .map(str::trim)
-                        .filter(|id| !id.is_empty() && valid_message_ids.contains(*id))
-                        .map(str::to_owned)
-                        .collect::<BTreeSet<_>>()
-                })
-                .unwrap_or_default(),
-        );
-        object.insert("id".to_owned(), serde_json::json!(id));
-        object.insert(
-            "sourceMessageIds".to_owned(),
-            serde_json::json!(source_message_ids.iter().cloned().collect::<Vec<_>>()),
-        );
-        let count = if source_message_ids.is_empty() {
-            existing_by_id
-                .get(&id)
-                .map(|topic| topic.count)
-                .unwrap_or_default()
-        } else if let Some(existing) = existing_by_id.get(&id) {
-            if existing.source_message_ids.is_empty() {
-                existing
-                    .count
-                    .saturating_add(source_message_ids.len().try_into().unwrap_or_default())
-            } else {
-                source_message_ids.len().try_into().unwrap_or_default()
-            }
-        } else {
-            source_message_ids.len().try_into().unwrap_or_default()
-        };
-        object.insert("count".to_owned(), serde_json::json!(count));
-    }
-    let returned_ids = summary
-        .topics
-        .iter()
-        .filter_map(|topic| topic.get("id").and_then(|value| value.as_str()))
-        .map(str::to_owned)
-        .collect::<HashSet<_>>();
-    for existing in existing_topics {
-        if returned_ids.contains(&existing.id) {
-            continue;
-        }
-        summary
-            .topics
-            .push(summary_topic_context_to_value(existing));
-    }
-    summary.topics.sort_by(|left, right| {
-        let left_count = left
-            .get("count")
-            .and_then(|value| value.as_i64())
-            .unwrap_or_default();
-        let right_count = right
-            .get("count")
-            .and_then(|value| value.as_i64())
-            .unwrap_or_default();
-        right_count.cmp(&left_count)
-    });
-    summary.topics.truncate(MAX_SUMMARY_CANDIDATES);
-}
-
-pub(crate) fn describe_request_error(prefix: &str, err: reqwest::Error) -> String {
-    let mut details = vec![err.to_string()];
-    let mut source = err.source();
-    while let Some(cause) = source {
-        let cause_text = cause.to_string();
-        if !details.iter().any(|detail| detail == &cause_text) {
-            details.push(cause_text);
-        }
-        source = cause.source();
-    }
-
-    let mut hints = Vec::new();
-    if err.is_timeout() {
-        hints.push("请求超时，请检查网络、代理或服务商响应速度");
-    }
-    if err.is_connect() {
-        hints.push("连接失败，请检查 DNS、代理/VPN、防火墙或公司网络策略");
-    }
-    if err.is_request() {
-        hints.push("请求未能发出，请确认 Base URL 可访问且系统时间正常");
-    }
-
-    let hint_text = if hints.is_empty() {
-        String::new()
-    } else {
-        format!("；{}", hints.join("；"))
-    };
-    format!(
-        "{prefix}：{}{}",
-        truncate_text(details.join("；原因："), 700),
-        hint_text
-    )
-}
-
 pub(crate) fn persist_analysis_for_messages(
     conn: &rusqlite::Connection,
     day: &str,
@@ -1673,242 +1081,6 @@ pub(crate) fn persist_local_keyword_stats(
     Ok(keywords.len())
 }
 
-async fn request_analysis(
-    config: &AiConfig,
-    request_label: &str,
-    timeout_secs: u64,
-    system_prompt: &str,
-    input: &serde_json::Value,
-    max_tokens: u32,
-) -> anyhow::Result<AiRequestOutput> {
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(timeout_secs))
-        .build()?;
-    let base_url = config.base_url.trim().trim_end_matches('/');
-    let user_content = serde_json::to_string(input)?;
-    let mut endpoint = format!("{base_url}/chat/completions");
-    let mut response_format = None;
-
-    let response = if config.provider == "Claude" || base_url.contains("anthropic.com") {
-        endpoint = format!("{base_url}/messages");
-        send_with_retry(request_label, || {
-            client
-                .post(&endpoint)
-                .header("x-api-key", config.api_key.trim())
-                .header("anthropic-version", "2023-06-01")
-                .json(&serde_json::json!({
-                    "model": config.model,
-                    "max_tokens": max_tokens,
-                    "temperature": 0,
-                    "system": system_prompt,
-                    "messages": [{ "role": "user", "content": user_content }]
-                }))
-        })
-        .await?
-    } else {
-        let mut body = serde_json::json!({
-            "model": config.model,
-            "messages": [
-                { "role": "system", "content": system_prompt },
-                { "role": "user", "content": user_content }
-            ],
-            "max_tokens": max_tokens,
-            "temperature": 0
-        });
-        if !config.provider.contains("本地")
-            && !base_url.contains("127.0.0.1")
-            && !base_url.contains("localhost")
-        {
-            body["response_format"] = serde_json::json!({ "type": "json_object" });
-            response_format = Some("json_object".to_owned());
-        }
-        send_with_retry(request_label, || {
-            let request = client.post(&endpoint);
-            let request = if config.api_key.trim().is_empty() {
-                request
-            } else {
-                request.bearer_auth(config.api_key.trim())
-            };
-            let request = with_provider_headers(request, config, base_url);
-            request.json(&body)
-        })
-        .await?
-    };
-
-    let status = response.status();
-    let body = response.text().await.unwrap_or_default();
-    if !status.is_success() {
-        let diagnostics = build_ai_call_diagnostics(
-            config,
-            &endpoint,
-            max_tokens,
-            response_format,
-            Some(status.as_u16()),
-            &body,
-            None,
-            None,
-            None,
-        );
-        return Err(AiCallError::new(
-            format!(
-                "{request_label}请求失败：{}：{}",
-                status,
-                truncate_text(body, 500)
-            ),
-            Some(diagnostics),
-        )
-        .into());
-    }
-
-    if config.provider == "Claude" || base_url.contains("anthropic.com") {
-        let value: serde_json::Value = serde_json::from_str(&body)?;
-        let text = value
-            .get("content")
-            .and_then(|content| content.as_array())
-            .and_then(|items| {
-                items
-                    .iter()
-                    .find_map(|item| item.get("text").and_then(|text| text.as_str()))
-            })
-            .unwrap_or_default();
-        let diagnostics = build_ai_call_diagnostics(
-            config,
-            &endpoint,
-            max_tokens,
-            response_format,
-            Some(status.as_u16()),
-            &body,
-            Some(text),
-            value.get("stop_reason").and_then(|reason| reason.as_str()),
-            value.get("usage").cloned(),
-        );
-        return Ok(AiRequestOutput {
-            content: text.to_owned(),
-            diagnostics,
-        });
-    }
-
-    let value: serde_json::Value = serde_json::from_str(&body)?;
-    let choice = value
-        .get("choices")
-        .and_then(|choices| choices.as_array())
-        .and_then(|choices| choices.first());
-    let message = choice.and_then(|choice| choice.get("message"));
-    let content = message
-        .and_then(|message| message.get("content"))
-        .and_then(|content| content.as_str())
-        .unwrap_or_default();
-    let diagnostics = build_ai_call_diagnostics(
-        config,
-        &endpoint,
-        max_tokens,
-        response_format,
-        Some(status.as_u16()),
-        &body,
-        Some(content),
-        choice
-            .and_then(|choice| choice.get("finish_reason"))
-            .and_then(|reason| reason.as_str()),
-        value.get("usage").cloned(),
-    );
-    Ok(AiRequestOutput {
-        content: content.to_owned(),
-        diagnostics: diagnostics.with_reasoning_from_message(message),
-    })
-}
-
-impl AiCallDiagnostics {
-    fn with_reasoning_from_message(mut self, message: Option<&serde_json::Value>) -> Self {
-        let reasoning = message
-            .and_then(|message| message.get("reasoning_content"))
-            .and_then(|reasoning| reasoning.as_str());
-        self.reasoning_content_present = reasoning
-            .map(|reasoning| !reasoning.trim().is_empty())
-            .unwrap_or(false);
-        self.reasoning_content_length = reasoning.map(char_count).unwrap_or_default();
-        self
-    }
-}
-
-fn build_ai_call_diagnostics(
-    config: &AiConfig,
-    endpoint: &str,
-    max_tokens: u32,
-    response_format: Option<String>,
-    http_status: Option<u16>,
-    body: &str,
-    content: Option<&str>,
-    finish_reason: Option<&str>,
-    usage: Option<serde_json::Value>,
-) -> AiCallDiagnostics {
-    let content = content.unwrap_or_default();
-    AiCallDiagnostics {
-        provider: config.provider.clone(),
-        model: config.model.clone(),
-        endpoint: endpoint.to_owned(),
-        max_tokens,
-        response_format,
-        http_status,
-        finish_reason: finish_reason.map(ToOwned::to_owned),
-        content_empty: content.trim().is_empty(),
-        content_length: char_count(content),
-        content_snippet: diagnostic_snippet(content, 600),
-        reasoning_content_present: false,
-        reasoning_content_length: 0,
-        response_body_length: char_count(body),
-        response_body_snippet: if content.trim().is_empty() {
-            diagnostic_snippet(body, 600)
-        } else {
-            None
-        },
-        usage,
-    }
-}
-
-fn diagnostic_snippet(value: &str, limit: usize) -> Option<String> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
-    Some(truncate_text(sanitize_log(trimmed), limit))
-}
-
-fn char_count(value: &str) -> usize {
-    value.chars().count()
-}
-
-async fn send_with_retry<F>(
-    request_label: &str,
-    mut build_request: F,
-) -> anyhow::Result<reqwest::Response>
-where
-    F: FnMut() -> reqwest::RequestBuilder,
-{
-    let not_sent_prefix = format!("{request_label}请求未发出");
-    let mut last_error = None;
-    for attempt in 0..3 {
-        match build_request().send().await {
-            Ok(response) => return Ok(response),
-            Err(err) if (err.is_timeout() || err.is_connect()) && attempt < 2 => {
-                last_error = Some(err);
-                tokio::time::sleep(std::time::Duration::from_millis(600 * (attempt + 1) as u64))
-                    .await;
-            }
-            Err(err) => {
-                return Err(anyhow::anyhow!(describe_request_error(
-                    &not_sent_prefix,
-                    err
-                )));
-            }
-        }
-    }
-
-    Err(anyhow::anyhow!(describe_request_error(
-        &not_sent_prefix,
-        last_error.expect("retry loop stores the last request error")
-    )))
-}
-
 fn persist_analysis_across_profiles(
     conn: &rusqlite::Connection,
     day: &str,
@@ -1944,13 +1116,14 @@ fn persist_analysis_across_profiles(
         } else {
             None
         };
+        let first_detected_at = source_message_first_detected_at(&tx, &source_message_ids)?;
         tx.execute(
             "insert into action_items(
                id, type, status, priority, title, description, suggested_reply, profile_id, platform,
                chat_id, chat_name, source_message_ids, evidence_summary, context_incomplete, carry_over,
                first_detected_at, last_updated_at, completed_at
              )
-             values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 1, datetime('now'), datetime('now'), ?15)
+             values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 1, ?15, datetime('now'), ?16)
              on conflict(id) do update set
                status = excluded.status,
                priority = excluded.priority,
@@ -1977,6 +1150,7 @@ fn persist_analysis_across_profiles(
                 serde_json::to_string(&source_message_ids)?,
                 evidence_summary,
                 i64::from(item.context_incomplete),
+                first_detected_at,
                 completed_at,
             ],
         )?;
@@ -2024,6 +1198,7 @@ struct ActionItemSource {
     chat_id: String,
     chat_name: String,
     is_group: bool,
+    timestamp: i64,
 }
 
 fn analysis_message_sources(messages: &[AnalysisMessage]) -> HashMap<String, ActionItemSource> {
@@ -2038,10 +1213,34 @@ fn analysis_message_sources(messages: &[AnalysisMessage]) -> HashMap<String, Act
                     chat_id: message.chat_id.clone(),
                     chat_name: message.chat_name.clone(),
                     is_group: message.is_group,
+                    timestamp: message.timestamp,
                 },
             )
         })
         .collect()
+}
+
+fn source_message_first_detected_at(
+    conn: &rusqlite::Connection,
+    source_message_ids: &[String],
+) -> anyhow::Result<String> {
+    if source_message_ids.is_empty() {
+        return Ok(Local::now().to_rfc3339());
+    }
+    let placeholders = (1..=source_message_ids.len())
+        .map(|index| format!("?{index}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let sql = format!(
+        "select datetime(min(timestamp), 'unixepoch', 'localtime')
+         from daily_messages
+         where id in ({placeholders})"
+    );
+    Ok(conn
+        .query_row(&sql, params_from_iter(source_message_ids.iter()), |row| {
+            row.get::<_, Option<String>>(0)
+        })?
+        .unwrap_or_else(|| Local::now().to_rfc3339()))
 }
 
 fn resolve_action_item_source(
@@ -2082,6 +1281,7 @@ fn resolve_action_item_source(
                 chat_id,
                 chat_name,
                 is_group,
+                timestamp: 0,
             }));
         }
     }
@@ -2109,6 +1309,12 @@ fn resolve_action_item_source(
                 chat_id: item.chat_id.clone(),
                 chat_name,
                 is_group,
+                timestamp: item
+                    .source_message_ids
+                    .iter()
+                    .filter_map(|id| message_sources.get(id).map(|source| source.timestamp))
+                    .min()
+                    .unwrap_or_default(),
             }));
         }
     }
@@ -2131,6 +1337,7 @@ fn resolve_action_item_source(
                 chat_id: row.get(2)?,
                 chat_name: row.get(3)?,
                 is_group: row.get::<_, i64>(4)? == 1,
+                timestamp: 0,
             })
         },
     )
@@ -5131,6 +4338,12 @@ mod tests {
     }
 
     #[test]
+    fn default_prompts_require_primary_chat_language() {
+        assert!(DEFAULT_ANALYSIS_PROMPT.contains("主要语言"));
+        assert!(DEFAULT_SUMMARY_PROMPT.contains("主要语言"));
+    }
+
+    #[test]
     fn summary_prompt_prevents_generic_cross_scene_merges() {
         assert!(DEFAULT_SUMMARY_PROMPT.contains("不能只因为共享"));
         assert!(DEFAULT_SUMMARY_PROMPT.contains("女朋友让我买东西"));
@@ -5321,15 +4534,22 @@ mod tests {
 
         persist_analysis_across_profiles(&conn, "2026-05-01", &[], analysis)
             .expect("persist analysis");
-        let (status, completed_at): (String, Option<String>) = conn
+        let (status, completed_at, first_detected_at, expected_detected_at): (
+            String,
+            Option<String>,
+            String,
+            String,
+        ) = conn
             .query_row(
-                "select status, completed_at from action_items where type = 'reply'",
+                "select status, completed_at, first_detected_at, datetime(1, 'unixepoch', 'localtime')
+                 from action_items where type = 'reply'",
                 [],
-                |row| Ok((row.get(0)?, row.get(1)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
             )
             .expect("action item");
         assert_eq!(status, "done");
         assert!(completed_at.is_some());
+        assert_eq!(first_detected_at, expected_detected_at);
     }
 
     #[test]

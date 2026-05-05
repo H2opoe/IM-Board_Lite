@@ -3,6 +3,7 @@ mod bridge_runner;
 mod commands;
 mod connectors;
 mod daily_cache;
+mod domain;
 mod macos_permissions;
 mod profile_manager;
 mod runtime;
@@ -31,6 +32,7 @@ fn show_main_window(app: &tauri::AppHandle) {
 
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new().expect("初始化应用状态失败"))
         .setup(|app| {
             let show_item =
@@ -101,7 +103,8 @@ pub fn run() {
             commands::sync::cancel_sync,
             commands::sync::retry_ai_analysis,
             commands::sync::run_full_resync,
-            commands::sync::run_manual_sync
+            commands::sync::run_manual_sync,
+            commands::sync::run_sync_job
         ])
         .build(tauri::generate_context!())
         .expect("构建 Tauri 应用失败");

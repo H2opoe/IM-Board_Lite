@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy, X } from "lucide-react";
+import wechatIconUrl from "../assets/platform-icons/wechat.png";
 
 interface Props {
   onClose: () => void;
@@ -8,6 +9,8 @@ interface Props {
 const developerWechatId = "DAISUNFILMS";
 const developerWechatQrPayload = "https://u.wechat.com/EDsLZ6LQyemJxtrM-PlvT-k?s=3";
 const qrQuietZoneSize = 4;
+const qrCenterIconSize = 7;
+const qrCenterIconPadding = 1;
 
 // 原始二维码内容解码自开发者微信二维码，下面按该内容重新生成纯矢量 QR 矩阵。
 const developerWechatQrRows = [
@@ -73,12 +76,32 @@ function DeveloperWechatQr() {
     )
     .join("");
   const qrSize = developerWechatQrRows.length + qrQuietZoneSize * 2;
+  const qrCenterIconOffset = (qrSize - qrCenterIconSize) / 2;
+  const qrCenterIconBackingOffset = qrCenterIconOffset - qrCenterIconPadding;
+  const qrCenterIconBackingSize = qrCenterIconSize + qrCenterIconPadding * 2;
 
   return (
     <svg className="developer-feedback-qr" viewBox={`0 0 ${qrSize} ${qrSize}`} role="img" aria-label="开发者微信二维码">
       <title>{developerWechatQrPayload}</title>
       <rect className="developer-feedback-qr-background" width={qrSize} height={qrSize} rx="2" />
-      <path d={qrModulePath} />
+      <path className="developer-feedback-qr-modules" d={qrModulePath} />
+      <rect
+        className="developer-feedback-qr-icon-backing"
+        x={qrCenterIconBackingOffset}
+        y={qrCenterIconBackingOffset}
+        width={qrCenterIconBackingSize}
+        height={qrCenterIconBackingSize}
+        rx="2"
+      />
+      <image
+        className="developer-feedback-qr-icon"
+        href={wechatIconUrl}
+        x={qrCenterIconOffset}
+        y={qrCenterIconOffset}
+        width={qrCenterIconSize}
+        height={qrCenterIconSize}
+        preserveAspectRatio="xMidYMid meet"
+      />
     </svg>
   );
 }

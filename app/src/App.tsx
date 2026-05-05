@@ -1,7 +1,6 @@
 import { Suspense, lazy, useState } from "react";
 import { isDemoMode } from "./api/demoMode";
-import { AppShell } from "./components/layout/AppShell";
-import type { AppView } from "./appTypes";
+import { AppShell, type AppView } from "./components/layout/AppShell";
 import { useDashboardStore } from "./features/dashboard/hooks/useDashboardStore";
 import { useProfilesStore } from "./features/profiles/hooks/useProfilesStore";
 import { useSyncController } from "./features/sync/hooks/useSyncController";

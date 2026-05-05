@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { getDashboard } from "../../dashboard/api/dashboardApi";
-import { cancelSync, retryAiAnalysis, runFullResync, runManualSync, watchSyncProgress, type SyncProgress } from "../api/syncApi";
+import { cancelSync, runSyncJob, watchSyncProgress } from "../api/syncApi";
 import type { DashboardData } from "../../dashboard/model/types";
+import type { SyncJobMode, SyncProgress, SyncResult } from "../model/types";
 import {
   SYNC_CANCEL_CONFIRM_MESSAGES,
   type SyncMaintenanceAction,
@@ -22,13 +23,44 @@ export interface SyncProgressNotice {
 interface UseSyncControllerOptions {
   activeProfileId: string;
   demoMode: boolean;
-  setDashboard: (dashboard: DashboardData) => void;
+  setDashboard: Dispatch<SetStateAction<DashboardData | null>>;
+}
+
+interface SyncJobUiConfig {
+  mode: SyncJobMode;
+  initialState: SyncUiState;
+  initialMessage: string;
+  fallbackMessage: string;
+  completedPrefix: string;
 }
 
 const DEFAULT_SYNC_FREQUENCY_MINUTES = 15;
 const SYNC_FREQUENCY_STORAGE_KEY = "im-board-sync-frequency-minutes";
 const SYNC_CANCEL_CONFIRM_TIMEOUT_MS = 3_000;
-const DASHBOARD_REFRESH_PROGRESS_PHASES = new Set(["clear_cache_done", "history_done", "fetch_messages_done", "analysis_done", "summary_done"]);
+
+const SYNC_JOB_UI_CONFIG: Record<SyncJobMode, SyncJobUiConfig> = {
+  incremental: {
+    mode: "incremental",
+    initialState: "syncing",
+    initialMessage: "正在准备读取今天消息...",
+    fallbackMessage: "正在读取今天消息...",
+    completedPrefix: ""
+  },
+  full_resync: {
+    mode: "full_resync",
+    initialState: "syncing",
+    initialMessage: "正在清空缓存并准备重新同步...",
+    fallbackMessage: "正在重新同步消息...",
+    completedPrefix: "重新同步完成，"
+  },
+  retry_analysis: {
+    mode: "retry_analysis",
+    initialState: "analyzing",
+    initialMessage: "正在清空AI结果并重新生成...",
+    fallbackMessage: "正在清空AI结果并重新生成...",
+    completedPrefix: "重新生成完成，"
+  }
+};
 
 function loadSyncFrequency() {
   const stored = window.localStorage.getItem(SYNC_FREQUENCY_STORAGE_KEY);
@@ -48,6 +80,22 @@ function syncProgressNoticeVariant(phase: string): SyncProgressNoticeVariant {
   if (phase.includes("failed")) return "error";
   if (phase.endsWith("_done") || phase === "profile_sync_done") return "success";
   return "info";
+}
+
+function nextStateForProgress(progress: SyncProgress): SyncUiState | null {
+  return progress.phase === "analysis" ? "analyzing" : null;
+}
+
+function syncCompletionMessage(mode: SyncJobMode, result: SyncResult) {
+  const prefix = SYNC_JOB_UI_CONFIG[mode].completedPrefix;
+  if (result.aiStatus === "not_configured") {
+    if (mode === "retry_analysis") return "AI未启用。";
+    return `${prefix}已读取${result.insertedMessages}条新消息，AI未启用。`;
+  }
+  if (mode === "retry_analysis") {
+    return `${prefix}AI已识别${result.analyzedMessages}个事项。`;
+  }
+  return `${prefix}已读取${result.insertedMessages}条新消息，AI分析完成，识别${result.analyzedMessages}个事项。`;
 }
 
 export function useSyncController({ activeProfileId, demoMode, setDashboard }: UseSyncControllerOptions) {
@@ -107,17 +155,28 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
     dashboardRefreshSeq.current += 1;
   }
 
-  const startSync = useCallback(
-    (targetProfileId = activeProfileId, resetCache = false) => {
+  const executeSyncJob = useCallback(
+    (mode: SyncJobMode, targetProfileId = activeProfileId) => {
       if (syncInFlight.current) return syncRunPromise.current ?? Promise.resolve();
+      const config = SYNC_JOB_UI_CONFIG[mode];
 
       const run = (async () => {
         syncInFlight.current = true;
-        setSyncState("syncing");
+        setSyncState(config.initialState);
+        if (mode === "retry_analysis") {
+          setDashboard((currentDashboard) =>
+            currentDashboard
+              ? {
+                  ...currentDashboard,
+                  aiStatus: "analyzing"
+                }
+              : currentDashboard
+          );
+        }
         setIsSyncCancelArmed(false);
         setSyncMessagePages([]);
         setSyncProgressNotices([]);
-        setSyncMessage(resetCache ? "正在清空缓存并准备重新同步..." : "正在准备读取今天消息...");
+        setSyncMessage(config.initialMessage);
         let unlisten = () => {};
 
         try {
@@ -127,23 +186,22 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
               setSyncMessagePages([]);
               setSyncMessage(progress.message);
               updateSyncProgressNotice(progress);
-              if (progress.phase === "analysis") {
-                setSyncState("analyzing");
-              }
-              if (DASHBOARD_REFRESH_PROGRESS_PHASES.has(progress.phase)) {
+              const nextState = nextStateForProgress(progress);
+              if (nextState) setSyncState(nextState);
+              if (progress.shouldRefreshDashboard) {
                 refreshDashboardForArrivedBatch();
               }
             });
           } catch {
-            setSyncMessage("正在读取今天消息...");
+            setSyncMessage(config.fallbackMessage);
           }
 
-          const result = resetCache ? await runFullResync(targetProfileId) : await runManualSync(targetProfileId);
+          const result = await runSyncJob(targetProfileId, config.mode);
           markDashboardRefreshSettled();
-          const next = await getDashboard(activeProfileId);
-          if (result.analyzedMessages > 0) {
+          const nextDashboard = await getDashboard(activeProfileId);
+          if (mode !== "retry_analysis" && result.analyzedMessages > 0) {
             setDashboard({
-              ...next,
+              ...nextDashboard,
               syncStatus: "analyzing",
               aiStatus: "analyzing"
             });
@@ -166,14 +224,10 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
             setSyncProgressNotices([]);
             setSyncMessagePages(visibleWarnings);
             setSyncMessage(visibleWarnings[0]);
-          } else if (result.aiStatus === "not_configured") {
-            setSyncMessagePages([]);
-            setSyncProgressNotices([]);
-            setSyncMessage(`${resetCache ? "重新同步完成，" : ""}已读取${result.insertedMessages}条新消息，AI未启用。`);
           } else {
             setSyncMessagePages([]);
             setSyncProgressNotices([]);
-            setSyncMessage(`${resetCache ? "重新同步完成，" : ""}已读取${result.insertedMessages}条新消息，AI分析完成，识别${result.analyzedMessages}个事项。`);
+            setSyncMessage(syncCompletionMessage(mode, result));
           }
         } catch (error) {
           const message = syncErrorMessage(error);
@@ -208,7 +262,7 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
 
   const handleSyncButtonClick = useCallback(() => {
     if (!isCancellableSyncState(syncState)) {
-      void startSync(activeProfileId);
+      void executeSyncJob("incremental", activeProfileId);
       return;
     }
     if (!isSyncCancelArmed) {
@@ -225,98 +279,13 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
       setSyncMessagePages([message]);
       setSyncMessage(message);
     });
-  }, [activeProfileId, isSyncCancelArmed, startSync, syncState]);
-
-  const retryAnalysis = useCallback(
-    (targetProfileId = activeProfileId) => {
-      if (syncInFlight.current) return syncRunPromise.current ?? Promise.resolve();
-
-      const run = (async () => {
-        syncInFlight.current = true;
-        setSyncState("analyzing");
-        setIsSyncCancelArmed(false);
-        setSyncMessagePages([]);
-        setSyncProgressNotices([]);
-        setSyncMessage("正在清空AI结果并重新生成...");
-        let unlisten = () => {};
-
-        try {
-          try {
-            unlisten = await watchSyncProgress((progress) => {
-              if (targetProfileId !== "aggregate" && progress.profileId !== targetProfileId) return;
-              setSyncMessagePages([]);
-              setSyncMessage(progress.message);
-              updateSyncProgressNotice(progress);
-              if (DASHBOARD_REFRESH_PROGRESS_PHASES.has(progress.phase)) {
-                refreshDashboardForArrivedBatch();
-              }
-            });
-          } catch {
-            setSyncMessage("正在清空AI结果并重新生成...");
-          }
-
-          const result = await retryAiAnalysis(targetProfileId);
-          markDashboardRefreshSettled();
-          const finalDashboard = await getDashboard(activeProfileId);
-          setDashboard({
-            ...finalDashboard,
-            syncStatus: result.syncStatus,
-            aiStatus: result.aiStatus
-          });
-          setSyncState(result.aiStatus === "failed" ? "failed" : "done");
-          const visibleWarnings = result.warnings.filter(shouldShowSyncWarning);
-          if (visibleWarnings.length > 0) {
-            setSyncProgressNotices([]);
-            setSyncMessagePages(visibleWarnings);
-            setSyncMessage(visibleWarnings[0]);
-          } else if (result.aiStatus === "not_configured") {
-            setSyncMessagePages([]);
-            setSyncProgressNotices([]);
-            setSyncMessage("AI未启用。");
-          } else {
-            setSyncMessagePages([]);
-            setSyncProgressNotices([]);
-            setSyncMessage(`重新生成完成，AI已识别${result.analyzedMessages}个事项。`);
-          }
-        } catch (error) {
-          const message = syncErrorMessage(error);
-          if (pendingMaintenanceAction.current && isSyncCancellationMessage(message)) {
-            setSyncMessagePages([]);
-            setSyncMessage(syncMaintenancePendingMessage(pendingMaintenanceAction.current));
-          } else {
-            setSyncState("failed");
-            setSyncProgressNotices([]);
-            setSyncMessagePages([message]);
-            setSyncMessage(message);
-          }
-        } finally {
-          unlisten();
-          syncInFlight.current = false;
-          if (!pendingMaintenanceAction.current) {
-            setIsSyncCancelArmed(false);
-          }
-        }
-      })();
-
-      const trackedRun = run.finally(() => {
-        if (syncRunPromise.current === trackedRun) {
-          syncRunPromise.current = null;
-        }
-      });
-      syncRunPromise.current = trackedRun;
-      return syncRunPromise.current;
-    },
-    [activeProfileId, refreshDashboardForArrivedBatch, setDashboard]
-  );
+  }, [activeProfileId, executeSyncJob, isSyncCancelArmed, syncState]);
 
   const runMaintenanceAction = useCallback(
     async (action: SyncMaintenanceAction, targetProfileId = activeProfileId) => {
+      const mode: SyncJobMode = action === "retry-analysis" ? "retry_analysis" : "full_resync";
       if (!syncInFlight.current) {
-        if (action === "retry-analysis") {
-          await retryAnalysis(targetProfileId);
-        } else {
-          await startSync(targetProfileId, true);
-        }
+        await executeSyncJob(mode, targetProfileId);
         return;
       }
 
@@ -335,11 +304,7 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
         await currentRun;
         if (maintenanceRequestSeq.current !== requestSeq || pendingMaintenanceAction.current !== action) return;
         pendingMaintenanceAction.current = null;
-        if (action === "retry-analysis") {
-          await retryAnalysis(targetProfileId);
-        } else {
-          await startSync(targetProfileId, true);
-        }
+        await executeSyncJob(mode, targetProfileId);
       } catch (error) {
         pendingMaintenanceAction.current = null;
         setSyncState("failed");
@@ -349,7 +314,7 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
         setSyncMessage(message);
       }
     },
-    [activeProfileId, retryAnalysis, startSync]
+    [activeProfileId, executeSyncJob]
   );
 
   useEffect(() => {
@@ -366,16 +331,16 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
     if (demoMode) return;
     if (initialSyncStarted.current) return;
     initialSyncStarted.current = true;
-    void startSync("aggregate");
-  }, [demoMode, startSync]);
+    void executeSyncJob("incremental", "aggregate");
+  }, [demoMode, executeSyncJob]);
 
   useEffect(() => {
     if (demoMode) return undefined;
     const interval = window.setInterval(() => {
-      void startSync("aggregate");
+      void executeSyncJob("incremental", "aggregate");
     }, syncFrequencyMinutes * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [demoMode, startSync, syncFrequencyMinutes]);
+  }, [demoMode, executeSyncJob, syncFrequencyMinutes]);
 
   return {
     syncState,

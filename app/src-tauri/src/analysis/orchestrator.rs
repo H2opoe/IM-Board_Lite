@@ -433,17 +433,17 @@ fn emit_analysis_progress_for_scope(
     }
     let _ = app.emit(
         "sync-progress",
-        SyncProgress {
-            profile_id: "aggregate".to_owned(),
-            profile_label: "全平台".to_owned(),
-            phase: "analysis".to_owned(),
-            message: format!(
+        SyncProgress::new(
+            "aggregate".to_owned(),
+            "全平台".to_owned(),
+            "analysis",
+            format!(
                 "正在进行全平台 AI 分析第 {}/{} 批（{} 条消息）...",
                 batch_index, total_batches, total
             ),
-            current: batch_index as i64,
-            total: total_batches as i64,
-        },
+            batch_index as i64,
+            total_batches as i64,
+        ),
     );
 }
 
@@ -472,17 +472,17 @@ fn emit_analysis_done_for_scope(
     }
     let _ = app.emit(
         "sync-progress",
-        SyncProgress {
-            profile_id: "aggregate".to_owned(),
-            profile_label: "全平台".to_owned(),
-            phase: "analysis_done".to_owned(),
-            message: format!(
+        SyncProgress::new(
+            "aggregate".to_owned(),
+            "全平台".to_owned(),
+            "analysis_done",
+            format!(
                 "已完成全平台第 {}/{} 批 AI 分析，正在更新看板...",
                 batch_index, total_batches
             ),
-            current: batch_index as i64,
-            total: total_batches as i64,
-        },
+            batch_index as i64,
+            total_batches as i64,
+        ),
     );
 }
 
@@ -500,14 +500,7 @@ fn emit_summary_progress_for_scope(
     }
     let _ = app.emit(
         "sync-progress",
-        SyncProgress {
-            profile_id: "aggregate".to_owned(),
-            profile_label: "全平台".to_owned(),
-            phase: phase.to_owned(),
-            message,
-            current,
-            total,
-        },
+        SyncProgress::new("aggregate".to_owned(), "全平台".to_owned(), phase, message, current, total),
     );
 }
 
@@ -997,11 +990,11 @@ fn emit_analysis_progress(
 ) {
     let _ = app.emit(
         "sync-progress",
-        SyncProgress {
-            profile_id: profile.id.clone(),
-            profile_label: profile.label.clone(),
-            phase: "analysis".to_owned(),
-            message: format!(
+        SyncProgress::new(
+            profile.id.clone(),
+            profile.label.clone(),
+            "analysis",
+            format!(
                 "正在进行 AI 分析【{} · {}】第 {}/{} 批（{} 条消息）...",
                 platform_label(&profile.platform),
                 profile_remark(profile),
@@ -1009,9 +1002,9 @@ fn emit_analysis_progress(
                 total_batches,
                 total
             ),
-            current: batch_index as i64,
-            total: total_batches as i64,
-        },
+            batch_index as i64,
+            total_batches as i64,
+        ),
     );
 }
 
@@ -1025,13 +1018,13 @@ fn emit_sync_progress(
 ) {
     let _ = app.emit(
         "sync-progress",
-        SyncProgress {
-            profile_id: profile.id.clone(),
-            profile_label: profile.label.clone(),
-            phase: phase.to_owned(),
+        SyncProgress::new(
+            profile.id.clone(),
+            profile.label.clone(),
+            phase,
             message,
             current,
             total,
-        },
+        ),
     );
 }

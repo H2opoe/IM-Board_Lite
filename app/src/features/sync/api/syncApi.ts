@@ -2,20 +2,11 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { isDemoMode } from "../../../api/demoMode";
 import { isTauri, requireTauri } from "../../../api/tauri";
-import type { SyncResult } from "../model/types";
+import type { SyncJobMode, SyncProgress, SyncResult } from "../model/types";
 
 const SYNC_PROGRESS_EVENT = "sync-progress";
 
-export interface SyncProgress {
-  profileId: string;
-  profileLabel: string;
-  phase: string;
-  message: string;
-  current: number;
-  total: number;
-}
-
-export async function runManualSync(profileId: string): Promise<SyncResult> {
+export async function runSyncJob(profileId: string, mode: SyncJobMode): Promise<SyncResult> {
   if (isDemoMode()) {
     await new Promise((resolve) => window.setTimeout(resolve, 420));
     const now = new Date().toISOString();
@@ -30,20 +21,20 @@ export async function runManualSync(profileId: string): Promise<SyncResult> {
       finishedAt: now
     };
   }
-  if (isTauri) return invoke("run_manual_sync", { profileId });
-  return requireTauri("同步消息");
+  if (isTauri) return invoke("run_sync_job", { profileId, mode });
+  return requireTauri("执行同步任务");
+}
+
+export async function runManualSync(profileId: string): Promise<SyncResult> {
+  return runSyncJob(profileId, "incremental");
 }
 
 export async function runFullResync(profileId: string): Promise<SyncResult> {
-  if (isDemoMode()) return runManualSync(profileId);
-  if (isTauri) return invoke("run_full_resync", { profileId });
-  return requireTauri("重新同步消息");
+  return runSyncJob(profileId, "full_resync");
 }
 
 export async function retryAiAnalysis(profileId: string): Promise<SyncResult> {
-  if (isDemoMode()) return runManualSync(profileId);
-  if (isTauri) return invoke("retry_ai_analysis", { profileId });
-  return requireTauri("重新生成AI分析");
+  return runSyncJob(profileId, "retry_analysis");
 }
 
 export async function cancelSync(): Promise<boolean> {

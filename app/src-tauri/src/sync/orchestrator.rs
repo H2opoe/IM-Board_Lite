@@ -18,17 +18,7 @@ use crate::daily_cache;
 use crate::macos_permissions;
 use crate::storage::models::{ImProfile, SyncResult};
 use crate::storage::AppState;
-
-#[derive(Debug, Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SyncProgress {
-    profile_id: String,
-    profile_label: String,
-    phase: String,
-    message: String,
-    current: i64,
-    total: i64,
-}
+use crate::sync::job::{SyncJobMode, SyncProgress};
 
 struct AiCallFailure {
     message: String,
@@ -38,16 +28,28 @@ struct AiCallFailure {
 const CONTEXT_BACKFILL_DAYS: i64 = 7;
 const CONTEXT_BACKFILL_LIMIT_PER_DAY: usize = 80;
 const CONTEXT_EVIDENCE_LIMIT: usize = 12;
-const OFFICIAL_CLI_FETCH_CONCURRENCY: usize = 4;
-const NON_WECHAT_PROFILE_SYNC_CONCURRENCY: usize = 4;
+const CONCURRENT_PROFILE_SYNC_CONCURRENCY: usize = 4;
 const SYNC_CANCELLED_MESSAGE: &str = "同步已终止。";
+
+pub async fn run_sync_job(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    profile_id: String,
+    mode: SyncJobMode,
+) -> Result<SyncResult, String> {
+    match mode {
+        SyncJobMode::Incremental => run_manual_sync_inner(app, state, profile_id, true).await,
+        SyncJobMode::FullResync => run_full_resync(app, state, profile_id).await,
+        SyncJobMode::RetryAnalysis => retry_ai_analysis(app, state, profile_id).await,
+    }
+}
 
 pub async fn run_manual_sync(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     profile_id: String,
 ) -> Result<SyncResult, String> {
-    run_manual_sync_inner(app, state, profile_id, true).await
+    run_sync_job(app, state, profile_id, SyncJobMode::Incremental).await
 }
 
 async fn run_manual_sync_inner(
@@ -230,14 +232,6 @@ pub async fn run_full_resync(
     run_manual_sync_inner(app, state, profile_id, false).await
 }
 
-fn prepare_profile_sync_access(profile: &ImProfile) {
-    if profile.platform == "wechat" {
-        // macOS 的 TCC 授权会记录到主应用身份上。同步前先由主应用触发一次读取权限注册，
-        // 避免后续每个 Python bridge 子进程在读取微信容器或外置卷资源时分别弹窗。
-        macos_permissions::prepare_wechat_sync_access(&profile.config_json);
-    }
-}
-
 fn prepare_sync_storage_access(state: &State<'_, AppState>) {
     macos_permissions::prepare_sync_storage_access(&state.app_dir, &state.cache_dir);
 }
@@ -282,7 +276,8 @@ mod tests {
                timestamp, time_text, msg_type, content, content_hash, analyzed_at
              )
              values('msg-1', '2026-05-01', 'profile-1', 'wechat', 'chat-1', '测试群', 1,
-                    'u-1', '用户', 1, '09:00', 'text', '需要重新生成', 'hash-1', datetime('now'))",
+                    'u-1', '用户', cast(strftime('%s', '2026-05-01 09:00:00') as integer), '09:00',
+                    'text', '需要重新生成', 'hash-1', datetime('now'))",
             [],
         )
         .expect("message");
@@ -360,7 +355,8 @@ mod tests {
                timestamp, time_text, msg_type, content, content_hash, analyzed_at
              )
              values('msg-today', '2026-05-01', 'profile-1', 'wechat', 'chat-1', '测试群', 1,
-                    'u-1', '用户', 1, '09:00', 'text', '今天需要重新生成', 'hash-today', datetime('now'))",
+                    'u-1', '用户', cast(strftime('%s', '2026-05-01 09:00:00') as integer), '09:00',
+                    'text', '今天需要重新生成', 'hash-today', datetime('now'))",
             [],
         )
         .expect("message");
@@ -415,22 +411,6 @@ mod tests {
         delete_regenerable_action_items(&conn, &day).expect("delete regenerable items");
 
         assert_eq!(action_item_ids(&conn), vec!["act-history-task".to_owned()]);
-    }
-
-    #[test]
-    fn dingtalk_message_permission_errors_are_silent_in_sync() {
-        assert!(is_silent_dingtalk_message_permission_error(
-            "dingtalk",
-            "DINGTALK_MESSAGE_PERMISSION_MISSING"
-        ));
-        assert!(!is_silent_dingtalk_message_permission_error(
-            "feishu",
-            "DINGTALK_MESSAGE_PERMISSION_MISSING"
-        ));
-        assert!(!is_silent_dingtalk_message_permission_error(
-            "dingtalk",
-            "DINGTALK_NOT_AUTHENTICATED"
-        ));
     }
 
     #[test]

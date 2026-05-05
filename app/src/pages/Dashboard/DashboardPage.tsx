@@ -10,7 +10,7 @@ import { MetricCard } from "../../components/cards/MetricCard";
 import { SpeakerTopCard } from "../../components/cards/SpeakerTopCard";
 import { TopicCard } from "../../components/cards/TopicCard";
 import { WordCloudCard } from "../../components/cards/WordCloudCard";
-import { FloatingNotice, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
+import { FloatingNotice, FloatingNoticeStack, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
 import { PagedTextBlock } from "../../components/shared/PagedTextBlock";
 import type { ActionItem, DashboardData } from "../../features/dashboard/model/types";
 import type { ImProfile } from "../../features/profiles/model/types";
@@ -218,8 +218,8 @@ export function DashboardPage({
       </header>
 
       {syncProgressNotices.length > 0 && (
-        <div className="floating-notice-layer page stacked">
-          {syncProgressNotices.map((notice) => (
+        <FloatingNoticeStack>
+          {[...syncProgressNotices].reverse().map((notice) => (
             <FloatingNotice
               key={notice.id}
               message={notice.message}
@@ -229,23 +229,26 @@ export function DashboardPage({
               onClose={() => onDismissSyncProgressNotice(notice.id)}
             />
           ))}
-        </div>
+        </FloatingNoticeStack>
       )}
 
       {syncProgressNotices.length === 0 && syncMessage && (
-        <FloatingNotice
-          variant={syncNoticeVariant}
-          autoCloseMs={syncNoticeVariant === "success" ? undefined : false}
-          onClose={onDismissSyncMessage}
-        >
-          <PagedTextBlock
-            text={visibleSyncMessage}
-            className="sync-message-content"
-            controlsClassName="sync-message-pager"
-            showCopy={syncNoticeVariant === "error"}
-            compactCopy
-          />
-        </FloatingNotice>
+        <FloatingNoticeStack>
+          <FloatingNotice
+            variant={syncNoticeVariant}
+            withinLayer
+            autoCloseMs={syncNoticeVariant === "success" ? undefined : false}
+            onClose={onDismissSyncMessage}
+          >
+            <PagedTextBlock
+              text={visibleSyncMessage}
+              className="sync-message-content"
+              controlsClassName="sync-message-pager"
+              showCopy={syncNoticeVariant === "error"}
+              compactCopy
+            />
+          </FloatingNotice>
+        </FloatingNoticeStack>
       )}
 
       <section className="metric-grid">

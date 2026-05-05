@@ -55,7 +55,7 @@ fn delete_regenerable_action_items_for_profile(
     profile_id: &str,
     day: &daily_cache::DashboardDay,
 ) -> anyhow::Result<()> {
-    // 历史未完成事项是跨天工作台的连续状态，重新生成只应清理当前业务日可重算的 AI 结果。
+    // 历史未完成事项按来源消息发生时间判断；旧数据找不到来源消息时才退回 first_detected_at。
     conn.execute(
         "delete from action_items
          where profile_id = ?1
@@ -63,7 +63,13 @@ fn delete_regenerable_action_items_for_profile(
              status = 'open'
              and type in ('reply', 'task')
              and carry_over = 1
-             and coalesce(cast(strftime('%s', first_detected_at) as integer), 0) < ?2
+             and coalesce((
+               select min(daily_messages.timestamp)
+               from daily_messages
+               where daily_messages.id in (
+                 select value from json_each(action_items.source_message_ids)
+               )
+             ), cast(strftime('%s', first_detected_at) as integer), 0) < ?2
            )",
         params![profile_id, day.day_start_timestamp],
     )?;
@@ -74,14 +80,20 @@ fn delete_regenerable_action_items(
     conn: &rusqlite::Connection,
     day: &daily_cache::DashboardDay,
 ) -> anyhow::Result<()> {
-    // 全量重新同步会重建今日消息与分析，但不能把历史未完成的待回复/待办当作缓存删除。
+    // 全量重新同步会重建今日消息与分析；历史口径仍以来源消息发生时间为准。
     conn.execute(
         "delete from action_items
          where not (
            status = 'open'
            and type in ('reply', 'task')
            and carry_over = 1
-           and coalesce(cast(strftime('%s', first_detected_at) as integer), 0) < ?1
+           and coalesce((
+             select min(daily_messages.timestamp)
+             from daily_messages
+             where daily_messages.id in (
+               select value from json_each(action_items.source_message_ids)
+             )
+           ), cast(strftime('%s', first_detected_at) as integer), 0) < ?1
          )",
         params![day.day_start_timestamp],
     )?;

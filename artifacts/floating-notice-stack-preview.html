@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Floating Notice 堆叠预览</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --im-font-sans: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+        --sidebar-width: 252px;
+        --notice-width: 720px;
+        --notice-overlap-step: 50%;
+        --surface: #101513;
+        --surface-2: #151d1a;
+        --panel: rgba(24, 33, 30, 0.88);
+        --border: rgba(212, 232, 225, 0.12);
+        --text: #edf7f3;
+        --muted: rgba(237, 247, 243, 0.64);
+        --shadow-soft: 0 16px 42px rgba(0, 0, 0, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          linear-gradient(180deg, rgba(49, 95, 156, 0.16), transparent 42%),
+          var(--surface);
+        color: var(--text);
+        font-family: var(--im-font-sans);
+        font-size: 14px;
+        text-rendering: optimizeLegibility;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: var(--sidebar-width) 1fr;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        padding: 28px 18px;
+        border-right: 1px solid var(--border);
+        background: rgba(11, 15, 14, 0.58);
+      }
+
+      .brand {
+        margin: 0 0 28px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        height: 38px;
+        padding: 0 12px;
+        margin: 6px 0;
+        border-radius: 8px;
+        color: var(--muted);
+      }
+
+      .nav-item.active {
+        background: rgba(47, 111, 104, 0.22);
+        color: var(--text);
+      }
+
+      .page {
+        position: relative;
+        padding: 30px 28px;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 56px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      .topbar span,
+      .panel p {
+        color: var(--muted);
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 8px;
+        background: #2f6f68;
+        color: #e7fff8;
+        font-weight: 650;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(280px, 1fr));
+        gap: 16px;
+        margin-top: 34px;
+      }
+
+      .panel {
+        min-height: 170px;
+        padding: 18px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .panel h2 {
+        margin-bottom: 10px;
+        font-size: 16px;
+      }
+
+      .floating-notice-layer {
+        position: fixed;
+        top: 86px;
+        left: calc(var(--sidebar-width) + 28px);
+        right: 28px;
+        z-index: 18;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .floating-notice-stack {
+        position: relative;
+        width: min(var(--notice-width), 100%);
+        height: 228px;
+      }
+
+      .floating-notice {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+        min-height: 54px;
+        padding: 10px 10px 10px 12px;
+        border: 1px solid rgba(87, 158, 230, 0.32);
+        border-radius: 8px;
+        background: rgba(28, 64, 86, 0.92);
+        color: #e4f2ff;
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(14px);
+        font-size: 14px;
+        opacity: calc(1 - var(--display-index, var(--stack-index)) * 0.15);
+        pointer-events: auto;
+        transform: translateX(-50%) translateY(calc(var(--display-index, var(--stack-index)) * var(--notice-overlap-step)));
+        transition:
+          transform 260ms ease,
+          opacity 260ms ease,
+          background 220ms ease,
+          border-color 220ms ease,
+          color 220ms ease;
+        z-index: calc(10 - var(--display-index, var(--stack-index)));
+      }
+
+      .floating-notice.entering {
+        animation: notice-pop 360ms cubic-bezier(0.2, 0.9, 0.25, 1.2);
+      }
+
+      .floating-notice.leaving {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%) translateY(calc(var(--display-index, var(--stack-index)) * var(--notice-overlap-step) - 12px)) scale(0.98);
+      }
+
+      .floating-notice.success {
+        border-color: rgba(69, 184, 127, 0.32);
+        background: rgba(47, 111, 104, 0.92);
+        color: #e7fff8;
+      }
+
+      .floating-notice.error {
+        border-color: rgba(239, 106, 97, 0.38);
+        background: rgba(106, 35, 35, 0.94);
+        color: #fff0ee;
+      }
+
+      .icon {
+        flex: 0 0 auto;
+        width: 17px;
+        height: 17px;
+        margin-top: 2px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+      }
+
+      .body {
+        flex: 1;
+        min-width: 0;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .close {
+        display: grid;
+        flex: 0 0 auto;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: currentColor;
+        font-size: 17px;
+        opacity: 0.72;
+      }
+
+      .preview-zone {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-top: 44px;
+      }
+
+      .preview-card {
+        position: relative;
+        min-height: 260px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-2);
+      }
+
+      .preview-card.light {
+        color-scheme: light;
+        --surface-2: #f7faf9;
+        --panel: #ffffff;
+        --border: rgba(33, 64, 57, 0.12);
+        --text: #17201d;
+        --muted: rgba(23, 32, 29, 0.58);
+        --shadow-soft: 0 16px 42px rgba(35, 48, 45, 0.12);
+        background: #f7faf9;
+        color: var(--text);
+      }
+
+      .preview-card .floating-notice-stack {
+        position: absolute;
+        top: 26px;
+        left: 50%;
+        width: min(640px, calc(100% - 32px));
+        transform: translateX(-50%);
+      }
+
+      .preview-card.light .floating-notice.info {
+        border-color: rgba(75, 131, 212, 0.24);
+        background: rgba(244, 249, 255, 0.96);
+        color: #315f9c;
+      }
+
+      .preview-card.light .floating-notice.success {
+        border-color: rgba(44, 143, 120, 0.22);
+        background: rgba(246, 255, 251, 0.96);
+        color: #236b5d;
+      }
+
+      .preview-card.light .floating-notice.error {
+        border-color: rgba(211, 77, 67, 0.28);
+        background: rgba(255, 241, 239, 0.96);
+        color: #a43f34;
+      }
+
+      .caption {
+        position: absolute;
+        left: 18px;
+        bottom: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .scroll-tip {
+        display: block;
+        margin-top: 4px;
+        opacity: 0.76;
+      }
+
+      @keyframes notice-pop {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(calc(var(--display-index, var(--stack-index)) * var(--notice-overlap-step) - 18px)) scale(0.98);
+        }
+
+        to {
+          opacity: calc(1 - var(--display-index, var(--stack-index)) * 0.15);
+          transform: translateX(-50%) translateY(calc(var(--display-index, var(--stack-index)) * var(--notice-overlap-step))) scale(1);
+        }
+      }
+
+      @media (max-width: 900px) {
+        :root {
+          --sidebar-width: 74px;
+        }
+
+        .sidebar {
+          padding: 22px 10px;
+        }
+
+        .brand,
+        .nav-item span {
+          display: none;
+        }
+
+        .grid,
+        .preview-zone {
+          grid-template-columns: 1fr;
+        }
+
+        .floating-notice-layer {
+          top: 82px;
+          left: calc(var(--sidebar-width) + 16px);
+          right: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <p class="brand">IM-Board</p>
+        <div class="nav-item active"><span>业务看板</span></div>
+        <div class="nav-item"><span>平台管理</span></div>
+        <div class="nav-item"><span>AI 设置</span></div>
+      </aside>
+
+      <section class="page">
+        <header class="topbar">
+          <div>
+            <h1>业务看板</h1>
+            <span>同步状态 同步中｜AI 状态 等待分析</span>
+          </div>
+          <button class="button">同步中</button>
+        </header>
+
+        <section class="grid">
+          <article class="panel">
+            <h2>未处理事项</h2>
+            <p>这里保留页面背景，用来观察浮动通知是否遮挡关键操作。</p>
+          </article>
+          <article class="panel">
+            <h2>平台读取</h2>
+            <p>多平台并发读取时，通知在顶部叠放，靠后的消息作为队列感露出。</p>
+          </article>
+          <article class="panel">
+            <h2>批量测试读取</h2>
+            <p>短消息和长消息混排时，重叠距离保持一致。</p>
+          </article>
+          <article class="panel">
+            <h2>同步明细</h2>
+            <p>可观察顶部中心区域的层级、透明度和关闭按钮密度。</p>
+          </article>
+        </section>
+
+        <section class="preview-zone">
+          <article class="preview-card">
+            <div class="floating-notice-stack">
+              <div class="floating-notice success" style="--stack-index: 0">
+                <span class="icon"></span>
+                <div class="body">【微信 · 工作号】同步完成，已读取 128 条新消息。</div>
+                <button class="close">×</button>
+              </div>
+              <div class="floating-notice info" style="--stack-index: 1">
+                <span class="icon"></span>
+                <div class="body">【飞书 · 市场组】正在读取会话消息，已完成 18/42 个会话。</div>
+                <button class="close">×</button>
+              </div>
+              <div class="floating-notice error" style="--stack-index: 2">
+                <span class="icon"></span>
+                <div class="body">【钉钉 · 批量测试】部分会话不可读，不影响其它普通会话测试。</div>
+                <button class="close">×</button>
+              </div>
+            </div>
+            <p class="caption">暗色主题｜3 条｜每条错开 50%<span class="scroll-tip">鼠标悬浮后上下滑动，可像转轮一样翻看。</span></p>
+          </article>
+
+          <article class="preview-card light">
+            <div class="floating-notice-stack">
+              <div class="floating-notice info" style="--stack-index: 0">
+                <span class="icon"></span>
+                <div class="body">多平台并发消息同步中：微信、企微、飞书、钉钉正在并行读取。</div>
+                <button class="close">×</button>
+              </div>
+              <div class="floating-notice success" style="--stack-index: 1">
+                <span class="icon"></span>
+                <div class="body">【企微 · 客户群】测试读取完成，返回 36 条最近消息。</div>
+                <button class="close">×</button>
+              </div>
+              <div class="floating-notice info" style="--stack-index: 2">
+                <span class="icon"></span>
+                <div class="body">【飞书 · 产品组】正在核查授权范围，等待 CLI 返回。</div>
+                <button class="close">×</button>
+              </div>
+              <div class="floating-notice error" style="--stack-index: 3">
+                <span class="icon"></span>
+                <div class="body">【钉钉 · 组织通知】该类会话不开放消息读取，已跳过。</div>
+                <button class="close">×</button>
+              </div>
+              <div class="floating-notice success" style="--stack-index: 4">
+                <span class="icon"></span>
+                <div class="body">【微信 · 私人号】读取完成。</div>
+                <button class="close">×</button>
+              </div>
+            </div>
+            <p class="caption">亮色主题｜5 条｜后层透明度递减<span class="scroll-tip">不需要滚轮，直接上下移动鼠标即可切换。</span></p>
+          </article>
+        </section>
+
+        <div class="floating-notice-layer">
+          <div id="liveStack" class="floating-notice-stack" aria-label="动态同步通知预览">
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const liveNotices = [
+        {
+          platform: "微信 · 工作号",
+          syncing: "正在同步消息，已读取 52 条新消息。",
+          done: "同步完成，已读取 128 条新消息。"
+        },
+        {
+          platform: "企微 · 销售团队",
+          syncing: "正在读取客户群消息，已完成 8/24 个会话。",
+          done: "同步完成，已读取 41 条新消息。"
+        },
+        {
+          platform: "飞书 · 项目群",
+          syncing: "正在核查授权并读取会话列表。",
+          done: "同步完成，已读取 17 条新消息。"
+        },
+        {
+          platform: "钉钉 · 批量测试",
+          syncing: "正在批量测试读取，已完成 3/9 个账号。",
+          done: "测试读取完成，7 个账号返回消息。"
+        }
+      ];
+
+      function noticeTemplate(notice, index, status, entering = false, sourceIndex = index) {
+        const variant = status === "done" ? "success" : "info";
+        const message = status === "done" ? notice.done : notice.syncing;
+        return `
+          <div class="floating-notice ${variant} ${entering ? "entering" : ""}" data-source-index="${sourceIndex}" style="--stack-index: ${index}; --display-index: ${index}">
+            <span class="icon"></span>
+            <div class="body">【${notice.platform}】${message}</div>
+            <button class="close" type="button">×</button>
+          </div>
+        `;
+      }
+
+      function refreshStackDisplay(stack) {
+        const notices = Array.from(stack.querySelectorAll(".floating-notice"));
+        const focus = Number(stack.dataset.focus || 0);
+        notices.forEach((notice, index) => {
+          const displayIndex = (index - focus + notices.length) % notices.length;
+          notice.style.setProperty("--display-index", displayIndex);
+        });
+      }
+
+      function removeNoticeWithMotion(notice) {
+        const stack = notice.closest(".floating-notice-stack");
+        notice.classList.add("leaving");
+        window.setTimeout(() => {
+          notice.remove();
+          if (stack) refreshStackDisplay(stack);
+        }, 240);
+      }
+
+      function bindStackInteractions(stack) {
+        if (stack.dataset.hoverCarouselBound === "true") {
+          refreshStackDisplay(stack);
+          return;
+        }
+        stack.dataset.hoverCarouselBound = "true";
+        stack.addEventListener("mouseenter", (event) => {
+          stack.dataset.lastPointerY = String(event.clientY);
+          stack.dataset.pointerRemainder = "0";
+        });
+        stack.addEventListener("mouseleave", () => {
+          delete stack.dataset.lastPointerY;
+          stack.dataset.pointerRemainder = "0";
+        });
+        stack.addEventListener("mousemove", (event) => {
+          const notices = stack.querySelectorAll(".floating-notice");
+          if (notices.length <= 1) return;
+          const lastPointerY = Number(stack.dataset.lastPointerY || event.clientY);
+          const deltaY = event.clientY - lastPointerY;
+          stack.dataset.lastPointerY = String(event.clientY);
+          const nextRemainder = Number(stack.dataset.pointerRemainder || 0) + deltaY;
+          const turnDistance = 26;
+          if (Math.abs(nextRemainder) < turnDistance) {
+            stack.dataset.pointerRemainder = String(nextRemainder);
+            return;
+          }
+          const direction = nextRemainder > 0 ? 1 : -1;
+          const currentFocus = Number(stack.dataset.focus || 0);
+          stack.dataset.focus = String((currentFocus + direction + notices.length) % notices.length);
+          stack.dataset.pointerRemainder = String(nextRemainder - direction * turnDistance);
+          refreshStackDisplay(stack);
+        });
+        stack.addEventListener("click", (event) => {
+          const closeButton = event.target.closest(".close");
+          if (!closeButton) return;
+          const notice = closeButton.closest(".floating-notice");
+          if (notice) {
+            const sourceIndex = notice.dataset.sourceIndex;
+            if (stack === liveStack && sourceIndex !== undefined) {
+              dismissedLiveNoticeIndexes.add(Number(sourceIndex));
+            }
+            removeNoticeWithMotion(notice);
+          }
+        });
+        refreshStackDisplay(stack);
+      }
+
+      document.querySelectorAll(".floating-notice-stack").forEach(bindStackInteractions);
+
+      const liveStack = document.querySelector("#liveStack");
+      let cycleToken = 0;
+      let dismissedLiveNoticeIndexes = new Set();
+
+      function renderLive(activeCount, completedCount, enteringIndex) {
+        const visibleNotices = liveNotices
+          .slice(0, activeCount)
+          .map((notice, sourceIndex) => ({ notice, sourceIndex }))
+          .filter(({ sourceIndex }) => !dismissedLiveNoticeIndexes.has(sourceIndex))
+          .reverse();
+        liveStack.innerHTML = visibleNotices
+          .map(({ notice, sourceIndex }, index) => noticeTemplate(notice, index, sourceIndex < completedCount ? "done" : "syncing", sourceIndex === enteringIndex, sourceIndex))
+          .join("");
+        liveStack.dataset.focus = "0";
+        bindStackInteractions(liveStack);
+      }
+
+      function autoDismissLiveNotices() {
+        Array.from(liveStack.querySelectorAll(".floating-notice"))
+          .sort((left, right) => Number(left.dataset.sourceIndex || 0) - Number(right.dataset.sourceIndex || 0))
+          .forEach((notice, index) => {
+            window.setTimeout(() => removeNoticeWithMotion(notice), index * 520);
+          });
+      }
+
+      function scheduleLiveCycle() {
+        const token = ++cycleToken;
+        dismissedLiveNoticeIndexes = new Set();
+        liveStack.innerHTML = "";
+        liveStack.dataset.focus = "0";
+
+        liveNotices.forEach((_, index) => {
+          window.setTimeout(() => {
+            if (token !== cycleToken) return;
+            renderLive(index + 1, Math.max(0, index - 1), index);
+          }, index * 850);
+        });
+
+        liveNotices.forEach((_, index) => {
+          window.setTimeout(() => {
+            if (token !== cycleToken) return;
+            renderLive(liveNotices.length, index + 1, -1);
+          }, 3600 + index * 760);
+        });
+
+        window.setTimeout(() => {
+          if (token !== cycleToken) return;
+          autoDismissLiveNotices();
+        }, 6800);
+
+        window.setTimeout(() => {
+          if (token !== cycleToken) return;
+          scheduleLiveCycle();
+        }, 9200);
+      }
+
+      scheduleLiveCycle();
+    </script>
+  </body>
+</html>

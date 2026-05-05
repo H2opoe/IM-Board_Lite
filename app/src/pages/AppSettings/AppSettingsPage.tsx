@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { FileArchive, Info, Loader2, MessageCircle, Save, TimerReset } from "lucide-react";
+import { save as showSaveDialog } from "@tauri-apps/plugin-dialog";
 import { exportDiagnosticPackage, getAppSettings, saveAppSettings } from "../../api/appSettingsApi";
 import { AboutModal } from "../../components/AboutModal";
 import { DeveloperFeedbackModal } from "../../components/DeveloperFeedbackModal";
-import { FloatingNotice } from "../../components/shared/FloatingNotice";
+import { FloatingNotice, FloatingNoticeStack } from "../../components/shared/FloatingNotice";
 import { APP_MESSAGES } from "../../constants/messages";
 import type { AppSettings } from "../../features/app-settings/model/types";
 import { userErrorMessage } from "../../utils/errors";
@@ -11,6 +12,14 @@ import { userErrorMessage } from "../../utils/errors";
 const defaultSettings: AppSettings = {
   cacheClearTime: "00:00"
 };
+
+function diagnosticPackageFileName() {
+  const timestamp = new Date()
+    .toLocaleString("sv-SE", { hour12: false })
+    .replace(/[-:]/g, "")
+    .replace(" ", "-");
+  return `IM-Board-diagnostics-${timestamp}.zip`;
+}
 
 export function AppSettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
@@ -48,10 +57,17 @@ export function AppSettingsPage() {
   }
 
   async function exportDiagnostics() {
-    setStatus("exportingDiagnostics");
-    setMessage("正在导出诊断包，请稍候。");
     try {
-      const result = await exportDiagnosticPackage();
+      const filePath = await showSaveDialog({
+        title: "保存诊断包",
+        defaultPath: diagnosticPackageFileName(),
+        filters: [{ name: "ZIP 压缩包", extensions: ["zip"] }]
+      });
+      if (!filePath) return;
+
+      setStatus("exportingDiagnostics");
+      setMessage("正在导出诊断包，请稍候。");
+      const result = await exportDiagnosticPackage(filePath);
       setStatus("saved");
       setMessage(`诊断包已导出到：${result.filePath}`);
     } catch (error) {
@@ -68,12 +84,17 @@ export function AppSettingsPage() {
           <span>缓存清理与软件信息</span>
         </div>
       </header>
-      <FloatingNotice
-        message={message}
-        variant={status === "error" ? "error" : status === "saved" ? "success" : "info"}
-        autoCloseMs={status === "saved" ? undefined : false}
-        onClose={() => setMessage("")}
-      />
+      {message && (
+        <FloatingNoticeStack>
+          <FloatingNotice
+            message={message}
+            variant={status === "error" ? "error" : status === "saved" ? "success" : "info"}
+            withinLayer
+            autoCloseMs={status === "saved" ? undefined : false}
+            onClose={() => setMessage("")}
+          />
+        </FloatingNoticeStack>
+      )}
 
       <section className="settings-layout app-settings-grid">
         <article className="panel settings-panel app-settings-card">

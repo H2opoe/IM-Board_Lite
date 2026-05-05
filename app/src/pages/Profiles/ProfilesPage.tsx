@@ -28,7 +28,7 @@ import {
 } from "../../api/profileReadApi";
 import type { ImProfile, Platform, WechatCandidate } from "../../features/profiles/model/types";
 import { AboutModal } from "../../components/AboutModal";
-import { FloatingNotice, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
+import { FloatingNotice, FloatingNoticeStack, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
 import { PagedTextBlock } from "../../components/shared/PagedTextBlock";
 import { APP_MESSAGES, OFFICIAL_CLI_MESSAGES, PROFILE_MESSAGES } from "../../constants/messages";
 import { userErrorMessage } from "../../utils/errors";
@@ -1013,20 +1013,22 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   function renderModalFormMessage() {
     if (!formMessage) return null;
     return (
-      <FloatingNotice
-        variant={modalFormMessageVariant}
-        scope="modal"
-        autoCloseMs={false}
-        onClose={() => setFormMessage("")}
-      >
-        <PagedTextBlock
-          text={formMessage}
-          className="modal-form-message-content"
-          controlsClassName="modal-form-message-pager"
-          maxLines={4}
-          compactCopy
-        />
-      </FloatingNotice>
+      <FloatingNoticeStack scope="modal">
+        <FloatingNotice
+          variant={modalFormMessageVariant}
+          withinLayer
+          autoCloseMs={false}
+          onClose={() => setFormMessage("")}
+        >
+          <PagedTextBlock
+            text={formMessage}
+            className="modal-form-message-content"
+            controlsClassName="modal-form-message-pager"
+            maxLines={4}
+            compactCopy
+          />
+        </FloatingNotice>
+      </FloatingNoticeStack>
     );
   }
 
@@ -1039,24 +1041,8 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
         </div>
       </header>
       {(profileMessage || profileReadNotices.length > 0) && (
-        <div className="floating-notice-layer page stacked">
-          <FloatingNotice
-            message={profileMessage}
-            variant={profileNoticeVariant}
-            withinLayer
-            autoCloseMs={profileNoticeVariant === "success" ? undefined : false}
-            onClose={() => {
-              if (pendingDeleteId && profileMessage.startsWith(APP_MESSAGES.confirmDelete)) {
-                setPendingDeleteId("");
-              }
-              if (pendingBulkDeleteIds.length > 0 && profileMessage.startsWith(APP_MESSAGES.confirmDelete)) {
-                setPendingBulkDeleteIds([]);
-              }
-              setProfileMessage("");
-              setProfileMessageIsError(false);
-            }}
-          />
-          {profileReadNotices.map((notice) => (
+        <FloatingNoticeStack>
+          {[...profileReadNotices].reverse().map((notice) => (
             <FloatingNotice
               key={notice.id}
               message={notice.message}
@@ -1066,7 +1052,25 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
               onClose={() => closeProfileReadNotice(notice.id)}
             />
           ))}
-        </div>
+          {profileMessage && (
+            <FloatingNotice
+              message={profileMessage}
+              variant={profileNoticeVariant}
+              withinLayer
+              autoCloseMs={profileNoticeVariant === "success" ? undefined : false}
+              onClose={() => {
+                if (pendingDeleteId && profileMessage.startsWith(APP_MESSAGES.confirmDelete)) {
+                  setPendingDeleteId("");
+                }
+                if (pendingBulkDeleteIds.length > 0 && profileMessage.startsWith(APP_MESSAGES.confirmDelete)) {
+                  setPendingBulkDeleteIds([]);
+                }
+                setProfileMessage("");
+                setProfileMessageIsError(false);
+              }}
+            />
+          )}
+        </FloatingNoticeStack>
       )}
 
       <section className="profile-layout">

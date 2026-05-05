@@ -1,7 +1,6 @@
 import { ChevronRight, KeyRound, LayoutDashboard, Link2, Monitor, Moon, Settings, SunMedium, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useRef, useState } from "react";
-import type { AppView } from "../../appTypes";
 import type { ThemeChoice, ThemeMode } from "../../hooks/useThemeController";
 import type { ActionItem } from "../../features/dashboard/model/types";
 import type { ImProfile } from "../../features/profiles/model/types";
@@ -12,6 +11,8 @@ import { formatRelativeDateTime } from "../../utils/dates";
 import { profileRemark } from "../../utils/profiles";
 
 const DRAWER_CLOSE_ANIMATION_MS = 300;
+
+export type AppView = "dashboard" | "profiles" | "settings" | "appSettings";
 
 interface Props {
   profiles: ImProfile[];

@@ -17,8 +17,9 @@ export async function saveAppSettings(settings: AppSettings): Promise<AppSetting
   return requireTauri("保存应用设置");
 }
 
-export async function exportDiagnosticPackage(): Promise<DiagnosticExport> {
-  if (isTauri) return invoke("export_diagnostic_package");
+export async function exportDiagnosticPackage(filePath: string): Promise<DiagnosticExport> {
+  if (isTauri) return invoke("export_diagnostic_package", { filePath });
+  void filePath;
   return requireTauri("导出诊断包");
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type SetStateAction } from "react";
 import { getDashboard } from "../api/dashboardApi";
 import type { DashboardData } from "../model/types";
 
@@ -7,7 +7,7 @@ export function useDashboardStore(activeProfileId: string, isDashboardActive: bo
   const [dashboardProfileId, setDashboardProfileId] = useState("");
 
   const setDashboardForProfile = useCallback(
-    (nextDashboard: DashboardData, profileId = activeProfileId) => {
+    (nextDashboard: SetStateAction<DashboardData | null>, profileId = activeProfileId) => {
       setDashboard(nextDashboard);
       setDashboardProfileId(profileId);
     },

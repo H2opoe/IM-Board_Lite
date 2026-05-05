@@ -1,3 +1,7 @@
+use crate::connectors::{
+    self, ConnectorAdapter, ProfileSyncLane, ProfileSyncMode, SessionDiscoveryStep,
+};
+
 #[derive(Debug, Clone)]
 struct FetchJob {
     index: usize,
@@ -58,23 +62,23 @@ async fn sync_target_profiles_messages(
     resource_dir: std::path::PathBuf,
     cache_dir: std::path::PathBuf,
 ) -> Result<Vec<ProfileSyncOutcome>, String> {
-    let mut wechat_profiles = Vec::new();
+    let mut serial_profiles = Vec::new();
     let mut concurrent_profiles = Vec::new();
 
     for profile in target_profiles {
-        if profile.platform == "wechat" {
-            wechat_profiles.push(profile.clone());
-        } else {
-            concurrent_profiles.push(profile.clone());
+        let connector = connector_for_profile(profile)?;
+        match (connector.sync_lane)() {
+            ProfileSyncLane::Serial => serial_profiles.push(profile.clone()),
+            ProfileSyncLane::Concurrent => concurrent_profiles.push(profile.clone()),
         }
     }
 
-    // 微信本地读取在自己的车道内保持串行；官方 CLI 平台同时启动，并按账号并发收集后再统一进入 AI 分析。
-    let (wechat_outcomes, concurrent_outcomes) = tokio::join!(
-        sync_wechat_profiles_messages(
+    // connector 决定账号进入串行或并发车道；同步编排不再直接关心具体平台名。
+    let (serial_outcomes, concurrent_outcomes) = tokio::join!(
+        sync_serial_profiles_messages(
             app,
             state,
-            wechat_profiles,
+            serial_profiles,
             window,
             day_start,
             day_start_text,
@@ -95,12 +99,17 @@ async fn sync_target_profiles_messages(
         )
     );
 
-    let mut outcomes = wechat_outcomes?;
+    let mut outcomes = serial_outcomes?;
     outcomes.extend(concurrent_outcomes?);
     Ok(outcomes)
 }
 
-async fn sync_wechat_profiles_messages(
+fn connector_for_profile(profile: &ImProfile) -> Result<ConnectorAdapter, String> {
+    connectors::find(&profile.platform)
+        .ok_or_else(|| format!("暂不支持{}账号同步。", profile.label))
+}
+
+async fn sync_serial_profiles_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
     profiles: Vec<ImProfile>,
@@ -144,7 +153,7 @@ async fn sync_concurrent_profiles_messages(
     cache_dir: std::path::PathBuf,
 ) -> Result<Vec<ProfileSyncOutcome>, String> {
     let mut outcomes = Vec::new();
-    for chunk in profiles.chunks(NON_WECHAT_PROFILE_SYNC_CONCURRENCY) {
+    for chunk in profiles.chunks(CONCURRENT_PROFILE_SYNC_CONCURRENCY) {
         ensure_sync_not_cancelled(state)?;
         let futures = chunk.iter().cloned().map(|profile| {
             sync_profile_messages_with_notice(
@@ -217,11 +226,12 @@ async fn sync_profile_messages(
     resource_dir: std::path::PathBuf,
     cache_dir: std::path::PathBuf,
 ) -> Result<ProfileSyncOutcome, String> {
+    let connector = connector_for_profile(&profile)?;
     let mut warnings = Vec::new();
     let mut inserted_messages = 0;
 
     ensure_sync_not_cancelled(state)?;
-    prepare_profile_sync_access(&profile);
+    (connector.prepare_profile_sync_access)(&profile);
     emit_sync_progress(
         app,
         &profile,
@@ -235,85 +245,7 @@ async fn sync_profile_messages(
         0,
     );
 
-    let mut contact_sessions = Vec::new();
-    if profile.platform == "wecom" {
-        emit_sync_progress(
-            app,
-            &profile,
-            "list_contacts",
-            format!(
-                "正在读取【{} · {}】通讯录...",
-                platform_label(&profile.platform),
-                profile_remark(&profile)
-            ),
-            0,
-            0,
-        );
-        let contacts = run_sync_bridge(
-            state,
-            BridgeRequest {
-                platform: profile.platform.clone(),
-                command: "list-contacts".to_owned(),
-                profile: Some(profile.clone()),
-                args: HashMap::new(),
-                stdin_secret: None,
-            },
-            resource_dir.clone(),
-            cache_dir.clone(),
-        )
-        .await
-        .map_err(|err| err.to_string())?;
-        warnings.extend(contacts.warnings);
-        if contacts.ok {
-            contact_sessions = value_array(&contacts.data)
-                .into_iter()
-                .cloned()
-                .collect::<Vec<_>>();
-        } else if let Some(error) = contacts.error {
-            warnings.push(format!("{} 通讯录：{}", profile.label, error.message));
-        }
-    }
-    if profile.platform == "feishu" {
-        emit_sync_progress(
-            app,
-            &profile,
-            "search_messages",
-            format!(
-                "正在检索【{} · {}】今天消息...",
-                platform_label(&profile.platform),
-                profile_remark(&profile)
-            ),
-            0,
-            0,
-        );
-        let mut search_args = HashMap::new();
-        search_args.insert("start_time".to_owned(), day_start_text.to_owned());
-        search_args.insert("end_time".to_owned(), sync_end_text.to_owned());
-        let searched_sessions = run_sync_bridge(
-            state,
-            BridgeRequest {
-                platform: profile.platform.clone(),
-                command: "search-messages".to_owned(),
-                profile: Some(profile.clone()),
-                args: search_args,
-                stdin_secret: None,
-            },
-            resource_dir.clone(),
-            cache_dir.clone(),
-        )
-        .await
-        .map_err(|err| err.to_string())?;
-        warnings.extend(searched_sessions.warnings);
-        if searched_sessions.ok {
-            contact_sessions = value_array(&searched_sessions.data)
-                .into_iter()
-                .cloned()
-                .collect::<Vec<_>>();
-        } else if let Some(error) = searched_sessions.error {
-            warnings.push(format!("{} 消息检索：{}", profile.label, error.message));
-        }
-    }
-    if profile.platform == "dingtalk" {
+    if (connector.sync_mode)() == ProfileSyncMode::WindowMessagesWithGroupFallback {
         let (_fetched, inserted) = fetch_dingtalk_window_messages(
             app,
             state,
@@ -333,6 +265,19 @@ async fn sync_profile_messages(
             warnings,
         });
     }
+
+    let contact_sessions = collect_session_discovery_steps(
+        app,
+        state,
+        &profile,
+        connector,
+        day_start_text,
+        sync_end_text,
+        resource_dir.clone(),
+        cache_dir.clone(),
+        &mut warnings,
+    )
+    .await?;
 
     let mut session_args = HashMap::new();
     session_args.insert("limit".to_owned(), "200".to_owned());
@@ -368,17 +313,10 @@ async fn sync_profile_messages(
     let mut all_sessions = contact_sessions;
     all_sessions.extend(value_array(&sessions.data).into_iter().cloned());
     let all_sessions = dedupe_sessions(all_sessions);
-    if profile.platform == "wecom" && all_sessions.is_empty() {
-        warnings.push(
-            "企业微信：通讯录和内部群聊列表均为空，无法自动拉取消息。请确认当前授权用户可见通讯录和最近 7 天内有可读消息。"
-                .to_owned(),
-        );
-    }
-    if profile.platform == "feishu" && all_sessions.is_empty() {
-        warnings.push(
-            "飞书：当前授权未返回可见群聊。若需要发现私聊或按消息检索最近会话，请补充授权 search:message。"
-                .to_owned(),
-        );
+    if all_sessions.is_empty() {
+        if let Some(warning) = (connector.empty_session_warning)(&profile) {
+            warnings.push(warning);
+        }
     }
 
     let recent_sessions = all_sessions
@@ -396,21 +334,7 @@ async fn sync_profile_messages(
         app,
         &profile,
         "list_chats_done",
-        if profile.platform == "wecom" {
-            format!(
-                "已准备检查【{} · {}】{} 个通讯录成员/群聊。",
-                platform_label(&profile.platform),
-                profile_remark(&profile),
-                total
-            )
-        } else {
-            format!(
-                "已发现【{} · {}】{} 个今天会话。",
-                platform_label(&profile.platform),
-                profile_remark(&profile),
-                total
-            )
-        },
+        (connector.sessions_ready_message)(&profile, total),
         0,
         total,
     );
@@ -436,6 +360,96 @@ async fn sync_profile_messages(
         inserted_messages,
         warnings,
     })
+}
+
+async fn collect_session_discovery_steps(
+    app: &tauri::AppHandle,
+    state: &State<'_, AppState>,
+    profile: &ImProfile,
+    connector: ConnectorAdapter,
+    day_start_text: &str,
+    sync_end_text: &str,
+    resource_dir: std::path::PathBuf,
+    cache_dir: std::path::PathBuf,
+    warnings: &mut Vec<String>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let mut sessions = Vec::new();
+    for step in (connector.session_discovery_steps)() {
+        match step {
+            SessionDiscoveryStep::Contacts => {
+                emit_sync_progress(
+                    app,
+                    profile,
+                    "list_contacts",
+                    format!(
+                        "正在读取【{} · {}】通讯录...",
+                        platform_label(&profile.platform),
+                        profile_remark(profile)
+                    ),
+                    0,
+                    0,
+                );
+                let contacts = run_sync_bridge(
+                    state,
+                    BridgeRequest {
+                        platform: profile.platform.clone(),
+                        command: "list-contacts".to_owned(),
+                        profile: Some(profile.clone()),
+                        args: HashMap::new(),
+                        stdin_secret: None,
+                    },
+                    resource_dir.clone(),
+                    cache_dir.clone(),
+                )
+                .await
+                .map_err(|err| err.to_string())?;
+                warnings.extend(contacts.warnings);
+                if contacts.ok {
+                    sessions.extend(value_array(&contacts.data).into_iter().cloned());
+                } else if let Some(error) = contacts.error {
+                    warnings.push(format!("{} 通讯录：{}", profile.label, error.message));
+                }
+            }
+            SessionDiscoveryStep::WindowSearch => {
+                emit_sync_progress(
+                    app,
+                    profile,
+                    "search_messages",
+                    format!(
+                        "正在检索【{} · {}】今天消息...",
+                        platform_label(&profile.platform),
+                        profile_remark(profile)
+                    ),
+                    0,
+                    0,
+                );
+                let mut search_args = HashMap::new();
+                search_args.insert("start_time".to_owned(), day_start_text.to_owned());
+                search_args.insert("end_time".to_owned(), sync_end_text.to_owned());
+                let searched_sessions = run_sync_bridge(
+                    state,
+                    BridgeRequest {
+                        platform: profile.platform.clone(),
+                        command: "search-messages".to_owned(),
+                        profile: Some(profile.clone()),
+                        args: search_args,
+                        stdin_secret: None,
+                    },
+                    resource_dir.clone(),
+                    cache_dir.clone(),
+                )
+                .await
+                .map_err(|err| err.to_string())?;
+                warnings.extend(searched_sessions.warnings);
+                if searched_sessions.ok {
+                    sessions.extend(value_array(&searched_sessions.data).into_iter().cloned());
+                } else if let Some(error) = searched_sessions.error {
+                    warnings.push(format!("{} 消息检索：{}", profile.label, error.message));
+                }
+            }
+        }
+    }
+    Ok(sessions)
 }
 
 fn emit_profile_sync_done(app: &tauri::AppHandle, profile: &ImProfile, inserted_messages: i64) {
@@ -500,7 +514,7 @@ async fn fetch_dingtalk_window_messages(
     warnings.extend(history.warnings);
     if !history.ok {
         if let Some(error) = history.error {
-            if !is_silent_dingtalk_message_permission_error(&profile.platform, &error.code) {
+            if !(connector_for_profile(profile)?.should_silence_message_error)(&error.code) {
                 warnings.push(format!(
                     "【{} · {}】今天消息：{}",
                     platform_label(&profile.platform),
@@ -570,7 +584,7 @@ async fn fetch_dingtalk_discovered_group_messages(
     cache_dir: std::path::PathBuf,
     warnings: &mut Vec<String>,
 ) -> Result<(usize, i64), String> {
-    let queries = dingtalk_search_queries(profile);
+    let queries = (connector_for_profile(profile)?.fallback_group_search_queries)(profile);
     if queries.is_empty() {
         return Ok((0, 0));
     }
@@ -611,7 +625,7 @@ async fn fetch_dingtalk_discovered_group_messages(
         warnings.extend(searched.warnings);
         if !searched.ok {
             if let Some(error) = searched.error {
-                if !is_silent_dingtalk_message_permission_error(&profile.platform, &error.code) {
+                if !(connector_for_profile(profile)?.should_silence_message_error)(&error.code) {
                     warnings.push(format!(
                         "{} 群聊检索「{}」：{}",
                         profile.label, query, error.message
@@ -747,7 +761,8 @@ async fn fetch_recent_session_messages(
         return Ok((0, 0));
     }
 
-    let concurrency = fetch_concurrency_for_platform(&profile.platform);
+    let connector = connector_for_profile(profile)?;
+    let concurrency = (connector.fetch_concurrency)();
     if concurrency > 1 {
         emit_sync_progress(
             app,
@@ -804,8 +819,7 @@ async fn fetch_recent_session_messages(
             warnings.extend(history.warnings);
             if !history.ok {
                 if let Some(error) = history.error {
-                    if !is_silent_dingtalk_message_permission_error(&profile.platform, &error.code)
-                    {
+                    if !(connector.should_silence_message_error)(&error.code) {
                         warnings.push(format!(
                             "{} / {}：{}",
                             profile.label, job.chat_name, error.message
@@ -847,72 +861,6 @@ async fn fetch_recent_session_messages(
     }
 
     Ok((fetched_messages, inserted_messages))
-}
-
-fn is_silent_dingtalk_message_permission_error(platform: &str, code: &str) -> bool {
-    // 钉钉官方/机器人/组织通知类会话可能能被检索到，但不开放消息读取。
-    // 这类会话不影响其它普通会话同步，按不可读对象静默跳过。
-    platform == "dingtalk" && code == "DINGTALK_MESSAGE_PERMISSION_MISSING"
-}
-
-fn dingtalk_search_queries(profile: &ImProfile) -> Vec<String> {
-    let mut queries = Vec::new();
-    if let Some(items) = profile
-        .config_json
-        .get("syncSearchQueries")
-        .and_then(|value| value.as_array())
-    {
-        for item in items {
-            if let Some(query) = item.as_str() {
-                push_dingtalk_search_query(&mut queries, query);
-            }
-        }
-    }
-    if let Some(query) = profile
-        .config_json
-        .get("syncSearchQuery")
-        .and_then(|value| value.as_str())
-    {
-        push_dingtalk_search_query(&mut queries, query);
-    }
-    if let Some(identity) = profile.config_json.get("accountIdentity") {
-        for key in ["orgName", "corpName", "tenantName", "userName"] {
-            if let Some(query) = identity.get(key).and_then(|value| value.as_str()) {
-                push_dingtalk_search_query(&mut queries, query);
-            }
-        }
-    }
-    if let Some(remark) = profile
-        .config_json
-        .get("remark")
-        .and_then(|value| value.as_str())
-    {
-        push_dingtalk_search_query(&mut queries, remark);
-    }
-    if profile.label != "钉钉" {
-        push_dingtalk_search_query(&mut queries, &profile.label);
-    }
-    queries
-}
-
-fn push_dingtalk_search_query(queries: &mut Vec<String>, query: &str) {
-    let query = query.trim();
-    if query.is_empty() || query == "钉钉" {
-        return;
-    }
-    if !queries.iter().any(|item| item == query) {
-        queries.push(query.to_owned());
-    }
-}
-
-fn fetch_concurrency_for_platform(platform: &str) -> usize {
-    match platform {
-        // Windows 版 DWS 把授权 token 固定写入当前用户注册表，运行前需要按 profile 导入 token。
-        // 同一 profile 内也串行读取，避免多个 DWS 子进程抢同一个注册表 token。
-        "dingtalk" if cfg!(windows) => 1,
-        "wecom" | "feishu" | "dingtalk" => OFFICIAL_CLI_FETCH_CONCURRENCY,
-        _ => 1,
-    }
 }
 
 fn refresh_local_keyword_stats(
