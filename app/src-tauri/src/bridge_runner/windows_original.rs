@@ -3,15 +3,13 @@ use std::process::Stdio;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use tokio::process::Command;
-
 use super::errors::bridge_error_for;
 use super::paths::expand_home;
 use super::windows_wechat::{
     append_wechat_option, resolve_windows_wechat_cli, run_tracked_output, wechat_cli_arg_placement,
     wechat_cli_command, wechat_command_key, windows_wechat_profile_paths,
 };
-use super::{apply_official_cli_env, official_cli_command, BridgeEnvelope, BridgeRequest};
+use super::{apply_official_cli_env, official_cli_command, BridgeEnvelope, BridgeError, BridgeRequest};
 use crate::security::sanitize_log;
 
 #[cfg(windows)]

@@ -174,7 +174,11 @@ function isPythonRuntimeUsable(pythonPath) {
 
 async function removeWindowsLaunchersFromPython(platform) {
   const pythonRoot = join(pythonRuntimeRoot, pythonStandaloneRelease, platform.arch, "python");
-  await removeFilesMatching(pythonRoot, (entry) => entry.toLowerCase().endsWith(".exe"));
+  // macOS 包只保留本系统运行所需内容，清掉 Python 发行包里夹带的 Windows 启动脚本。
+  await removeFilesMatching(pythonRoot, (entry) => {
+    const lowerEntry = entry.toLowerCase();
+    return lowerEntry.endsWith(".exe") || lowerEntry.endsWith(".dll") || lowerEntry.endsWith(".bat") || lowerEntry.endsWith(".cmd");
+  });
 }
 
 async function removeWindowsOnlyPythonFiles(platform) {
@@ -275,6 +279,7 @@ function installWechatCliIntoPython(platform) {
     "install",
     "--disable-pip-version-check",
     "--no-compile",
+    "--no-build-isolation",
     "--force-reinstall",
     wechatCliSourceRoot,
   ]);

@@ -1,3 +1,6 @@
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 async fn install_windows_wechat_python_cli(
     install_root: &Path,
     version: &str,
@@ -132,7 +135,9 @@ fn run_python_install_step(
     pip_cache: &Path,
     context: &str,
 ) -> Result<(), String> {
-    let output = std::process::Command::new(python)
+    let mut command = std::process::Command::new(python);
+    hide_python_install_window(&mut command);
+    let output = command
         .args(args)
         .env("PIP_CACHE_DIR", pip_cache)
         .env("PIP_INDEX_URL", PYPI_MIRROR_INDEX_URL)
@@ -154,4 +159,13 @@ fn run_python_install_step(
     .collect::<Vec<_>>()
     .join("\n");
     Err(format!("{context}：{detail}"))
+}
+
+#[cfg(windows)]
+fn hide_python_install_window(command: &mut std::process::Command) {
+    use std::os::windows::process::CommandExt;
+
+    // Windows微信CLI准备阶段会连续启动 ensurepip / pip；GUI应用内必须静默执行，
+    // 否则用户打开绑定窗口时会看到一闪而过的命令提示符。
+    command.creation_flags(CREATE_NO_WINDOW);
 }

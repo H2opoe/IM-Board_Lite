@@ -1044,10 +1044,24 @@ def run_wechat_cli(args: argparse.Namespace, command: str) -> int:
             error={"code": "WECHAT_CLI_MISSING", "message": f"微信 CLI 不可用：{sanitize(str(exc))}", "recoverable": True},
         )
     if proc.returncode != 0:
+        stderr = sanitize(proc.stderr)
+        stdout = sanitize(proc.stdout)
+        combined_output = "\n".join([stderr, stdout])
+        if is_wechat_history_key_incomplete(command, combined_output):
+            return envelope(
+                False,
+                data=None,
+                warnings=[line for line in [stderr, stdout] if line],
+                error={
+                    "code": "WECHAT_KEYS_INCOMPLETE",
+                    "message": "微信密钥获取不完整，无法读取聊天记录。请等微信消息同步完成后重新绑定该账号。",
+                    "recoverable": True,
+                },
+            )
         return envelope(
             False,
             data=None,
-            warnings=[sanitize(proc.stderr or proc.stdout)],
+            warnings=[line for line in [stderr, stdout] if line],
             error={"code": "WECHAT_DECRYPT_FAILED", "message": f"wechat-cli {command} 执行失败。", "recoverable": True},
         )
     raw = proc.stdout.strip()
@@ -1056,6 +1070,12 @@ def run_wechat_cli(args: argparse.Namespace, command: str) -> int:
     except json.JSONDecodeError:
         data = {"text": raw}
     return envelope(True, data=data, command=command)
+
+
+def is_wechat_history_key_incomplete(command: str, output: str) -> bool:
+    if command_key(command) != "fetchMessages":
+        return False
+    return "找不到" in output and "的消息记录" in output
 
 
 def clear_cache(args: argparse.Namespace) -> int:
