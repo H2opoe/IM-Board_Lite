@@ -145,7 +145,7 @@ export function DeveloperFeedbackModal({ onClose }: Props) {
       <article className="profile-modal developer-feedback-modal" onMouseDown={(event) => event.stopPropagation()}>
         <header className="modal-header">
           <div>
-            <strong>反馈给开发者</strong>
+            <strong>联系开发者</strong>
             <span>扫码添加微信，或复制微信号联系</span>
           </div>
           <button className="icon-button" onClick={onClose} aria-label="关闭反馈窗口">

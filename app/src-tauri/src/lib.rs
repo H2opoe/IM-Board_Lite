@@ -101,11 +101,7 @@ pub fn run() {
             commands::ai::install_local_deepseek_model,
             commands::ai::save_ai_config,
             commands::ai::test_ai_connection,
-            commands::sync::detect_day_rollover,
             commands::sync::cancel_sync,
-            commands::sync::retry_ai_analysis,
-            commands::sync::run_full_resync,
-            commands::sync::run_manual_sync,
             commands::sync::run_sync_job
         ])
         .build(tauri::generate_context!())

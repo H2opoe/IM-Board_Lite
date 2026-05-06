@@ -25,7 +25,7 @@ async fn install_windows_wechat_python_cli(
         emit_platform_cli_progress(
             progress,
             "installing",
-            "正在用应用内置Python准备Windows微信CLI...".to_owned(),
+            "正在用应用内置Python准备Windows微信CLI…".to_owned(),
             3,
             5,
             None,
@@ -155,4 +155,3 @@ fn run_python_install_step(
     .join("\n");
     Err(format!("{context}：{detail}"))
 }
-

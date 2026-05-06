@@ -131,7 +131,7 @@ pub async fn install_package(
         emit_platform_cli_progress(
             progress,
             "installing",
-            format!("正在后台更新 {}@{}...", package, version),
+            format!("正在后台更新 {}@{}…", package, version),
             3,
             5,
             None,
@@ -272,7 +272,7 @@ pub async fn ensure_platform_cli_ready(
             progress,
             "locating",
             format!(
-                "正在定位 {} 官方CLI可执行入口...",
+                "正在定位 {} 官方CLI可执行入口…",
                 platform_label(spec.platform)
             ),
             4,
@@ -292,7 +292,7 @@ pub async fn ensure_platform_cli_ready(
         emit_platform_cli_progress(
             progress,
             "ready",
-            format!("{} 官方CLI已准备完成。", platform_label(spec.platform)),
+            format!("已准备好 {} 官方CLI。", platform_label(spec.platform)),
             5,
             5,
             None,

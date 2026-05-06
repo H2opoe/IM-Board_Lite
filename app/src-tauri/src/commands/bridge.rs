@@ -82,7 +82,7 @@ pub async fn deploy_platform_bridge(
         &progress,
         "checking_local",
         format!(
-            "正在核查 {} 官方CLI准备状态...",
+            "正在核查 {} 官方CLI准备状态…",
             official_cli::platform_label(&platform)
         ),
         1,

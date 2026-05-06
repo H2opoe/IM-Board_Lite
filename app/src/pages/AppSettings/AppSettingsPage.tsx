@@ -165,7 +165,7 @@ export function AppSettingsPage() {
             </button>
             <button className="secondary-button" onClick={() => setIsDeveloperFeedbackOpen(true)}>
               <MessageCircle size={16} />
-              反馈给开发者
+              联系开发者
             </button>
           </div>
         </article>

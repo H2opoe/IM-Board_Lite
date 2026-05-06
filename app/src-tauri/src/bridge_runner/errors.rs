@@ -220,6 +220,19 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
         .and_then(|value| value.get("category"))
         .and_then(|value| value.as_str())
         .unwrap_or_default();
+    let server_error_code = error
+        .and_then(|value| value.get("server_error_code"))
+        .and_then(|value| {
+            value
+                .as_str()
+                .map(ToOwned::to_owned)
+                .or_else(|| value.as_i64().map(|number| number.to_string()))
+        })
+        .unwrap_or_default();
+    let server_key = error
+        .and_then(|value| value.get("server_key"))
+        .and_then(|value| value.as_str())
+        .unwrap_or_default();
     let action_url = error
         .and_then(|value| value.get("action_url"))
         .and_then(|value| value.as_str())
@@ -249,6 +262,10 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
         || detail.contains("chat.message:list")
         || detail.contains("该组织尚未开启 CLI数据访问权限")
         || detail.contains("TOKEN_VERIFIED_FAILED")
+        || (reason == "business_error"
+            && category == "api"
+            && server_key == "group-chat"
+            && (server_error_code == "1001" || message.contains("forbidden request")))
         || (code_text == "1"
             && category == "api"
             && (action_url.contains("developerSettings")

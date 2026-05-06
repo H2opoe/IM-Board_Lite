@@ -30,14 +30,6 @@ pub async fn run_sync_job(
     }
 }
 
-pub async fn run_manual_sync(
-    app: tauri::AppHandle,
-    state: State<'_, AppState>,
-    profile_id: String,
-) -> Result<SyncResult, String> {
-    run_sync_job(app, state, profile_id, SyncJobMode::Incremental).await
-}
-
 async fn run_manual_sync_inner(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
@@ -131,7 +123,7 @@ async fn run_manual_sync_inner(
     })
 }
 
-pub async fn retry_ai_analysis(
+async fn retry_ai_analysis(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     profile_id: String,
@@ -155,7 +147,7 @@ pub async fn retry_ai_analysis(
             &app,
             profile,
             "clear_cache_done",
-            "今天AI结果已清空，历史待回复和待办已保留，正在重新生成...".to_owned(),
+            "今天AI结果已清空，历史待回复和待办已保留，正在重新生成…".to_owned(),
             0,
             0,
         );
@@ -185,7 +177,7 @@ pub async fn retry_ai_analysis(
     })
 }
 
-pub async fn run_full_resync(
+async fn run_full_resync(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     profile_id: String,
@@ -217,7 +209,7 @@ pub async fn run_full_resync(
             &app,
             profile,
             "clear_cache_done",
-            "今日看板数据和数据缓存已清空，历史待回复和待办已保留，正在重新读取今天消息..."
+            "今天看板数据和数据缓存已清空，历史待回复和待办已保留，正在重新读取今天的消息…"
                 .to_owned(),
             0,
             0,

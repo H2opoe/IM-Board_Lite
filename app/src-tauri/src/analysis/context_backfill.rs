@@ -91,7 +91,7 @@ async fn backfill_context_for_requests(
             app,
             profile,
             "context_backfill",
-            format!("正在补读【{}】上下文证据...", request.chat_name),
+            format!("正在补读【{}】上下文证据…", request.chat_name),
             completed,
             requests.len() as i64,
         );
@@ -182,7 +182,7 @@ async fn fetch_context_history_for_targets(
             app,
             profile,
             "context_backfill",
-            format!("正在补读【{}】历史上下文...", target.chat_name),
+            format!("正在补读【{}】历史上下文…", target.chat_name),
             history.len() as i64,
             CONTEXT_EVIDENCE_LIMIT as i64,
         );
@@ -352,4 +352,3 @@ fn merge_context_summary(existing: &str, incoming: &str, max_chars: usize) -> St
 fn truncate_context_text(value: &str, max_chars: usize) -> String {
     value.chars().take(max_chars).collect()
 }
-

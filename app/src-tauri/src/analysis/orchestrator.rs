@@ -355,7 +355,7 @@ pub(crate) async fn analyze_pending_messages(
                 app,
                 target_profiles,
                 "summary",
-                format!("正在识别{}热门话题和关键词...", analysis_scope_label),
+                format!("正在识别{}热门话题和关键词…", analysis_scope_label),
                 0,
                 0,
             );
@@ -378,7 +378,7 @@ pub(crate) async fn analyze_pending_messages(
                     target_profiles,
                     "summary_done",
                     format!(
-                        "{}暂无新的热门话题和关键词候选，正在刷新看板...",
+                        "{}暂无新的热门话题和关键词候选，正在刷新看板…",
                         analysis_scope_label
                     ),
                     0,
@@ -409,7 +409,7 @@ pub(crate) async fn analyze_pending_messages(
                     target_profiles,
                     "summary",
                     format!(
-                        "正在识别{}热门话题和关键词第 {}/{} 批...",
+                        "正在识别{}热门话题和关键词第 {}/{} 批…",
                         analysis_scope_label,
                         summary_batch_index + 1,
                         total_summary_batches
@@ -528,7 +528,7 @@ pub(crate) async fn analyze_pending_messages(
                         target_profiles,
                         "summary_done",
                         format!(
-                            "已更新{}热门话题和关键词第 {}/{} 批，正在刷新看板...",
+                            "已更新{}热门话题和关键词第 {}/{} 批，正在刷新看板…",
                             analysis_scope_label,
                             summary_batch_index + 1,
                             total_summary_batches

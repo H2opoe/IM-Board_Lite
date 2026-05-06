@@ -54,7 +54,7 @@ pub(super) async fn npm_metadata(
             emit_platform_cli_progress(
                 progress,
                 "checking_remote",
-                format!("正在从镜像源核查 {} 最新版本...", package),
+                format!("正在从镜像源核查 {} 最新版本…", package),
                 2,
                 5,
                 Some(registry),

@@ -37,8 +37,8 @@ export const DASHBOARD_MESSAGES = {
       failed: "异常"
     }
   },
-  retryAnalysisDescription: "重新生成会清空当前业务日AI结果，重新分析当前业务日全部消息。历史待回复和待办不会被清除。",
-  fullResyncDescription: "重新同步会清空缓存，并重新读取当前业务日消息。历史待回复和待办不会被清除。"
+  retryAnalysisDescription: "重新生成会清空今天的AI结果，并重新分析今天的全部消息。历史待回复和待办不会被清除。",
+  fullResyncDescription: "重新同步会清空缓存，并重新读取今天的消息。历史待回复和待办不会被清除。"
 };
 
 export const APP_SETTINGS_MESSAGES = {
@@ -83,7 +83,7 @@ export const OFFICIAL_CLI_MESSAGES = {
   versionCheckFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI版本核查失败。`,
   waitReady: (platform: Platform) => `请先等待${platformDisplayName(platform)}官方CLI准备完成。`,
   updateFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI更新失败。`,
-  cleanupFailed: (platform: Platform) => `清理${platformDisplayName(platform)}官方CLI失败`,
+  cleanupFailed: (platform: Platform) => `清理${platformDisplayName(platform)}官方CLI失败。`,
   placeholder: (platform: Platform) => `正在准备${platformDisplayName(platform)}官方CLI…`
 };
 

@@ -1,4 +1,16 @@
-import { type CSSProperties, Children, cloneElement, type PointerEvent, type ReactNode, isValidElement, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  Children,
+  cloneElement,
+  type PointerEvent,
+  type ReactNode,
+  type WheelEvent,
+  isValidElement,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react";
 import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
 
 export type FloatingNoticeScope = "page" | "modal";
@@ -34,11 +46,29 @@ type StackStyle = CSSProperties & {
   "--notice-stack-height"?: string;
 };
 
+function resolveNoticeDisplayIndex(baseDisplayIndex: number, visibleCount: number, turnProgress: number) {
+  if (visibleCount <= 1 || turnProgress === 0) return baseDisplayIndex;
+
+  if (turnProgress > 0) {
+    if (baseDisplayIndex === 0) {
+      return turnProgress * (visibleCount - 1);
+    }
+    return baseDisplayIndex - turnProgress;
+  }
+
+  const backwardProgress = Math.abs(turnProgress);
+  if (baseDisplayIndex === visibleCount - 1) {
+    return (visibleCount - 1) * (1 - backwardProgress);
+  }
+  return baseDisplayIndex + backwardProgress;
+}
+
 export function FloatingNoticeStack({ children, scope = "page" }: FloatingNoticeStackProps) {
   const notices = Children.toArray(children).filter(Boolean);
   const noticeKeys = notices.map((notice, index) => String(isValidElement(notice) && notice.key !== null ? notice.key : index));
   const noticeOrderKey = noticeKeys.join("|");
   const [focusIndex, setFocusIndex] = useState(0);
+  const [turnProgress, setTurnProgress] = useState(0);
   const [revealedCount, setRevealedCount] = useState(0);
   const previousNoticeKeysRef = useRef<string[]>([]);
   const lastPointerYRef = useRef<number | null>(null);
@@ -54,6 +84,7 @@ export function FloatingNoticeStack({ children, scope = "page" }: FloatingNotice
     previousNoticeKeysRef.current = noticeKeys;
     lastPointerYRef.current = null;
     pointerRemainderRef.current = 0;
+    setTurnProgress(0);
 
     if (notices.length === 0) {
       setFocusIndex(0);
@@ -107,6 +138,21 @@ export function FloatingNoticeStack({ children, scope = "page" }: FloatingNotice
   function handlePointerLeave() {
     lastPointerYRef.current = null;
     pointerRemainderRef.current = 0;
+    setTurnProgress(0);
+  }
+
+  function applyTurnDelta(deltaY: number) {
+    if (visibleCount <= 1) return;
+    let nextRemainder = pointerRemainderRef.current + deltaY;
+
+    while (Math.abs(nextRemainder) >= STACK_TURN_DISTANCE_PX) {
+      const direction = nextRemainder > 0 ? 1 : -1;
+      setFocusIndex((currentIndex) => (currentIndex + direction + visibleCount) % visibleCount);
+      nextRemainder -= direction * STACK_TURN_DISTANCE_PX;
+    }
+
+    pointerRemainderRef.current = nextRemainder;
+    setTurnProgress(nextRemainder / STACK_TURN_DISTANCE_PX);
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
@@ -115,15 +161,13 @@ export function FloatingNoticeStack({ children, scope = "page" }: FloatingNotice
     const deltaY = event.clientY - lastPointerY;
     lastPointerYRef.current = event.clientY;
 
-    const nextRemainder = pointerRemainderRef.current + deltaY;
-    if (Math.abs(nextRemainder) < STACK_TURN_DISTANCE_PX) {
-      pointerRemainderRef.current = nextRemainder;
-      return;
-    }
+    applyTurnDelta(deltaY);
+  }
 
-    const direction = nextRemainder > 0 ? 1 : -1;
-    setFocusIndex((currentIndex) => (currentIndex + direction + visibleCount) % visibleCount);
-    pointerRemainderRef.current = nextRemainder - direction * STACK_TURN_DISTANCE_PX;
+  function handleWheel(event: WheelEvent<HTMLDivElement>) {
+    if (visibleCount <= 1) return;
+    event.preventDefault();
+    applyTurnDelta(event.deltaY);
   }
 
   const layerStyle: StackStyle = {
@@ -139,22 +183,29 @@ export function FloatingNoticeStack({ children, scope = "page" }: FloatingNotice
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerMove={handlePointerMove}
+      onWheel={handleWheel}
     >
       <div className="floating-notice-stack">
-        {visibleNotices.map(({ index: noticeIndex, notice }, visibleIndex) => (
-          <div
-            key={isValidElement(notice) && notice.key !== null ? notice.key : noticeIndex}
-            className="floating-notice-stack-item"
-            style={
-              {
-                "--notice-index": visibleIndex,
-                "--notice-display-index": (visibleIndex - focusIndex + visibleCount) % visibleCount
-              } as StackStyle
-            }
-          >
-            {isValidElement<Props>(notice) ? cloneElement(notice, { autoCloseDelayMs: (notices.length - 1 - noticeIndex) * STACK_NOTICE_ENTER_DELAY_MS }) : notice}
-          </div>
-        ))}
+        {visibleNotices.map(({ index: noticeIndex, notice }, visibleIndex) => {
+          const baseDisplayIndex = (visibleIndex - focusIndex + visibleCount) % visibleCount;
+          const displayIndex = resolveNoticeDisplayIndex(baseDisplayIndex, visibleCount, turnProgress);
+
+          return (
+            <div
+              key={isValidElement(notice) && notice.key !== null ? notice.key : noticeIndex}
+              className="floating-notice-stack-item"
+              style={
+                {
+                  "--notice-index": visibleIndex,
+                  "--notice-display-index": displayIndex,
+                  zIndex: Math.max(1, Math.round((visibleCount - displayIndex) * 10))
+                } as StackStyle
+              }
+            >
+              {isValidElement<Props>(notice) ? cloneElement(notice, { autoCloseDelayMs: (notices.length - 1 - noticeIndex) * STACK_NOTICE_ENTER_DELAY_MS }) : notice}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

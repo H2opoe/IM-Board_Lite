@@ -387,6 +387,28 @@ token=***
     }
 
     #[test]
+    fn classifies_dingtalk_group_chat_forbidden_error() {
+        let stdout = r#"{
+          "error": {
+            "category": "api",
+            "code": 1,
+            "hint": "The API returned a business-level error. Check required parameters and values.",
+            "message": "forbidden request",
+            "operation": "tools/call",
+            "reason": "business_error",
+            "server_error_code": "1001",
+            "server_key": "group-chat",
+            "trace_id": "21030ead17780641308991861e0a34"
+          }
+        }"#;
+
+        let error = classify_dingtalk_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "DINGTALK_MESSAGE_PERMISSION_MISSING");
+        assert!(error.recoverable);
+        assert!(error.message.contains("消息读取权限"));
+    }
+
+    #[test]
     fn filters_feishu_cli_page_progress() {
         let output = "[page 1] fetching...\n[page 1] fetched 50 items\n真实警告";
 

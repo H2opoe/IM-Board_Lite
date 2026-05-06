@@ -2,7 +2,7 @@ import { testProfileRead } from "../../../api/profileReadApi";
 import { PROFILE_MESSAGES } from "../../../constants/messages";
 import { userErrorMessage } from "../../../utils/errors";
 import { profileDisplayName } from "../../../utils/profiles";
-import { createProfileDraft, deleteProfile, reorderProfiles, upsertProfile } from "../api/profilesApi";
+import { createProfileDraft, deleteProfile, upsertProfile } from "../api/profilesApi";
 import { isOfficialCliBindPlatform, type OfficialCliBindPlatform } from "../bind-flows/officialCli";
 import { isWindowsRuntime, usesWindowsWechatRuntime } from "../model/profilePathUtils";
 import type { ImProfile, Platform } from "../model/types";
@@ -71,16 +71,6 @@ export function useProfilesController({
       updatedAt: new Date().toISOString()
     });
     await onProfilesChange();
-  }
-
-  async function saveProfileOrder(nextProfiles: ImProfile[]) {
-    try {
-      await reorderProfiles(nextProfiles);
-      setProfileNotice(PROFILE_MESSAGES.profileOrderSaved);
-      await onProfilesChange();
-    } catch (error) {
-      setProfileNotice(userErrorMessage(error, PROFILE_MESSAGES.profileOrderFailed), true);
-    }
   }
 
   async function removeProfile(profile: ImProfile) {
@@ -162,7 +152,6 @@ export function useProfilesController({
     confirmRemoveProfile,
     editProfile,
     removeProfile,
-    saveProfileOrder,
     testRead,
     testSelectedProfilesRead,
     toggleProfile

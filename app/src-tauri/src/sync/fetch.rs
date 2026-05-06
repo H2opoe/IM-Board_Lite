@@ -258,7 +258,7 @@ async fn sync_profile_messages(
         &profile,
         "list_chats",
         format!(
-            "正在读取【{} · {}】最近会话...",
+            "正在读取【{} · {}】最近会话…",
             platform_label(&profile.platform),
             profile_remark(&profile)
         ),
@@ -403,7 +403,7 @@ async fn collect_session_discovery_steps(
                     profile,
                     "list_contacts",
                     format!(
-                        "正在读取【{} · {}】通讯录...",
+                        "正在读取【{} · {}】通讯录…",
                         platform_label(&profile.platform),
                         profile_remark(profile)
                     ),
@@ -437,7 +437,7 @@ async fn collect_session_discovery_steps(
                     profile,
                     "search_messages",
                     format!(
-                        "正在检索【{} · {}】今天消息...",
+                        "正在检索【{} · {}】今天的消息…",
                         platform_label(&profile.platform),
                         profile_remark(profile)
                     ),
@@ -479,7 +479,7 @@ fn emit_profile_sync_done(app: &tauri::AppHandle, profile: &ImProfile, inserted_
         profile,
         "profile_sync_done",
         format!(
-            "【{} · {}】同步完成，已读取 {} 条新消息。",
+            "已同步【{} · {}】，读取 {} 条新消息。",
             platform_label(&profile.platform),
             profile_remark(profile),
             inserted_messages

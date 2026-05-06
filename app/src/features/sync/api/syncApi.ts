@@ -25,18 +25,6 @@ export async function runSyncJob(profileId: string, mode: SyncJobMode): Promise<
   return requireTauri("执行同步任务");
 }
 
-export async function runManualSync(profileId: string): Promise<SyncResult> {
-  return runSyncJob(profileId, "incremental");
-}
-
-export async function runFullResync(profileId: string): Promise<SyncResult> {
-  return runSyncJob(profileId, "full_resync");
-}
-
-export async function retryAiAnalysis(profileId: string): Promise<SyncResult> {
-  return runSyncJob(profileId, "retry_analysis");
-}
-
 export async function cancelSync(): Promise<boolean> {
   if (isTauri) return invoke("cancel_sync");
   return requireTauri("终止同步");

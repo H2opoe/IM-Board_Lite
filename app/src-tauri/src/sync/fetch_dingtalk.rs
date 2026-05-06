@@ -14,7 +14,7 @@ async fn fetch_dingtalk_window_messages(
         profile,
         "search_messages",
         format!(
-            "正在读取【{} · {}】今天钉钉消息...",
+            "正在读取【{} · {}】今天的钉钉消息…",
             platform_label(&profile.platform),
             profile_remark(profile)
         ),
@@ -46,7 +46,7 @@ async fn fetch_dingtalk_window_messages(
         if let Some(error) = history.error {
             if !(connector_for_profile(profile)?.should_silence_message_error)(&error.code) {
                 warnings.push(format!(
-                    "【{} · {}】今天消息：{}",
+                    "【{} · {}】今天的消息：{}",
                     platform_label(&profile.platform),
                     profile_remark(profile),
                     error.message
@@ -91,7 +91,7 @@ async fn fetch_dingtalk_window_messages(
         profile,
         "fetch_messages_done",
         format!(
-            "已读取【{} · {}】{} 条今天消息，涉及 {} 个会话。",
+            "已读取【{} · {}】{} 条今天的消息，涉及 {} 个会话。",
             platform_label(&profile.platform),
             profile_remark(profile),
             fetched,
@@ -124,7 +124,7 @@ async fn fetch_dingtalk_discovered_group_messages(
         profile,
         "search_groups",
         format!(
-            "未在全量窗口读到钉钉消息，正在按账号信息查找【{} · {}】可读群聊...",
+            "未读到钉钉消息，正在按账号信息查找【{} · {}】可读群聊…",
             platform_label(&profile.platform),
             profile_remark(profile)
         ),
@@ -211,4 +211,3 @@ async fn fetch_dingtalk_discovered_group_messages(
     )
     .await
 }
-

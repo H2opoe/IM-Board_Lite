@@ -16,23 +16,23 @@ export const SYNC_JOB_UI_CONFIG: Record<SyncJobMode, SyncJobUiConfig> = {
   incremental: {
     mode: "incremental",
     initialState: "syncing",
-    initialMessage: "正在准备读取当前业务日消息...",
-    fallbackMessage: "正在读取当前业务日消息...",
+    initialMessage: "正在准备读取今天的消息…",
+    fallbackMessage: "正在读取今天的消息…",
     completedPrefix: ""
   },
   full_resync: {
     mode: "full_resync",
     initialState: "syncing",
-    initialMessage: "正在清空缓存并准备重新同步...",
-    fallbackMessage: "正在重新同步消息...",
-    completedPrefix: "重新同步完成，"
+    initialMessage: "正在清空缓存并准备重新同步…",
+    fallbackMessage: "正在重新同步消息…",
+    completedPrefix: "已重新同步，"
   },
   retry_analysis: {
     mode: "retry_analysis",
     initialState: "analyzing",
-    initialMessage: "正在清空AI结果并重新生成...",
-    fallbackMessage: "正在清空AI结果并重新生成...",
-    completedPrefix: "重新生成完成，"
+    initialMessage: "正在清空AI结果并重新生成…",
+    fallbackMessage: "正在清空AI结果并重新生成…",
+    completedPrefix: "已重新生成，"
   }
 };
 
@@ -43,12 +43,12 @@ export const SYNC_CANCEL_CONFIRM_MESSAGES: Partial<Record<SyncMessageState, stri
 
 export const SYNC_RUNTIME_MESSAGES = {
   cancelCurrentTask: "再次点击将停止当前任务。",
-  cancellingAnalysis: "正在终止当前AI分析...",
-  cancellingSync: "正在终止当前同步进程...",
-  analysisStillRunning: "AI分析仍在进行...",
-  syncStillRunning: "同步仍在进行...",
+  cancellingAnalysis: "正在终止当前AI分析…",
+  cancellingSync: "正在终止当前同步进程…",
+  analysisStillRunning: "AI分析仍在进行…",
+  syncStillRunning: "同步仍在进行…",
   refreshingDashboard: (insertedMessages: number, analyzedMessages: number) =>
-    `已读取${insertedMessages}条新消息，AI已识别${analyzedMessages}个事项，正在刷新看板...`
+    `已读取${insertedMessages}条新消息，AI已识别${analyzedMessages}个事项，正在刷新看板…`
 };
 
 export function syncErrorMessage(error: unknown): string {
@@ -77,11 +77,11 @@ export function isSyncMessageError(message: string): boolean {
 }
 
 export function syncMaintenancePendingMessage(action: SyncMaintenanceAction): string {
-  return action === "retry-analysis" ? "当前任务已停止，正在准备重新生成AI分析..." : "当前任务已停止，正在准备重新同步...";
+  return action === "retry-analysis" ? "当前任务已停止，正在准备重新生成AI分析…" : "当前任务已停止，正在准备重新同步…";
 }
 
 export function syncMaintenanceStoppingMessage(action: SyncMaintenanceAction): string {
-  return action === "retry-analysis" ? "正在终止当前任务，随后重新生成AI分析..." : "正在终止当前任务，随后重新同步...";
+  return action === "retry-analysis" ? "正在终止当前任务，随后重新生成AI分析…" : "正在终止当前任务，随后重新同步…";
 }
 
 export function syncCompletionMessage(mode: SyncJobMode, result: SyncResult): string {
@@ -93,5 +93,5 @@ export function syncCompletionMessage(mode: SyncJobMode, result: SyncResult): st
   if (mode === "retry_analysis") {
     return `${prefix}AI已识别${result.analyzedMessages}个事项。`;
   }
-  return `${prefix}已读取${result.insertedMessages}条新消息，AI分析完成，识别${result.analyzedMessages}个事项。`;
+  return `${prefix}已读取${result.insertedMessages}条新消息，AI分析已完成，识别${result.analyzedMessages}个事项。`;
 }
