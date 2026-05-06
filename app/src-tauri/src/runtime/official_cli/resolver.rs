@@ -228,8 +228,8 @@ fn windows_wechat_launcher_python_exists(path: &Path) -> bool {
     let Ok(text) = std::fs::read_to_string(path) else {
         return false;
     };
-    // Windows 微信 CLI 启动器会固定调用应用内置 Python。App 升级或迁移后，
-    // AppData 中旧启动器可能还在但内部 Python 路径失效，必须视为坏缓存并触发重装。
+    // Windows微信CLI启动器会固定调用应用内置Python。App升级或迁移后，
+    // AppData中旧启动器可能还在但内部Python路径失效，必须视为坏缓存并触发重装。
     text.lines()
         .find_map(extract_quoted_python_path)
         .is_some_and(|python| python.exists())
@@ -303,7 +303,7 @@ pub fn writable_cli_install_root(
     let install_root = app_dir.join("OfficialCli").join(spec.platform);
     std::fs::create_dir_all(&install_root).map_err(|err| {
         format!(
-            "无法创建{}官方 CLI 更新目录 {}：{err}",
+            "无法创建{}官方CLI更新目录 {}：{err}",
             platform_label(spec.platform),
             install_root.display()
         )

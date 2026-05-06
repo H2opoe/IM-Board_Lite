@@ -13,14 +13,14 @@ pub(super) async fn download_and_extract_tgz(
         .get(url)
         .send()
         .await
-        .map_err(|err| format!("下载官方 CLI 包失败：{err}"))?;
+        .map_err(|err| format!("下载官方CLI包失败：{err}"))?;
     if !response.status().is_success() {
-        return Err(format!("下载官方 CLI 包失败：HTTP {}", response.status()));
+        return Err(format!("下载官方CLI包失败：HTTP {}", response.status()));
     }
     let bytes = response
         .bytes()
         .await
-        .map_err(|err| format!("读取官方 CLI 包失败：{err}"))?;
+        .map_err(|err| format!("读取官方CLI包失败：{err}"))?;
     fs::remove_dir_all(destination).ok();
     fs::create_dir_all(destination).map_err(|err| err.to_string())?;
     extract_tgz_bytes(&bytes, destination, true)
@@ -42,7 +42,7 @@ pub(super) async fn download_first_available(urls: &[String]) -> Result<Vec<u8>,
             Err(err) => last_error = format!("{url}: {err}"),
         }
     }
-    Err(format!("下载官方 CLI 可执行文件失败：{last_error}"))
+    Err(format!("下载官方CLI可执行文件失败：{last_error}"))
 }
 
 pub(super) fn extract_tgz_bytes(
@@ -68,7 +68,7 @@ pub(super) fn extract_tgz_bytes(
         }
         entry
             .unpack(&output)
-            .map_err(|err| format!("解压官方 CLI 文件 {} 失败：{err}", output.display()))?;
+            .map_err(|err| format!("解压官方CLI文件 {} 失败：{err}", output.display()))?;
     }
     Ok(())
 }
@@ -105,7 +105,7 @@ fn safe_archive_path(path: &Path, strip_package_prefix: bool) -> Result<PathBuf,
         match component {
             Component::Normal(value) => output.push(value),
             Component::CurDir => {}
-            _ => return Err(format!("官方 CLI 包含不安全路径：{}", path.display())),
+            _ => return Err(format!("官方CLI包含不安全路径：{}", path.display())),
         }
     }
     Ok(output)

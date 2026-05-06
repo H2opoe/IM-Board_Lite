@@ -45,7 +45,7 @@ pub(super) async fn run_official_feishu_cli(
             "feishu",
             "https://github.com/larksuite/cli",
             "FEISHU_CLI_MISSING",
-            "飞书官方 CLI 尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
+            "飞书官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
             true,
             started_at,
         ));
@@ -157,7 +157,7 @@ pub(super) async fn run_official_feishu_cli(
                 "feishu",
                 "https://github.com/larksuite/cli",
                 "FEISHU_UNSUPPORTED_COMMAND",
-                &format!("飞书官方 CLI 暂不支持应用命令：{other}"),
+                &format!("飞书官方CLI暂不支持应用命令：{other}"),
                 true,
                 started_at,
             ));
@@ -179,7 +179,7 @@ pub(super) async fn run_official_feishu_cli(
                 "feishu",
                 "https://github.com/larksuite/cli",
                 "FEISHU_CLI_MISSING",
-                &format!("无法启动飞书官方 CLI：{err}"),
+                &format!("无法启动飞书官方CLI：{err}"),
                 true,
                 started_at,
             ));
@@ -213,9 +213,9 @@ pub(super) async fn run_official_feishu_cli(
             });
         }
         let message = if detail.is_empty() {
-            "飞书官方 CLI 执行失败。".to_owned()
+            "飞书官方CLI执行失败。".to_owned()
         } else {
-            format!("飞书官方 CLI 执行失败：{detail}")
+            format!("飞书官方CLI执行失败：{detail}")
         };
         return Ok(bridge_error_for(
             "feishu",

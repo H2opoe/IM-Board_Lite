@@ -28,7 +28,7 @@ pub fn prepare_wechat_sync_access(config_json: &serde_json::Value) {
 
 #[cfg(target_os = "macos")]
 pub fn prepare_sync_storage_access(app_dir: &Path, cache_dir: &Path) {
-    // 可移动卷访问授权要落到主 App 身份上。同步前先触碰应用数据和缓存目录，
+    // 可移动卷访问授权要落到主App身份上。同步前先触碰应用数据和缓存目录，
     // 避免后续 bridge 子进程首次访问外置卷时才触发系统弹窗。
     for path in [app_dir, cache_dir] {
         probe_read_access_path(path);

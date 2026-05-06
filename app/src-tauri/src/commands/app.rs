@@ -123,7 +123,7 @@ fn open_macos_privacy_settings_impl(
             if status.success() {
                 Ok(())
             } else {
-                Err("打开系统设置失败，请手动前往 系统设置 > 隐私与安全性。".to_string())
+                Err("打开系统设置失败，请手动前往 系统设置>隐私与安全性。".to_string())
             }
         })
 }
@@ -161,7 +161,7 @@ fn export_diagnostic_package_impl(
         &mut zip,
         options,
         "README.txt",
-        "IM-Board 诊断包\n\n此诊断包用于定位同步、AI分析、账号绑定和运行时问题。\n包内默认不包含聊天内容、API Key等任何敏感信息。\n如果问题涉及特定聊天，请另行提供对应截图或手动脱敏后的上下文。\n",
+        "IM-Board诊断包\n\n此诊断包用于定位同步、AI分析、账号绑定和运行时问题。\n包内默认不包含聊天内容、API Key等任何敏感信息。\n如果问题涉及特定聊天，请另行提供对应截图或手动脱敏后的上下文。\n",
     )?;
     add_zip_text(
         &mut zip,
@@ -502,17 +502,17 @@ fn truncate_for_diagnostic(value: &str, limit: usize) -> String {
 fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), String> {
     let icon_path = dock_icon_path(&app, theme_icon_file_name(theme));
     let icon_bytes = std::fs::read(&icon_path)
-        .map_err(|error| format!("读取 Dock 图标失败（{}）：{error}", icon_path.display()))?;
+        .map_err(|error| format!("读取 Dock图标失败（{}）：{error}", icon_path.display()))?;
     let (sender, receiver) = std::sync::mpsc::channel();
 
     app.run_on_main_thread(move || {
         let _ = sender.send(set_macos_app_icon(&icon_bytes));
     })
-    .map_err(|error| format!("切换 Dock 图标失败：{error}"))?;
+    .map_err(|error| format!("切换 Dock图标失败：{error}"))?;
 
     receiver
         .recv()
-        .map_err(|error| format!("等待 Dock 图标切换结果失败：{error}"))?
+        .map_err(|error| format!("等待 Dock图标切换结果失败：{error}"))?
 }
 
 #[cfg(target_os = "windows")]
@@ -574,7 +574,7 @@ fn set_macos_app_icon(icon_bytes: &[u8]) -> Result<(), String> {
     let application = NSApplication::sharedApplication(marker);
     let data = NSData::with_bytes(icon_bytes);
     let icon = NSImage::initWithData(NSImage::alloc(), &data)
-        .ok_or_else(|| "创建 Dock 图标图片失败。".to_string())?;
+        .ok_or_else(|| "创建 Dock图标图片失败。".to_string())?;
     unsafe { application.setApplicationIconImage(Some(&icon)) };
     Ok(())
 }

@@ -96,7 +96,7 @@ function MessageTypeTooltip({ active, payload }: { active?: boolean; payload?: A
   return (
     <div className="chart-tooltip">
       <strong>{row.label}</strong>
-      <span>总计 {row.count}</span>
+      <span>总计{row.count}</span>
       <pre>{sourceStatsTitle(row.sources)}</pre>
     </div>
   );

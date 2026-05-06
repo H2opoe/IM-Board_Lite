@@ -36,17 +36,52 @@ type StackStyle = CSSProperties & {
 
 export function FloatingNoticeStack({ children, scope = "page" }: FloatingNoticeStackProps) {
   const notices = Children.toArray(children).filter(Boolean);
-  const noticeOrderKey = notices.map((notice, index) => (isValidElement(notice) && notice.key !== null ? notice.key : index)).join("|");
+  const noticeKeys = notices.map((notice, index) => String(isValidElement(notice) && notice.key !== null ? notice.key : index));
+  const noticeOrderKey = noticeKeys.join("|");
   const [focusIndex, setFocusIndex] = useState(0);
   const [revealedCount, setRevealedCount] = useState(0);
+  const previousNoticeKeysRef = useRef<string[]>([]);
   const lastPointerYRef = useRef<number | null>(null);
   const pointerRemainderRef = useRef(0);
 
   useEffect(() => {
-    setFocusIndex(0);
-    setRevealedCount(0);
+    const previousNoticeKeys = previousNoticeKeysRef.current;
+    const previousNoticeKeySet = new Set(previousNoticeKeys);
+    const hasSameNoticeSet =
+      previousNoticeKeys.length === noticeKeys.length && noticeKeys.every((noticeKey) => previousNoticeKeySet.has(noticeKey));
+    const addedNoticeCount = noticeKeys.filter((noticeKey) => !previousNoticeKeySet.has(noticeKey)).length;
+
+    previousNoticeKeysRef.current = noticeKeys;
     lastPointerYRef.current = null;
     pointerRemainderRef.current = 0;
+
+    if (notices.length === 0) {
+      setFocusIndex(0);
+      setRevealedCount(0);
+      return undefined;
+    }
+
+    setFocusIndex((currentIndex) => Math.min(currentIndex, notices.length - 1));
+
+    if (hasSameNoticeSet) {
+      setRevealedCount(notices.length);
+      return undefined;
+    }
+
+    if (previousNoticeKeys.length > 0) {
+      setRevealedCount(Math.max(0, notices.length - addedNoticeCount));
+      const timers = Array.from({ length: addedNoticeCount }, (_, index) =>
+        window.setTimeout(() => {
+          setRevealedCount(notices.length - addedNoticeCount + index + 1);
+        }, index * STACK_NOTICE_ENTER_DELAY_MS)
+      );
+      return () => {
+        timers.forEach((timer) => window.clearTimeout(timer));
+      };
+    }
+
+    setFocusIndex(0);
+    setRevealedCount(0);
     const timers = notices.map((_, index) =>
       window.setTimeout(() => {
         setRevealedCount(index + 1);

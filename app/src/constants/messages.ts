@@ -20,6 +20,35 @@ export const APP_MESSAGES = {
   confirmDelete: "确认删除"
 };
 
+export const DASHBOARD_MESSAGES = {
+  statusLabels: {
+    sync: {
+      idle: "空闲",
+      synced: "已同步",
+      syncing: "同步中",
+      analyzing: "分析中",
+      failed: "失败",
+      cancelled: "已取消"
+    },
+    ai: {
+      not_configured: "未配置",
+      ready: "已就绪",
+      analyzing: "分析中",
+      failed: "异常"
+    }
+  },
+  retryAnalysisDescription: "重新生成会清空当前业务日AI结果，重新分析当前业务日全部消息。历史待回复和待办不会被清除。",
+  fullResyncDescription: "重新同步会清空缓存，并重新读取当前业务日消息。历史待回复和待办不会被清除。"
+};
+
+export const APP_SETTINGS_MESSAGES = {
+  readFailed: "设置读取失败。",
+  saveFailed: "设置保存失败。",
+  diagnosticsExporting: "正在导出诊断包，请稍候。",
+  diagnosticsExported: (filePath: string) => `诊断包已导出到：${filePath}`,
+  diagnosticsExportFailed: "诊断包导出失败。"
+};
+
 export const PROFILE_MESSAGES = {
   selectForManage: "请先选择需要管理的账号。",
   selectForDelete: "请先选择需要删除的账号。",
@@ -46,16 +75,16 @@ export const PROFILE_MESSAGES = {
 export const OFFICIAL_CLI_MESSAGES = {
   clipboardUnsupported: "当前环境不支持自动复制。",
   copyFailed: "复制命令失败，请手动复制命令详情。",
-  checkingVersion: "正在检查官方 CLI 版本",
-  readyStatusTitle: "已加载 CLI",
-  preparingStatusTitle: "CLI 准备中",
-  pendingReady: "等待 CLI 就绪",
-  prepareFailed: (platform: Platform) => `${platformDisplayName(platform)}官方 CLI 准备失败。`,
-  versionCheckFailed: (platform: Platform) => `${platformDisplayName(platform)}官方 CLI 版本核查失败。`,
-  waitReady: (platform: Platform) => `请先等待${platformDisplayName(platform)}官方 CLI 准备完成。`,
-  updateFailed: (platform: Platform) => `${platformDisplayName(platform)}官方 CLI 更新失败。`,
-  cleanupFailed: (platform: Platform) => `清理${platformDisplayName(platform)}官方 CLI 失败`,
-  placeholder: (platform: Platform) => `正在准备${platformDisplayName(platform)}官方 CLI…`
+  checkingVersion: "正在检查官方CLI版本",
+  readyStatusTitle: "已加载CLI",
+  preparingStatusTitle: "CLI准备中",
+  pendingReady: "等待CLI就绪",
+  prepareFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI准备失败。`,
+  versionCheckFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI版本核查失败。`,
+  waitReady: (platform: Platform) => `请先等待${platformDisplayName(platform)}官方CLI准备完成。`,
+  updateFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI更新失败。`,
+  cleanupFailed: (platform: Platform) => `清理${platformDisplayName(platform)}官方CLI失败`,
+  placeholder: (platform: Platform) => `正在准备${platformDisplayName(platform)}官方CLI…`
 };
 
 export const AI_SETTINGS_MESSAGES = {
@@ -77,20 +106,9 @@ export const AI_SETTINGS_MESSAGES = {
   clearModelFailed: "清除本地DeepSeek模型失败。",
   modelPathCopied: "本地DeepSeek模型存储路径已复制。",
   modelDownloaded: "本地DeepSeek模型已下载完成。",
-  downloadedAndEnabled: "本地DeepSeek已下载并启用，后续AI分析不再要求云端API Key。"
+  downloadedAndEnabled: "本地DeepSeek已下载并启用，后续AI分析不再要求云端API Key。",
+  saveFailed: "AI配置保存失败。"
 };
-
-export const SETTINGS_SUCCESS_MESSAGES = new Set([
-  AI_SETTINGS_MESSAGES.configSaved,
-  AI_SETTINGS_MESSAGES.downloadStarted,
-  AI_SETTINGS_MESSAGES.connectionPassed,
-  AI_SETTINGS_MESSAGES.modelDownloaded,
-  AI_SETTINGS_MESSAGES.localDeepseekEnabled,
-  AI_SETTINGS_MESSAGES.downloadCancelled,
-  AI_SETTINGS_MESSAGES.modelCleared,
-  AI_SETTINGS_MESSAGES.modelPathCopied,
-  AI_SETTINGS_MESSAGES.downloadedAndEnabled
-]);
 
 function platformDisplayName(platform: Platform): string {
   return PLATFORM_LABELS[platform] ?? "平台";

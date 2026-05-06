@@ -101,7 +101,7 @@ pub(super) fn resolve_official_cli_for_runtime(
         .and_then(|profile| profile.config_json.get("cliPath"))
         .and_then(|value| value.as_str())
         .filter(|value| !value.trim().is_empty());
-    // 官方 CLI 优先走应用后台热更新目录；用户配置路径只作为兜底，避免把开发机上的 node/npm 依赖带入打包版运行边界。
+    // 官方CLI优先走应用后台热更新目录；用户配置路径只作为兜底，避免把开发机上的 node/npm 依赖带入打包版运行边界。
     resolve_hot_updated_official_cli(resource_dir, platform, package, bin).or_else(|| {
         configured
             .and_then(resolve_existing_command)
@@ -289,7 +289,7 @@ fn windows_wechat_launcher_python_exists(path: &Path) -> bool {
     let Ok(text) = std::fs::read_to_string(path) else {
         return false;
     };
-    // AppData 中热更新的 Windows 微信启动器会引用应用内置 Python。
+    // AppData中热更新的 Windows微信启动器会引用应用内置Python。
     // 如果安装包升级或移动后旧路径失效，不能继续把这个 cmd 当成可用入口。
     text.lines()
         .find_map(extract_quoted_python_path)

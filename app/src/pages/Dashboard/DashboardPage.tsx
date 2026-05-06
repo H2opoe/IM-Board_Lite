@@ -12,6 +12,7 @@ import { TopicCard } from "../../components/cards/TopicCard";
 import { WordCloudCard } from "../../components/cards/WordCloudCard";
 import { FloatingNotice, FloatingNoticeStack, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
 import { PagedTextBlock } from "../../components/shared/PagedTextBlock";
+import { DASHBOARD_MESSAGES } from "../../constants/messages";
 import type { ActionItem, DashboardData } from "../../features/dashboard/model/types";
 import type { ImProfile } from "../../features/profiles/model/types";
 import { profileDisplayName } from "../../utils/profiles";
@@ -69,22 +70,10 @@ export function DashboardPage({
   const hasSyncErrorMessage = [syncMessage, ...syncMessagePages].some((message) => message && isSyncMessageError(message));
   const syncNoticeVariant: FloatingNoticeVariant = syncState === "failed" || hasSyncErrorMessage ? "error" : syncState === "done" && syncMessagePages.length === 0 ? "success" : "info";
   const canCancelCurrentRun = syncState === "syncing" || syncState === "analyzing";
-  const syncStatusLabel =
-    {
-      idle: "空闲",
-      synced: "已同步",
-      syncing: "同步中",
-      analyzing: "分析中",
-      failed: "失败",
-      cancelled: "已取消"
-    }[data.syncStatus] ?? data.syncStatus;
-  const aiStatusLabel =
-    {
-      not_configured: "未配置",
-      ready: "已就绪",
-      analyzing: "分析中",
-      failed: "异常"
-    }[data.aiStatus] ?? data.aiStatus;
+  const syncStatusLabels: Record<string, string> = DASHBOARD_MESSAGES.statusLabels.sync;
+  const aiStatusLabels: Record<string, string> = DASHBOARD_MESSAGES.statusLabels.ai;
+  const syncStatusLabel = syncStatusLabels[data.syncStatus] ?? data.syncStatus;
+  const aiStatusLabel = aiStatusLabels[data.aiStatus] ?? data.aiStatus;
 
   async function complete(item: ActionItem) {
     await markActionItem(item.id, "done");
@@ -166,7 +155,7 @@ export function DashboardPage({
                 </button>
                 <div className="frequency-resync">
                   <div className="frequency-maintenance-row">
-                    <p>重新分析会清空今天AI结果，并重新分析今天全部消息。历史待回复和待办不会被清除。</p>
+                    <p>{DASHBOARD_MESSAGES.retryAnalysisDescription}</p>
                     <button
                       className="secondary-button compact-button"
                       onClick={() => {
@@ -179,7 +168,7 @@ export function DashboardPage({
                     </button>
                   </div>
                   <div className="frequency-maintenance-row">
-                    <p>重新同步会清空缓存，并重新读取今天消息。历史待回复和待办不会被清除。</p>
+                    <p>{DASHBOARD_MESSAGES.fullResyncDescription}</p>
                     <button
                       className="secondary-button compact-button"
                       onClick={() => {

@@ -63,24 +63,27 @@ pub(crate) const MANAGEMENT_RISK_PROMPT: &str = r#"管理介入/情绪风险规�
 pub const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个本地即时通讯工作助理。请根据输入的聊天消息生成看板话题。
 
 话题规则：
-1. existingTopics 是当前分析范围内已经汇总好的热门话题，candidateTopics 只包含本次尚未汇总的新消息候选；不要要求更多上下文，不要把历史或旧候选重新计数。
+1. candidateTopics 只包含本次尚未汇总的新消息候选；不要要求更多上下文，不要把历史或旧候选重新计数。
+2. 如果 candidateTopics 是全新话题，请生成新的 id、title、summary、sourceMessageIds 和 sourceChats。
+3. 话题表示多人或多轮围绕同一主题的讨论，不要按群名/联系人名简单排行。
+4. 普通寒暄、表情、单条孤立消息不要形成热门话题。
+5. 图片、视频、语音、文件、链接等媒介分享本身不是话题；只有 snippets 明确展示了图片/文件内容，并且多人围绕该具体内容讨论时，才可归纳成内容话题，标题不能写“图片分享/文件分享/链接分享”。
+6. “微信版本不支持展示内容”“当前版本不支持”“请升级微信查看”、“拍一拍”“拍了拍”、成员通过二维码加入群聊、邀请入群、退群等客户端兼容性、互动系统文本或系统提示不是用户讨论，不要形成话题，也不要写入 summary。
+7. count 表示相关有效消息条数；sourceMessageIds 只能来自本次新增的 candidateTopics.sourceMessageIds，系统会自动合并 existingTopics.sourceMessageIds 并重算 count，不要估算，不要使用群聊总消息数。
+8. sourceChats 只能使用 existingTopics 或 candidateTopics 中的 chatName，同一 chatName 只出现一次。
+9. summary 要反映当前进展，不要写入对话名/群聊名/联系人名。
+10. 投诉、生气、不满、抱怨、公开冲突、交付/服务/价格/质量争议等沟通氛围异常，应优先形成话题，标题体现风险主题，summary 说明情绪和争议焦点。
+11. 先根据 candidateTopics 的 snippets 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title 和 summary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
+
+旧话题去重合并规则：
+1. existingTopics 是当前分析范围内已经汇总好的热门话题，只用于判断新候选是否需要沿用旧话题。
 2. 如果 candidateTopics 与 existingTopics 中同一 id 的话题是同一具体对象、项目、客户、交付物、采购单、商品或同一聊天里的连续上下文，请沿用 existingTopics 的 id/title，只在 sourceMessageIds 中返回本次新增的 candidateTopics.sourceMessageIds；旧 sourceMessageIds 由系统自动保留并合并，不要重复输出。
-3. 如果 candidateTopics 是全新话题，请生成新的 id、title、summary、sourceMessageIds 和 sourceChats。
-4. 返回更新后的完整 topics：包括未变化的 existingTopics，以及合并/新增后的话题；最多返回 12 个。
-5. 话题表示多人或多轮围绕同一主题的讨论，不要按群名/联系人名简单排行。
-6. 普通寒暄、表情、单条孤立消息不要形成热门话题。
-7. 图片、视频、语音、文件、链接等媒介分享本身不是话题；只有 snippets 明确展示了图片/文件内容，并且多人围绕该具体内容讨论时，才可归纳成内容话题，标题不能写“图片分享/文件分享/链接分享”。
-8. “微信版本不支持展示内容”“当前版本不支持”“请升级微信查看”、“拍一拍”“拍了拍”、成员通过二维码加入群聊、邀请入群、退群等客户端兼容性、互动系统文本或系统提示不是用户讨论，不要形成话题，也不要写入 summary。
-9. count 表示相关有效消息条数；sourceMessageIds 只能来自本次新增的 candidateTopics.sourceMessageIds，系统会自动合并 existingTopics.sourceMessageIds 并重算 count，不要估算，不要使用群聊总消息数。
-10. sourceChats 只能使用 existingTopics 或 candidateTopics 中的 chatName，同一 chatName 只出现一次。
-11. summary 要反映当前进展，不要写入对话名/群聊名/联系人名。
-12. 投诉、生气、不满、抱怨、公开冲突、交付/服务/价格/质量争议等沟通氛围异常，应优先形成话题，标题体现风险主题，summary 说明情绪和争议焦点。
-13. 合并候选时不能只因为共享“买”“采购”“东西”“确认”“处理”“安排”等泛动作词就合并。
-14. 如果不同 sourceChats 的 snippets 只表现出相似动作、但人物关系、业务场景或办理对象不同，必须拆成不同话题。例如“女朋友让我买东西”和“公司群讨论采购是否已买”不能合并。
-15. 先根据 candidateTopics 的 snippets 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title 和 summary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
+3. 返回更新后的完整 topics：包括未变化的 existingTopics，以及合并/新增后的话题；最多返回 12 个。
+4. 合并候选时不能只因为共享“买”“采购”“东西”“确认”“处理”“安排”等泛动作词就合并。
+5. 如果不同 sourceChats 的 snippets 只表现出相似动作、但人物关系、业务场景或办理对象不同，必须拆成不同话题。例如“女朋友让我买东西”和“公司群讨论采购是否已买”不能合并。
 
 关键词词云识别规则：
-1. 如果输入 payload 存在 keywordRefine，请根据 keywordRefine.messages 直接生成顶层 keywords 字段；不要把整句消息直接当作关键词。
+1. 当输入中提供关键词识别消息列表（keywordRefine.messages）时，请只根据这些原始聊天消息直接生成顶层 keywords 字段，不要把整句消息直接当作关键词。
 2. display 和 aliases 必须来自聊天消息中的明确表达，可以做轻微归一化，例如“自取货架/货架自取”合并为更自然的展示词。
 3. 每个 keyword 必须包含 profileId、display、aliases、category、valid、confidence、scoreMultiplier、sourceMessageIds；profileId 和 sourceMessageIds 必须来自 keywordRefine.messages。
 4. 过滤系统通知、入群通知、退群通知、扫码入群、撤回消息、“拍一拍”“拍了拍”、群欢迎语、营销模板、技术 payload。
@@ -90,7 +93,11 @@ pub const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个本地即时通讯工作
 8. 对“二维码加入群聊”“通过扫描”“加入群聊”“拍一拍”“拍了拍”必须 category=system_noise、valid=false、scoreMultiplier=0。
 9. 每个 valid=true 的 keyword 必须至少对应 3 条有效消息，sourceMessageIds 去重后少于 3 条时不要返回为有效关键词。
 10. keywords 最多返回 30 个 valid=true 的关键词；category 只能使用 business_topic、issue_or_risk、product_or_sku、project、organization、person、tool_or_platform、system_or_project、generic、system_noise、marketing_noise、technical_noise、unknown。
-11. scoreMultiplier 范围 0~1.5；confidence 范围 0~1。没有 keywordRefine 时，keywords 返回空数组或省略。
+11. scoreMultiplier 范围 0~1.5；confidence 范围 0~1。没有关键词识别消息列表时，keywords 返回空数组或省略。
+
+旧关键词处理规则：
+1. 不要参考本地识别词，不要合并旧关键词；只按 keywordRefine.messages 重新判断本次关键词。
+2. AI 返回的 keywords 会全量替换本地关键词结果：应该输出本次判断后的完整有效关键词集合；不确定或不合格的词不要为了保留旧结果而返回。
 
 请返回严格 JSON，不要 Markdown，不要解释：
 {

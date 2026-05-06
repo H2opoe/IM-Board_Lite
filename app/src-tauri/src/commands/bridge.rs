@@ -16,8 +16,8 @@ pub async fn run_bridge_command(
     mut request: BridgeRequest,
 ) -> Result<BridgeEnvelope, String> {
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
-    // macOS 微信使用应用内置 Python bridge，实例发现不能被官方 CLI 热更新阻塞；
-    // Windows 微信才走热更新的原版 wechat-cli。
+    // macOS微信使用应用内置Python bridge，实例发现不能被官方CLI热更新阻塞；
+    // Windows微信才走热更新的原版wechat-cli。
     if request.platform == "wechat" && cfg!(windows) {
         if let Some(spec) = official_cli::cli_spec("wechat") {
             let needs_cli_arg = request
@@ -82,7 +82,7 @@ pub async fn deploy_platform_bridge(
         &progress,
         "checking_local",
         format!(
-            "正在核查 {} 官方 CLI 准备状态...",
+            "正在核查 {} 官方CLI准备状态...",
             official_cli::platform_label(&platform)
         ),
         1,
@@ -128,12 +128,12 @@ pub async fn check_platform_cli_update(
     let cli_path = official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec)
         .ok_or_else(|| {
             format!(
-                "尚未准备好 {} 官方 CLI。",
+                "尚未准备好 {} 官方CLI。",
                 official_cli::platform_label(&platform)
             )
         })?;
     let current_version = official_cli::official_cli_version(&cli_path, spec)
-        .ok_or_else(|| "无法读取 CLI 版本。".to_owned())?;
+        .ok_or_else(|| "无法读取 CLI版本。".to_owned())?;
     let latest_version = official_cli::npm_latest_version(spec.package, None)
         .await
         .unwrap_or_else(|_| current_version.clone());
@@ -171,13 +171,13 @@ pub async fn update_platform_cli(
         official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec).ok_or_else(
             || {
                 format!(
-                    "更新后未找到 {} 官方 CLI。",
+                    "更新后未找到 {} 官方CLI。",
                     official_cli::platform_label(&platform)
                 )
             },
         )?;
     let current_version = official_cli::official_cli_version(&refreshed_cli_path, spec)
-        .ok_or_else(|| "更新后无法读取 CLI 版本。".to_owned())?;
+        .ok_or_else(|| "更新后无法读取 CLI版本。".to_owned())?;
     Ok(PlatformCliVersionStatus {
         platform,
         update_available: official_cli::version_is_newer(&latest_version, &current_version),
@@ -212,7 +212,7 @@ pub fn cleanup_unused_platform_cli(
     if install_root.exists() {
         fs::remove_dir_all(&install_root).map_err(|err| {
             format!(
-                "删除{}官方 CLI 缓存 {} 失败：{err}",
+                "删除{}官方CLI缓存 {} 失败：{err}",
                 official_cli::platform_label(spec.platform),
                 install_root.display()
             )

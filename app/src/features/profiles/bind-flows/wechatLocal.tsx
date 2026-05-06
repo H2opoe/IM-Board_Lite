@@ -121,7 +121,7 @@ export function WechatLocalBindModal({
               >
                 <strong>{wechatDbFolderName(dbCandidate.path)}</strong>
                 <span>
-                  修改时间 {formatWechatDbTime(dbCandidate.lastModified)}·数据库 {dbCandidate.dbCount} 个
+                  修改时间{formatWechatDbTime(dbCandidate.lastModified)}·数据库{dbCandidate.dbCount}个
                   {dbCandidate.valid ? "·结构完整" : "·需确认"}
                 </span>
                 <small>{dbCandidate.path}</small>
@@ -226,7 +226,7 @@ function WechatSigningPrepSection({
           </button>
           <button className="secondary-button slim-button" onClick={() => onOpenPrivacyPane("app_management")}>
             <ExternalLink size={15} />
-            App 管理权限
+           App管理权限
           </button>
         </div>
         <div className="setup-checkline">

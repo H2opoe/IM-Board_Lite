@@ -167,7 +167,7 @@ export function buildOriginalWechatCandidate(
   const cacheDir = `${APP_CACHE_ROOT}/${profileId}`;
   return {
     id: profileId,
-    label: "原版微信",
+    label: "微信",
     pid: 0,
     relatedPids: [],
     bundleId: "wechat-cli-original",

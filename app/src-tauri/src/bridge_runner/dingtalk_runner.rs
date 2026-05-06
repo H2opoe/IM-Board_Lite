@@ -57,7 +57,7 @@ pub(super) async fn run_official_dingtalk_cli(
             "dingtalk",
             "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
             "DINGTALK_CLI_MISSING",
-            "钉钉官方 CLI 尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
+            "钉钉官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
             true,
             started_at,
         ));
@@ -230,7 +230,7 @@ pub(super) async fn run_official_dingtalk_cli(
                 "dingtalk",
                 "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
                 "DINGTALK_UNSUPPORTED_COMMAND",
-                &format!("钉钉官方 CLI 暂不支持应用命令：{other}"),
+                &format!("钉钉官方CLI暂不支持应用命令：{other}"),
                 true,
                 started_at,
             ));
@@ -279,7 +279,7 @@ pub(super) async fn run_official_dingtalk_cli(
                 "dingtalk",
                 "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
                 "DINGTALK_CLI_MISSING",
-                &format!("无法启动钉钉官方 CLI：{err}"),
+                &format!("无法启动钉钉官方CLI：{err}"),
                 true,
                 started_at,
             ));
@@ -313,9 +313,9 @@ pub(super) async fn run_official_dingtalk_cli(
             });
         }
         let message = if detail.is_empty() {
-            "钉钉官方 CLI 执行失败。".to_owned()
+            "钉钉官方CLI执行失败。".to_owned()
         } else {
-            format!("钉钉官方 CLI 执行失败：{detail}")
+            format!("钉钉官方CLI执行失败：{detail}")
         };
         return Ok(bridge_error_for(
             "dingtalk",
@@ -340,9 +340,9 @@ pub(super) async fn run_official_dingtalk_cli(
             BridgeError {
                 code: "DINGTALK_CLI_FAILED".to_owned(),
                 message: if detail.is_empty() {
-                    "钉钉官方 CLI 执行失败。".to_owned()
+                    "钉钉官方CLI执行失败。".to_owned()
                 } else {
-                    format!("钉钉官方 CLI 执行失败：{detail}")
+                    format!("钉钉官方CLI执行失败：{detail}")
                 },
                 recoverable: true,
             }

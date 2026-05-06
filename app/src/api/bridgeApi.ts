@@ -194,7 +194,7 @@ function formatWechatBridgeError(code?: string, message?: string, warnings?: str
     (code === "WECHAT_SIGN_FAILED" && /Operation not permitted|已阻止修改|App 管理/i.test(rawDetail))
   ) {
     return [
-      "微信签名被 macOS 权限拦截：请到 系统设置 > 隐私与安全性 > App 管理，允许 IM-Board 修改 App。",
+      "微信签名被 macOS 权限拦截：请到 系统设置>隐私与安全性 >App管理，允许 IM-Board 修改 App。",
       "授权后继续开始绑定，已输入的电脑用户密码和备注会保留。",
       rawDetail ? `底层返回：${rawDetail}` : ""
     ]

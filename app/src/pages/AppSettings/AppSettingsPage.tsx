@@ -5,7 +5,7 @@ import { exportDiagnosticPackage, getAppSettings, saveAppSettings } from "../../
 import { AboutModal } from "../../components/AboutModal";
 import { DeveloperFeedbackModal } from "../../components/DeveloperFeedbackModal";
 import { FloatingNotice, FloatingNoticeStack } from "../../components/shared/FloatingNotice";
-import { APP_MESSAGES } from "../../constants/messages";
+import { APP_MESSAGES, APP_SETTINGS_MESSAGES } from "../../constants/messages";
 import type { AppSettings } from "../../features/app-settings/model/types";
 import { userErrorMessage } from "../../utils/errors";
 
@@ -38,7 +38,7 @@ export function AppSettingsPage() {
       })
       .catch((error) => {
         setStatus("error");
-        setMessage(userErrorMessage(error, "设置读取失败。"));
+        setMessage(userErrorMessage(error, APP_SETTINGS_MESSAGES.readFailed));
       });
   }, []);
 
@@ -52,7 +52,7 @@ export function AppSettingsPage() {
       setMessage(APP_MESSAGES.settingsSaved);
     } catch (error) {
       setStatus("error");
-      setMessage(userErrorMessage(error, "设置保存失败。"));
+      setMessage(userErrorMessage(error, APP_SETTINGS_MESSAGES.saveFailed));
     }
   }
 
@@ -61,18 +61,18 @@ export function AppSettingsPage() {
       const filePath = await showSaveDialog({
         title: "保存诊断包",
         defaultPath: diagnosticPackageFileName(),
-        filters: [{ name: "ZIP 压缩包", extensions: ["zip"] }]
+        filters: [{ name: "ZIP压缩包", extensions: ["zip"] }]
       });
       if (!filePath) return;
 
       setStatus("exportingDiagnostics");
-      setMessage("正在导出诊断包，请稍候。");
+      setMessage(APP_SETTINGS_MESSAGES.diagnosticsExporting);
       const result = await exportDiagnosticPackage(filePath);
       setStatus("saved");
-      setMessage(`诊断包已导出到：${result.filePath}`);
+      setMessage(APP_SETTINGS_MESSAGES.diagnosticsExported(result.filePath));
     } catch (error) {
       setStatus("error");
-      setMessage(userErrorMessage(error, "诊断包导出失败。"));
+      setMessage(userErrorMessage(error, APP_SETTINGS_MESSAGES.diagnosticsExportFailed));
     }
   }
 

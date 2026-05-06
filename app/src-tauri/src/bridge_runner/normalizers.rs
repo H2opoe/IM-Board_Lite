@@ -9,7 +9,7 @@ pub(super) fn unwrap_wecom_cli_payload(raw: serde_json::Value) -> serde_json::Va
             "errmsg": error
                 .get("message")
                 .and_then(|value| value.as_str())
-                .unwrap_or("企业微信官方 CLI 返回错误。")
+                .unwrap_or("企业微信官方CLI返回错误。")
         });
     }
 

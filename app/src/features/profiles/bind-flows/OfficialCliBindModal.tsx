@@ -247,7 +247,7 @@ function CliStatusBox({
         <div className="cli-progress-content">
           <div className="cli-progress-header">
             <strong>{OFFICIAL_CLI_MESSAGES.preparingStatusTitle}</strong>
-            <span>当前 CLI 版本号 {formatCliVersion(currentVersion)}</span>
+            <span>当前CLI版本号 {formatCliVersion(currentVersion)}</span>
           </div>
           <div className="cli-progress-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPercent}>
             <span style={{ width: `${progressPercent}%` }} />
@@ -279,10 +279,10 @@ function CliStatusBox({
             ? OFFICIAL_CLI_MESSAGES.checkingVersion
             : versionStatus
               ? versionStatus.updateAvailable
-                ? `当前 ${formatCliVersion(versionStatus.currentVersion)}·最新 ${formatCliVersion(versionStatus.latestVersion)}`
-                : `当前 ${formatCliVersion(versionStatus.currentVersion)}·已是最新版本`
+                ? `当前${formatCliVersion(versionStatus.currentVersion)}·最新 ${formatCliVersion(versionStatus.latestVersion)}`
+                : `当前${formatCliVersion(versionStatus.currentVersion)}·已是最新版本`
               : deployment
-                ? `当前 ${formatCliVersion(deployment.currentVersion || "未知")}`
+                ? `当前${formatCliVersion(deployment.currentVersion || "未知")}`
                 : OFFICIAL_CLI_MESSAGES.pendingReady}
         </span>
       </div>

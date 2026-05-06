@@ -85,7 +85,7 @@ function ActivityTooltip({ active, payload, label }: { active?: boolean; payload
   return (
     <div className="chart-tooltip">
       <strong>{label}:00</strong>
-      <span>总计 {row.count}</span>
+      <span>总计{row.count}</span>
       <pre>{sourceStatsTitle(row.sources)}</pre>
     </div>
   );

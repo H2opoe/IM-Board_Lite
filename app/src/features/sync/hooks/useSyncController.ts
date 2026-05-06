@@ -5,11 +5,17 @@ import type { DashboardData } from "../../dashboard/model/types";
 import type { SyncJobMode, SyncProgress, SyncResult } from "../model/types";
 import {
   SYNC_CANCEL_CONFIRM_MESSAGES,
+  SYNC_JOB_UI_CONFIG,
+  SYNC_RUNTIME_MESSAGES,
   type SyncMaintenanceAction,
   shouldShowSyncWarning,
+  syncCompletionMessage,
   syncErrorMessage,
-  syncMaintenancePendingMessage
+  syncMaintenancePendingMessage,
+  syncMaintenanceStoppingMessage
 } from "../messages/syncMessages";
+import { logRecoverableError } from "../../../utils/logging";
+import { upsertNoticeToStackTop } from "../../../components/shared/noticeStack";
 
 export type SyncUiState = "idle" | "syncing" | "analyzing" | "done" | "failed";
 export type SyncProgressNoticeVariant = "info" | "success" | "error";
@@ -26,41 +32,9 @@ interface UseSyncControllerOptions {
   setDashboard: Dispatch<SetStateAction<DashboardData | null>>;
 }
 
-interface SyncJobUiConfig {
-  mode: SyncJobMode;
-  initialState: SyncUiState;
-  initialMessage: string;
-  fallbackMessage: string;
-  completedPrefix: string;
-}
-
 const DEFAULT_SYNC_FREQUENCY_MINUTES = 15;
 const SYNC_FREQUENCY_STORAGE_KEY = "im-board-sync-frequency-minutes";
 const SYNC_CANCEL_CONFIRM_TIMEOUT_MS = 3_000;
-
-const SYNC_JOB_UI_CONFIG: Record<SyncJobMode, SyncJobUiConfig> = {
-  incremental: {
-    mode: "incremental",
-    initialState: "syncing",
-    initialMessage: "正在准备读取今天消息...",
-    fallbackMessage: "正在读取今天消息...",
-    completedPrefix: ""
-  },
-  full_resync: {
-    mode: "full_resync",
-    initialState: "syncing",
-    initialMessage: "正在清空缓存并准备重新同步...",
-    fallbackMessage: "正在重新同步消息...",
-    completedPrefix: "重新同步完成，"
-  },
-  retry_analysis: {
-    mode: "retry_analysis",
-    initialState: "analyzing",
-    initialMessage: "正在清空AI结果并重新生成...",
-    fallbackMessage: "正在清空AI结果并重新生成...",
-    completedPrefix: "重新生成完成，"
-  }
-};
 
 function loadSyncFrequency() {
   const stored = window.localStorage.getItem(SYNC_FREQUENCY_STORAGE_KEY);
@@ -84,18 +58,6 @@ function syncProgressNoticeVariant(phase: string): SyncProgressNoticeVariant {
 
 function nextStateForProgress(progress: SyncProgress): SyncUiState | null {
   return progress.phase === "analysis" ? "analyzing" : null;
-}
-
-function syncCompletionMessage(mode: SyncJobMode, result: SyncResult) {
-  const prefix = SYNC_JOB_UI_CONFIG[mode].completedPrefix;
-  if (result.aiStatus === "not_configured") {
-    if (mode === "retry_analysis") return "AI未启用。";
-    return `${prefix}已读取${result.insertedMessages}条新消息，AI未启用。`;
-  }
-  if (mode === "retry_analysis") {
-    return `${prefix}AI已识别${result.analyzedMessages}个事项。`;
-  }
-  return `${prefix}已读取${result.insertedMessages}条新消息，AI分析完成，识别${result.analyzedMessages}个事项。`;
 }
 
 export function useSyncController({ activeProfileId, demoMode, setDashboard }: UseSyncControllerOptions) {
@@ -124,9 +86,7 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
       variant: syncProgressNoticeVariant(progress.phase)
     };
     setSyncProgressNotices((currentNotices) => {
-      const existingIndex = currentNotices.findIndex((currentNotice) => currentNotice.id === noticeId);
-      if (existingIndex < 0) return [...currentNotices, notice];
-      return currentNotices.map((currentNotice, index) => (index === existingIndex ? notice : currentNotice));
+      return upsertNoticeToStackTop(currentNotices, notice);
     });
   }
 
@@ -148,7 +108,9 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
         if (dashboardRefreshSeq.current !== requestSeq) return;
         setDashboard(nextDashboard);
       })
-      .catch(() => {});
+      .catch((error) => {
+        logRecoverableError("刷新看板失败，已等待下一次同步进度刷新", error);
+      });
   }, [activeProfileId, setDashboard]);
 
   function markDashboardRefreshSettled() {
@@ -207,7 +169,7 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
             });
             setSyncState("analyzing");
             setSyncMessagePages([]);
-            setSyncMessage(`已读取${result.insertedMessages}条新消息，AI已识别${result.analyzedMessages}个事项，正在刷新看板...`);
+            setSyncMessage(SYNC_RUNTIME_MESSAGES.refreshingDashboard(result.insertedMessages, result.analyzedMessages));
             await new Promise((resolve) => window.setTimeout(resolve, 850));
           }
 
@@ -268,10 +230,10 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
     if (!isSyncCancelArmed) {
       setIsSyncCancelArmed(true);
       setSyncMessagePages([]);
-      setSyncMessage(SYNC_CANCEL_CONFIRM_MESSAGES[syncState] ?? "再次点击将停止当前任务。");
+      setSyncMessage(SYNC_CANCEL_CONFIRM_MESSAGES[syncState] ?? SYNC_RUNTIME_MESSAGES.cancelCurrentTask);
       return;
     }
-    setSyncMessage(syncState === "analyzing" ? "正在终止当前AI分析..." : "正在终止当前同步进程...");
+    setSyncMessage(syncState === "analyzing" ? SYNC_RUNTIME_MESSAGES.cancellingAnalysis : SYNC_RUNTIME_MESSAGES.cancellingSync);
     setSyncMessagePages([]);
     void cancelSync().catch((error) => {
       setSyncState("failed");
@@ -295,7 +257,7 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
       setIsSyncCancelArmed(false);
       setSyncMessagePages([]);
       setSyncProgressNotices([]);
-      setSyncMessage(action === "retry-analysis" ? "正在终止当前任务，随后重新生成AI分析..." : "正在终止当前任务，随后重新同步...");
+      setSyncMessage(syncMaintenanceStoppingMessage(action));
 
       try {
         // 维护动作允许在同步/分析中直接触发：先取消当前后端任务，再串行启动用户刚点击的新任务，避免两个桥接进程同时读写缓存。
@@ -322,7 +284,13 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
     const armedMessage = SYNC_CANCEL_CONFIRM_MESSAGES[syncState];
     const timer = window.setTimeout(() => {
       setIsSyncCancelArmed(false);
-      setSyncMessage((message) => (message === armedMessage ? (syncState === "analyzing" ? "AI分析仍在进行..." : "同步仍在进行...") : message));
+      setSyncMessage((message) =>
+        message === armedMessage
+          ? syncState === "analyzing"
+            ? SYNC_RUNTIME_MESSAGES.analysisStillRunning
+            : SYNC_RUNTIME_MESSAGES.syncStillRunning
+          : message
+      );
     }, SYNC_CANCEL_CONFIRM_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [isSyncCancelArmed, syncState]);

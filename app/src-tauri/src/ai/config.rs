@@ -106,20 +106,20 @@ pub fn save_config(conn: &rusqlite::Connection, config: AiConfig) -> anyhow::Res
 }
 
 pub(crate) fn normalize_config(config: AiConfig) -> AiConfig {
-    // 默认提示词跟随软件版本升级；只有用户真实编辑过的提示词才按自定义内容保存。
+    // 提示词编辑框由前端维护，后端只归一化“是否自定义”的标记，不覆盖前端传入的提示词内容。
     let analysis_prompt_custom =
         config.analysis_prompt_custom && !is_known_default_analysis_prompt(&config.analysis_prompt);
     let summary_prompt_custom =
         config.summary_prompt_custom && !is_known_default_summary_prompt(&config.summary_prompt);
-    let analysis_prompt = if analysis_prompt_custom {
-        config.analysis_prompt.clone()
-    } else {
+    let analysis_prompt = if config.analysis_prompt.trim().is_empty() {
         DEFAULT_ANALYSIS_PROMPT.to_owned()
-    };
-    let summary_prompt = if summary_prompt_custom {
-        config.summary_prompt.clone()
     } else {
+        config.analysis_prompt.clone()
+    };
+    let summary_prompt = if config.summary_prompt.trim().is_empty() {
         DEFAULT_SUMMARY_PROMPT.to_owned()
+    } else {
+        config.summary_prompt.clone()
     };
     let analysis_batch_size = normalize_analysis_batch_size(&config);
     AiConfig {
@@ -274,6 +274,10 @@ fn is_known_default_summary_prompt(value: &str) -> bool {
         .starts_with("你是一个本地即时通讯工作助理。")
         && value.contains("请返回严格 JSON")
         && value.contains("keywordRefine.candidates");
+    let old_mixed_dedup_prompt = trimmed.starts_with("你是一个本地即时通讯工作助理。")
+        && value.contains("请返回严格 JSON")
+        && (value.contains("不要参考本地识别词，不要合并旧关键词")
+            || !value.contains("旧话题去重合并规则"));
     trimmed.is_empty()
         || trimmed == DEFAULT_SUMMARY_PROMPT.trim()
         || old_frontend_default
@@ -281,4 +285,5 @@ fn is_known_default_summary_prompt(value: &str) -> bool {
         || missing_primary_language_constraint
         || missing_keyword_refine_section
         || old_keyword_refine_candidates_prompt
+        || old_mixed_dedup_prompt
 }

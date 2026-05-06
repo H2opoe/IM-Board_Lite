@@ -952,8 +952,8 @@ fn normalize_analysis_batch_size_uses_provider_limits() {
 }
 
 #[test]
-fn default_prompts_follow_builtin_updates_until_customized() {
-    let saved_default = AiConfig {
+fn normalize_config_preserves_frontend_prompt_text() {
+    let frontend_prompt_config = AiConfig {
             provider: LOCAL_DEEPSEEK_PROVIDER.to_owned(),
             api_key: String::new(),
             base_url: "http://127.0.0.1:11434/v1".to_owned(),
@@ -968,9 +968,9 @@ fn default_prompts_follow_builtin_updates_until_customized() {
             test_status: "untested".to_owned(),
         };
 
-    let normalized = normalize_config(saved_default);
-    assert_eq!(normalized.analysis_prompt, DEFAULT_ANALYSIS_PROMPT);
-    assert_eq!(normalized.summary_prompt, DEFAULT_SUMMARY_PROMPT);
+    let normalized = normalize_config(frontend_prompt_config);
+    assert!(normalized.analysis_prompt.contains("今天聊天消息识别"));
+    assert!(normalized.summary_prompt.contains("今天聊天消息生成看板话题"));
     assert!(!normalized.analysis_prompt_custom);
     assert!(!normalized.summary_prompt_custom);
 }
@@ -1174,6 +1174,8 @@ fn summary_prompt_prevents_generic_cross_scene_merges() {
     assert!(DEFAULT_SUMMARY_PROMPT.contains("公司群讨论采购是否已买"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("existingTopics"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("sourceMessageIds"));
+    assert!(DEFAULT_SUMMARY_PROMPT.contains("旧话题去重合并规则"));
+    assert!(DEFAULT_SUMMARY_PROMPT.contains("旧关键词处理规则"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("旧 sourceMessageIds 由系统自动保留并合并"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("系统会自动合并 existingTopics.sourceMessageIds"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("keywordRefine"));

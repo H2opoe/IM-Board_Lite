@@ -15,9 +15,9 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
 
 export const PLATFORM_BINDING_OPTIONS: PlatformBindingOption[] = [
   { id: "wechat", label: PLATFORM_LABELS.wechat, auth: "读取本机微信数据" },
-  { id: "wecom", label: PLATFORM_LABELS.wecom, auth: "使用官方 CLI 授权" },
-  { id: "feishu", label: PLATFORM_LABELS.feishu, auth: "使用官方 CLI 授权" },
-  { id: "dingtalk", label: PLATFORM_LABELS.dingtalk, auth: "使用官方 CLI 授权" }
+  { id: "wecom", label: PLATFORM_LABELS.wecom, auth: "使用官方CLI授权" },
+  { id: "feishu", label: PLATFORM_LABELS.feishu, auth: "使用官方CLI授权" },
+  { id: "dingtalk", label: PLATFORM_LABELS.dingtalk, auth: "使用官方CLI授权" }
 ];
 
 export const PROFILE_STATUS_LABELS: Record<string, string> = {

@@ -117,7 +117,7 @@ pub(super) async fn npm_metadata(
             );
         }
     }
-    Err(format!("核查官方 CLI 最新版本失败：{last_error}"))
+    Err(format!("核查官方CLI最新版本失败：{last_error}"))
 }
 
 fn npm_package_url(package: &str) -> String {

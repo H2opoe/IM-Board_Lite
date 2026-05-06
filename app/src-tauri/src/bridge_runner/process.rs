@@ -169,7 +169,7 @@ pub(super) fn bridge_spawn_error(
         process.executable.to_string_lossy()
     ));
     if platform == "wechat" && script.is_some() && process.prefix_args.is_empty() {
-        hints.push("应用内置 Python 运行时缺失或不可用，macOS 微信 bridge 无法运行。请重新安装或使用重新打包后的应用。".to_owned());
+        hints.push("应用内置Python运行时缺失或不可用，macOS微信bridge无法运行。请重新安装或使用重新打包后的应用。".to_owned());
     }
     hints.push(detail.clone());
     BridgeEnvelope {

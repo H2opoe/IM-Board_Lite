@@ -40,7 +40,7 @@ pub(super) async fn run_official_wecom_cli(
     ) else {
         return Ok(bridge_error(
             "WECOM_CLI_MISSING",
-            "企业微信官方 CLI 尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
+            "企业微信官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
             true,
             started_at,
         ));
@@ -121,7 +121,7 @@ pub(super) async fn run_official_wecom_cli(
         other => {
             return Ok(bridge_error(
                 "WECOM_UNSUPPORTED_COMMAND",
-                &format!("企业微信官方 CLI 暂不支持应用命令：{other}"),
+                &format!("企业微信官方CLI暂不支持应用命令：{other}"),
                 true,
                 started_at,
             ));
@@ -157,7 +157,7 @@ pub(super) async fn run_official_wecom_cli(
         Err(err) => {
             return Ok(bridge_error(
                 "WECOM_CLI_MISSING",
-                &format!("无法启动企业微信官方 CLI：{err}"),
+                &format!("无法启动企业微信官方CLI：{err}"),
                 true,
                 started_at,
             ));
@@ -179,9 +179,9 @@ pub(super) async fn run_official_wecom_cli(
         let error = classify_wecom_cli_error(&cli_detail).unwrap_or_else(|| BridgeError {
             code: "WECOM_CLI_FAILED".to_owned(),
             message: if cli_detail.is_empty() {
-                "企业微信官方 CLI 执行失败。".to_owned()
+                "企业微信官方CLI执行失败。".to_owned()
             } else {
-                format!("企业微信官方 CLI 执行失败：{cli_detail}")
+                format!("企业微信官方CLI执行失败：{cli_detail}")
             },
             recoverable: true,
         });

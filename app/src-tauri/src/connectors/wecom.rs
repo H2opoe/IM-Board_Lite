@@ -36,7 +36,7 @@ fn session_discovery_steps() -> &'static [SessionDiscoveryStep] {
 
 fn empty_session_warning(_profile: &ImProfile) -> Option<String> {
     Some(
-        "企业微信：通讯录和内部群聊列表均为空，无法自动拉取消息。请确认当前授权用户可见通讯录和最近 7 天内有可读消息。"
+        "企业微信：通讯录和内部群聊列表均为空，无法自动拉取消息。请确认当前授权用户可见通讯录和最近7天内有可读消息。"
             .to_owned(),
     )
 }
