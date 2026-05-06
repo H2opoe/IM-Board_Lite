@@ -166,7 +166,7 @@ export function DashboardPage({
                 </button>
                 <div className="frequency-resync">
                   <div className="frequency-maintenance-row">
-                    <p>重新生成会清空今天AI结果，重新分析今天全部消息。历史待回复和待办不会被清除。</p>
+                    <p>重新分析会清空今天AI结果，并重新分析今天全部消息。历史待回复和待办不会被清除。</p>
                     <button
                       className="secondary-button compact-button"
                       onClick={() => {
@@ -175,7 +175,7 @@ export function DashboardPage({
                       }}
                     >
                       <Sparkles size={15} />
-                      重新生成
+                      重新分析
                     </button>
                   </div>
                   <div className="frequency-maintenance-row">

@@ -29,7 +29,12 @@ pub(crate) use analysis_loader::{
 };
 #[cfg(test)]
 pub(crate) use batching::estimate_analysis_messages_tokens;
-pub(crate) use batching::{split_analysis_batches, split_summary_candidate_batches};
+#[cfg(test)]
+pub(crate) use batching::split_analysis_batches;
+pub(crate) use batching::{
+    estimate_analysis_context_tokens, estimate_analysis_request_tokens, estimate_text_for_request,
+    split_analysis_batch_plans, split_summary_candidate_batches, AnalysisBatchPlan,
+};
 pub(crate) use config::analysis_batch_token_budget;
 #[cfg(test)]
 pub(crate) use config::normalize_config;
@@ -53,7 +58,8 @@ pub use prompts::{DEFAULT_ANALYSIS_PROMPT, DEFAULT_SUMMARY_PROMPT};
 #[cfg(test)]
 pub(crate) use request::merge_incremental_summary_topics;
 pub(crate) use request::{
-    describe_request_error, request_profile_analysis, request_profile_summary,
+    analysis_system_prompt, describe_request_error, request_profile_analysis,
+    request_profile_summary,
 };
 #[cfg(test)]
 pub(crate) use stats_persistence::persist_local_keyword_stats;
@@ -77,6 +83,8 @@ const LOCAL_DEEPSEEK_ANALYSIS_BATCH_ESTIMATED_TOKENS: usize = 4_096;
 const OTHER_MODEL_ANALYSIS_BATCH_ESTIMATED_TOKENS: usize = 32_000;
 const LOCAL_DEEPSEEK_ANALYSIS_OUTPUT_TOKENS: usize = 1_536;
 const OTHER_MODEL_ANALYSIS_OUTPUT_TOKENS: usize = 2_048;
+const LOCAL_DEEPSEEK_SUMMARY_OUTPUT_TOKENS: usize = 3_072;
+const OTHER_MODEL_SUMMARY_OUTPUT_TOKENS: usize = 6_144;
 const ANALYSIS_REQUEST_RESERVED_TOKENS: usize = 640;
 const MAX_SUMMARY_MESSAGES: usize = 800;
 const MAX_SUMMARY_CANDIDATES: usize = 12;
@@ -311,7 +319,7 @@ pub(crate) struct AiAnalysis {
     pub(crate) keywords: Vec<serde_json::Value>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AiSummary {
     #[serde(default)]

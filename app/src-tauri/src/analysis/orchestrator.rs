@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::atomic::Ordering;
-use std::time::Duration as StdDuration;
+use std::time::{Duration as StdDuration, Instant};
 
 use chrono::Duration;
 use rusqlite::params;
@@ -21,6 +21,12 @@ use crate::sync::orchestrator::run_sync_bridge;
 struct AiCallFailure {
     message: String,
     diagnostic: Option<serde_json::Value>,
+}
+
+struct AiRunTracker {
+    id: String,
+    started_at: Instant,
+    diagnostic: serde_json::Value,
 }
 
 const CONTEXT_BACKFILL_DAYS: i64 = 7;
@@ -67,11 +73,25 @@ pub(crate) async fn analyze_pending_messages(
     }
 
     let analysis_message_count = analysis_messages.len();
-    let analysis_batches = ai::split_analysis_batches(
+    let analysis_prompt = ai::analysis_system_prompt(&ai_config);
+    let fixed_request_tokens = ai::estimate_text_for_request(&analysis_prompt)
+        + ai::estimate_text_for_request(ai_config.user_prompt.trim());
+    let initial_analysis_batches = ai::split_analysis_batch_plans(
         analysis_messages,
         ai_config.analysis_batch_size,
         ai::analysis_batch_token_budget(&ai_config),
+        fixed_request_tokens,
     );
+    let analysis_batches = {
+        let conn = state.db.lock().map_err(|err| err.to_string())?;
+        rebalance_analysis_batches_for_context(
+            &conn,
+            initial_analysis_batches,
+            &ai_config,
+            &analysis_prompt,
+            fixed_request_tokens,
+        )?
+    };
 
     let profile_by_id = target_profiles
         .iter()
@@ -81,20 +101,24 @@ pub(crate) async fn analyze_pending_messages(
     let analysis_profile_id = analysis_scope_profile_id(target_profiles);
     let analysis_scope_label = analysis_scope_label(target_profiles);
     let total_batches = analysis_batches.len();
-    for (batch_index, messages) in analysis_batches.into_iter().enumerate() {
+    for (batch_index, plan) in analysis_batches.into_iter().enumerate() {
         ensure_sync_not_cancelled(state)?;
-        emit_analysis_progress_for_scope(
-            app,
-            target_profiles,
-            messages.len() as i64,
-            batch_index + 1,
-            total_batches,
-        );
+        let primary_messages = plan.primary_messages().to_vec();
+        let estimated_message_tokens = plan.estimated_input_tokens;
+        let overlap_message_count = plan.overlap_message_count;
+        let messages = plan.messages;
+        emit_analysis_progress_for_scope(app, target_profiles, batch_index + 1, total_batches);
         let mut context = {
             let conn = state.db.lock().map_err(|err| err.to_string())?;
             ai::load_analysis_context_for_messages(&conn, &messages)
                 .map_err(|err| err.to_string())?
         };
+        let estimated_request_tokens = ai::estimate_analysis_request_tokens(
+            &analysis_prompt,
+            ai_config.user_prompt.trim(),
+            &messages,
+            &context,
+        );
         let run_id = start_ai_analysis_run(
             state,
             day,
@@ -104,10 +128,14 @@ pub(crate) async fn analyze_pending_messages(
                 .iter()
                 .map(|message| message.id().to_owned())
                 .collect(),
-            messages.len(),
+            primary_messages.len(),
             &ai_config,
             Some(batch_index + 1),
             Some(total_batches),
+            estimated_request_tokens,
+            ai::estimate_analysis_context_tokens(&context),
+            estimated_message_tokens,
+            overlap_message_count,
         );
         let analysis_result = await_ai_call_or_cancel(
             state,
@@ -135,7 +163,11 @@ pub(crate) async fn analyze_pending_messages(
                     ai::context_backfill_targets_for_messages(&conn, day, &messages, &analysis)
                         .map_err(|err| err.to_string())?
                 };
-                if !context_targets.is_empty() {
+                // 本地模型优先保证看板刷新速度：历史证据补读放到保存后的事项级补全里处理，
+                // 避免同一批消息因为二次 AI 精修阻塞后续批次。
+                let should_inline_context_refine =
+                    !context_targets.is_empty() && !ai::is_local_provider(&ai_config);
+                if should_inline_context_refine {
                     match fetch_context_history_for_targets_by_profile(
                         app,
                         state,
@@ -159,10 +191,19 @@ pub(crate) async fn analyze_pending_messages(
                                     .iter()
                                     .map(|message| message.id().to_owned())
                                     .collect(),
-                                messages.len(),
+                                primary_messages.len(),
                                 &ai_config,
                                 Some(batch_index + 1),
                                 Some(total_batches),
+                                ai::estimate_analysis_request_tokens(
+                                    &analysis_prompt,
+                                    ai_config.user_prompt.trim(),
+                                    &messages,
+                                    &context,
+                                ),
+                                ai::estimate_analysis_context_tokens(&context),
+                                estimated_message_tokens,
+                                overlap_message_count,
                             );
                             match await_ai_call_or_cancel(
                                 state,
@@ -214,7 +255,7 @@ pub(crate) async fn analyze_pending_messages(
                 }
                 let persist_result = {
                     let conn = state.db.lock().map_err(|err| err.to_string())?;
-                    ai::persist_analysis_for_messages(&conn, day, &messages, analysis)
+                    ai::persist_analysis_for_messages(&conn, day, &primary_messages, analysis)
                 };
                 match persist_result {
                     Ok(persisted) => {
@@ -251,7 +292,11 @@ pub(crate) async fn analyze_pending_messages(
                     }
                     Err(err) => {
                         if let Ok(conn) = state.db.lock() {
-                            let _ = ai::keep_analysis_pending_for_messages(&conn, day, &messages);
+                            let _ = ai::keep_analysis_pending_for_messages(
+                                &conn,
+                                day,
+                                &primary_messages,
+                            );
                         }
                         ai_status = "failed".to_owned();
                         warnings.push(format!(
@@ -267,7 +312,7 @@ pub(crate) async fn analyze_pending_messages(
             Err(err) => {
                 finish_ai_analysis_run(state, run_id, "failed", Some(&err.message), err.diagnostic);
                 if let Ok(conn) = state.db.lock() {
-                    let _ = ai::keep_analysis_pending_for_messages(&conn, day, &messages);
+                    let _ = ai::keep_analysis_pending_for_messages(&conn, day, &primary_messages);
                 }
                 ai_status = "failed".to_owned();
                 warnings.push(format!(
@@ -350,10 +395,6 @@ pub(crate) async fn analyze_pending_messages(
             }
             let total_summary_batches = summary_batches.len();
             let mut rolling_topics = existing_topics;
-            let mut summary = ai::AiSummary {
-                topics: Vec::new(),
-                keywords: Vec::new(),
-            };
             for (summary_batch_index, summary_batch) in summary_batches.into_iter().enumerate() {
                 ensure_sync_not_cancelled(state)?;
                 let is_last_summary_batch = summary_batch_index + 1 == total_summary_batches;
@@ -389,8 +430,12 @@ pub(crate) async fn analyze_pending_messages(
                     &ai_config,
                     Some(summary_batch_index + 1),
                     Some(total_summary_batches),
+                    0,
+                    0,
+                    0,
+                    0,
                 );
-                summary = match await_ai_call_or_cancel(
+                let summary = match await_ai_call_or_cancel(
                     state,
                     ai::request_profile_summary(
                         &ai_config,
@@ -436,53 +481,59 @@ pub(crate) async fn analyze_pending_messages(
                         return Ok((ai_status, analyzed_messages));
                     }
                 };
-                // 每批汇总结果都会作为下一批 existingTopics，确保跨批话题继续合并而不是各算各的。
+                // 每批汇总结果都会作为下一批 existingTopics，确保跨批话题继续在 AI 层合并而不是各算各的。
                 rolling_topics = ai::summary_topic_contexts_from_summary(&summary);
-            }
-            let persist_result = {
-                let conn = state.db.lock().map_err(|err| err.to_string())?;
-                if let Some(plan) = &keyword_refine_plan {
-                    match ai::persist_refined_keywords_from_analysis(
-                        &conn,
-                        day,
-                        plan,
-                        &summary.keywords,
-                    ) {
-                        Ok(0) => {
-                            let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
-                        }
-                        Ok(_) => {}
-                        Err(err) => {
-                            let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
-                            warnings.push(format!("关键词 AI 识别结果保存失败：{}", err));
+
+                let persist_result = {
+                    let conn = state.db.lock().map_err(|err| err.to_string())?;
+                    if let Some(plan) = keyword_refine_for_batch {
+                        match ai::persist_refined_keywords_from_analysis(
+                            &conn,
+                            day,
+                            plan,
+                            &summary.keywords,
+                        ) {
+                            Ok(0) => {
+                                let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
+                            }
+                            Ok(_) => {}
+                            Err(err) => {
+                                let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
+                                warnings.push(format!("关键词 AI 识别结果保存失败：{}", err));
+                            }
                         }
                     }
+                    ai::persist_summary_stats(
+                        &conn,
+                        day,
+                        &summary_profile_id,
+                        summary.clone(),
+                        &summary_batch,
+                    )
+                };
+                if let Err(err) = persist_result {
+                    warnings.push(format!(
+                        "{}热门话题和关键词保存失败（第 {}/{} 批）：{}",
+                        analysis_scope_label,
+                        summary_batch_index + 1,
+                        total_summary_batches,
+                        err
+                    ));
+                } else {
+                    emit_summary_progress_for_scope(
+                        app,
+                        target_profiles,
+                        "summary_done",
+                        format!(
+                            "已更新{}热门话题和关键词第 {}/{} 批，正在刷新看板...",
+                            analysis_scope_label,
+                            summary_batch_index + 1,
+                            total_summary_batches
+                        ),
+                        (summary_batch_index + 1) as i64,
+                        total_summary_batches as i64,
+                    );
                 }
-                ai::persist_summary_stats(
-                    &conn,
-                    day,
-                    &summary_profile_id,
-                    summary,
-                    &summary_candidates,
-                )
-            };
-            if let Err(err) = persist_result {
-                warnings.push(format!(
-                    "{}热门话题和关键词保存失败：{}",
-                    analysis_scope_label, err
-                ));
-            } else {
-                emit_summary_progress_for_scope(
-                    app,
-                    target_profiles,
-                    "summary_done",
-                    format!(
-                        "已更新{}热门话题和关键词，正在刷新看板...",
-                        analysis_scope_label
-                    ),
-                    0,
-                    0,
-                );
             }
         }
     }
@@ -506,6 +557,45 @@ fn keyword_refine_message_count(plan: &ai::KeywordRefinePlan) -> usize {
         .unwrap_or_default()
 }
 
+fn rebalance_analysis_batches_for_context(
+    conn: &rusqlite::Connection,
+    batches: Vec<ai::AnalysisBatchPlan>,
+    ai_config: &crate::storage::models::AiConfig,
+    analysis_prompt: &str,
+    fixed_request_tokens: usize,
+) -> Result<Vec<ai::AnalysisBatchPlan>, String> {
+    let token_budget = ai::analysis_batch_token_budget(ai_config);
+    let mut balanced = Vec::new();
+    for batch in batches {
+        let context = ai::load_analysis_context_for_messages(conn, &batch.messages)
+            .map_err(|err| err.to_string())?;
+        let estimated_request_tokens = ai::estimate_analysis_request_tokens(
+            analysis_prompt,
+            ai_config.user_prompt.trim(),
+            &batch.messages,
+            &context,
+        );
+        if estimated_request_tokens <= token_budget || batch.primary_message_count() <= 1 {
+            balanced.push(batch);
+            continue;
+        }
+        let context_tokens = ai::estimate_analysis_context_tokens(&context);
+        let mut smaller_batches = ai::split_analysis_batch_plans(
+            batch.messages,
+            ai_config.analysis_batch_size,
+            token_budget,
+            fixed_request_tokens + context_tokens,
+        );
+        if smaller_batches.len() <= 1 {
+            balanced.extend(smaller_batches);
+            continue;
+        }
+        // 上下文较重时再做一次装箱，让每批按完整请求预算而不是只按消息正文均衡。
+        balanced.append(&mut smaller_batches);
+    }
+    Ok(balanced)
+}
+
 fn analysis_scope_label(target_profiles: &[ImProfile]) -> String {
     if target_profiles.len() == 1 {
         format!(
@@ -521,12 +611,11 @@ fn analysis_scope_label(target_profiles: &[ImProfile]) -> String {
 fn emit_analysis_progress_for_scope(
     app: &tauri::AppHandle,
     target_profiles: &[ImProfile],
-    total: i64,
     batch_index: usize,
     total_batches: usize,
 ) {
     if target_profiles.len() == 1 {
-        emit_analysis_progress(app, &target_profiles[0], total, batch_index, total_batches);
+        emit_analysis_progress(app, &target_profiles[0], batch_index, total_batches);
         return;
     }
     let _ = app.emit(
@@ -536,8 +625,8 @@ fn emit_analysis_progress_for_scope(
             "全平台".to_owned(),
             "analysis",
             format!(
-                "正在识别全平台待回复和待办事项第 {}/{} 批（{} 条消息）...",
-                batch_index, total_batches, total
+                "正在识别全平台待回复和待办事项第 {}/{} 批...",
+                batch_index, total_batches
             ),
             batch_index as i64,
             total_batches as i64,
@@ -1019,13 +1108,21 @@ fn start_ai_analysis_run(
     ai_config: &crate::storage::models::AiConfig,
     batch_index: Option<usize>,
     total_batches: Option<usize>,
-) -> Option<String> {
+    estimated_request_tokens: usize,
+    estimated_context_tokens: usize,
+    estimated_message_tokens: usize,
+    overlap_message_count: usize,
+) -> Option<AiRunTracker> {
     let run_id = Uuid::new_v4().to_string();
     let diagnostic = serde_json::json!({
         "requestKind": request_kind,
         "provider": ai_config.provider,
         "model": ai_config.model,
         "analysisInputTokenBudget": ai::analysis_batch_token_budget(ai_config),
+        "estimatedRequestTokens": estimated_request_tokens,
+        "estimatedMessageTokens": estimated_message_tokens,
+        "estimatedContextTokens": estimated_context_tokens,
+        "overlapMessageCount": overlap_message_count,
         "inputMessageCount": input_message_count,
         "batchIndex": batch_index,
         "totalBatches": total_batches,
@@ -1048,21 +1145,35 @@ fn start_ai_analysis_run(
         ],
     )
     .ok()?;
-    Some(run_id)
+    Some(AiRunTracker {
+        id: run_id,
+        started_at: Instant::now(),
+        diagnostic,
+    })
 }
 
 fn finish_ai_analysis_run(
     state: &State<'_, AppState>,
-    run_id: Option<String>,
+    run: Option<AiRunTracker>,
     status: &str,
     error: Option<&str>,
     diagnostic: Option<serde_json::Value>,
 ) {
-    let Some(run_id) = run_id else {
+    let Some(run) = run else {
         return;
     };
-    let diagnostic_json = diagnostic
-        .and_then(|value| serde_json::to_string(&diagnostic_for_run_status(status, value)).ok());
+    let duration_ms = run.started_at.elapsed().as_millis();
+    let token_usage_json = diagnostic
+        .as_ref()
+        .and_then(|value| value.get("usage").cloned())
+        .and_then(|value| serde_json::to_string(&value).ok());
+    let diagnostic_json = serde_json::to_string(&diagnostic_for_run_status(
+        status,
+        run.diagnostic,
+        diagnostic,
+        duration_ms,
+    ))
+    .ok();
     let sanitized_error = error.map(crate::security::sanitize_log);
     if let Ok(conn) = state.db.lock() {
         let _ = conn.execute(
@@ -1070,27 +1181,50 @@ fn finish_ai_analysis_run(
              set status = ?1,
                  error = ?2,
                  diagnostic_json = coalesce(?3, diagnostic_json),
+                 token_usage_json = coalesce(?4, token_usage_json),
                  finished_at = datetime('now')
-             where id = ?4",
-            params![status, sanitized_error, diagnostic_json, run_id],
+             where id = ?5",
+            params![
+                status,
+                sanitized_error,
+                diagnostic_json,
+                token_usage_json,
+                run.id
+            ],
         );
     }
 }
 
-fn diagnostic_for_run_status(status: &str, mut diagnostic: serde_json::Value) -> serde_json::Value {
+fn diagnostic_for_run_status(
+    status: &str,
+    mut run_diagnostic: serde_json::Value,
+    call_diagnostic: Option<serde_json::Value>,
+    duration_ms: u128,
+) -> serde_json::Value {
+    if let Some(object) = run_diagnostic.as_object_mut() {
+        object.insert("durationMs".to_owned(), serde_json::json!(duration_ms));
+        if let Some(mut call_diagnostic) = call_diagnostic {
+            if status == "done" {
+                if let Some(call_object) = call_diagnostic.as_object_mut() {
+                    call_object.remove("contentSnippet");
+                    call_object.remove("responseBodySnippet");
+                }
+            }
+            object.insert("call".to_owned(), call_diagnostic);
+        }
+    }
     if status == "done" {
-        if let Some(object) = diagnostic.as_object_mut() {
+        if let Some(object) = run_diagnostic.as_object_mut() {
             object.remove("contentSnippet");
             object.remove("responseBodySnippet");
         }
     }
-    diagnostic
+    run_diagnostic
 }
 
 fn emit_analysis_progress(
     app: &tauri::AppHandle,
     profile: &ImProfile,
-    total: i64,
     batch_index: usize,
     total_batches: usize,
 ) {
@@ -1101,12 +1235,11 @@ fn emit_analysis_progress(
             profile.label.clone(),
             "analysis",
             format!(
-                "正在识别【{} · {}】待回复和待办事项第 {}/{} 批（{} 条消息）...",
+                "正在识别【{} · {}】待回复和待办事项第 {}/{} 批...",
                 platform_label(&profile.platform),
                 profile_remark(profile),
                 batch_index,
-                total_batches,
-                total
+                total_batches
             ),
             batch_index as i64,
             total_batches as i64,

@@ -7,7 +7,8 @@ mod types;
 
 pub(crate) use candidates::{
     build_local_keyword_segmenter, is_cjk, is_generic_single_term, is_local_stopword,
-    is_self_sender, keyword_char_count, local_keyword_candidates, looks_like_noise_keyword,
+    is_low_semantic_keyword, is_self_sender, keyword_char_count, local_keyword_candidates,
+    looks_like_noise_keyword,
 };
 pub(crate) use dictionary::{
     contains_any, ANALYSIS_COMPLETION_TERMS, ANALYSIS_REPLY_TERMS, ANALYSIS_RISK_TERMS,

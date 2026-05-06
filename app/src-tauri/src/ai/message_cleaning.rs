@@ -121,6 +121,7 @@ pub(crate) fn is_disallowed_dashboard_keyword(text: &str) -> bool {
         || looks_like_noise_keyword(&normalized)
         || is_local_stopword(&normalized)
         || is_generic_single_term(text.trim())
+        || crate::analysis::local_keywords::is_low_semantic_keyword(text.trim())
         || matches!(
             normalized.as_str(),
             "dmg"

@@ -543,7 +543,9 @@ fn keyword_refine_uses_messages_and_overwrites_without_local_candidates() {
     .expect("profile");
     for (id, content, timestamp) in [
         ("msg-1", "下午货架自取的那批货到了吗", 1_i64),
-        ("msg-2", "张三通过扫描二维码加入群聊", 2_i64),
+        ("msg-2", "货架自取那批货已经放好了", 2_i64),
+        ("msg-3", "今天货架自取的订单别漏掉", 3_i64),
+        ("msg-4", "张三通过扫描二维码加入群聊", 4_i64),
     ] {
         conn.execute(
             "insert into daily_messages(
@@ -566,7 +568,7 @@ fn keyword_refine_uses_messages_and_overwrites_without_local_candidates() {
     upsert_keyword_meta(&conn, "2026-05-01", "profile-1", "kw-test", "local_final")
         .expect("keyword meta");
 
-    let plan = build_keyword_refine_plan(&conn, "2026-05-01", &["profile-1".to_owned()], 2)
+    let plan = build_keyword_refine_plan(&conn, "2026-05-01", &["profile-1".to_owned()], 4)
         .expect("keyword refine plan")
         .expect("plan");
     assert!(plan.payload.get("candidates").is_none());
@@ -575,7 +577,7 @@ fn keyword_refine_uses_messages_and_overwrites_without_local_candidates() {
         .get("messages")
         .and_then(|value| value.as_array())
         .expect("messages payload");
-    assert_eq!(messages.len(), 1);
+    assert_eq!(messages.len(), 3);
     assert_eq!(messages[0]["content"], "下午货架自取的那批货到了吗");
 
     let replaced = persist_refined_keywords_from_analysis(
@@ -590,7 +592,7 @@ fn keyword_refine_uses_messages_and_overwrites_without_local_candidates() {
             "valid": true,
             "confidence": 0.9,
             "scoreMultiplier": 1.2,
-            "sourceMessageIds": ["msg-1"]
+            "sourceMessageIds": ["msg-1", "msg-2", "msg-3"]
         })],
     )
     .expect("persist refined keywords");
@@ -607,7 +609,95 @@ fn keyword_refine_uses_messages_and_overwrites_without_local_candidates() {
     assert_eq!(values[0]["text"], "货架自取");
     assert_eq!(values[0]["source"], "ai_refined");
     assert_eq!(values[0]["localScore"], 0.0);
+    assert_eq!(values[0]["messageCount"], MIN_KEYWORD_CLOUD_COUNT);
     assert!(!raw.contains("本地旧词"));
+}
+
+#[test]
+fn keyword_refine_requires_three_ai_source_messages() {
+    let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+    conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+        .expect("schema");
+    conn.execute(
+        "insert into profiles(id, platform, label, config_json, created_at, updated_at)
+             values('profile-1', 'wechat', '微信工作号', '{}', datetime('now'), datetime('now'))",
+        [],
+    )
+    .expect("profile");
+    for (id, content, timestamp) in [
+        ("msg-1", "货架自取那批货到了", 1_i64),
+        ("msg-2", "货架自取订单已经放好", 2_i64),
+    ] {
+        conn.execute(
+            "insert into daily_messages(
+                   id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
+                   timestamp, time_text, msg_type, content, content_hash
+                 )
+                 values(?1, '2026-05-01', 'profile-1', 'wechat', 'chat-1', '测试群', 1, 'u-1', '测试用户', ?2, '09:00', 'text', ?3, ?4)",
+            params![id, timestamp, content, format!("hash-{id}")],
+        )
+        .expect("message");
+    }
+    upsert_stat(
+        &conn,
+        "2026-05-01",
+        "profile-1",
+        "keywords",
+        &[serde_json::json!({ "text": "本地旧词", "weight": 3, "version": "kw-test" })],
+    )
+    .expect("seed local keywords");
+    upsert_stat(
+        &conn,
+        "2026-05-01",
+        "aggregate",
+        "keywords",
+        &[serde_json::json!({ "text": "聚合旧词", "weight": 9, "version": "kw-aggregate-old" })],
+    )
+    .expect("seed aggregate keywords");
+    upsert_keyword_meta(&conn, "2026-05-01", "profile-1", "kw-test", "local_final")
+        .expect("keyword meta");
+
+    let plan = build_keyword_refine_plan(&conn, "2026-05-01", &["profile-1".to_owned()], 2)
+        .expect("keyword refine plan")
+        .expect("plan");
+    let replaced = persist_refined_keywords_from_analysis(
+        &conn,
+        "2026-05-01",
+        &plan,
+        &[serde_json::json!({
+            "profileId": "profile-1",
+            "display": "货架自取",
+            "aliases": [],
+            "category": "business_topic",
+            "valid": true,
+            "confidence": 0.9,
+            "scoreMultiplier": 1.2,
+            "sourceMessageIds": ["msg-1", "msg-2"]
+        })],
+    )
+    .expect("persist refined keywords");
+    assert_eq!(replaced, 1);
+
+    let raw: String = conn
+        .query_row(
+            "select value_json from daily_stats where day = '2026-05-01' and profile_id = 'profile-1' and metric = 'keywords'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("keywords");
+    let values: Vec<serde_json::Value> = serde_json::from_str(&raw).expect("keyword json");
+    assert!(
+        values.is_empty(),
+        "old local keywords must be replaced by empty AI result: {values:?}"
+    );
+    let aggregate_count: i64 = conn
+        .query_row(
+            "select count(*) from daily_stats where day = '2026-05-01' and profile_id = 'aggregate' and metric = 'keywords'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("aggregate keyword count");
+    assert_eq!(aggregate_count, 0);
 }
 
 #[test]
@@ -718,6 +808,90 @@ fn split_analysis_batches_starts_next_batch_before_crossing_limit() {
         .iter()
         .all(|batch| estimate_analysis_messages_tokens(batch)
             <= LOCAL_DEEPSEEK_ANALYSIS_BATCH_ESTIMATED_TOKENS));
+}
+
+#[test]
+fn split_analysis_batch_plans_use_full_request_budget() {
+    let mut messages = (0..24)
+        .map(|index| test_message(format!("msg-{index}"), &format!("chat-{index}")))
+        .collect::<Vec<_>>();
+    for message in &mut messages {
+        message.content = "客户催促交付，需要今天确认排期。".repeat(15);
+    }
+
+    let light_batches = split_analysis_batch_plans(messages.clone(), 30, 4_096, 0);
+    let heavy_batches = split_analysis_batch_plans(messages, 30, 4_096, 2_200);
+
+    assert!(
+        heavy_batches.len() > light_batches.len(),
+        "fixed prompt and context budget should reduce messages per batch"
+    );
+    assert!(heavy_batches
+        .iter()
+        .all(|batch| batch.estimated_input_tokens <= 4_096));
+}
+
+#[test]
+fn split_large_chat_group_adds_overlap_without_losing_primary_messages() {
+    let mut messages = (0..18)
+        .map(|index| test_message(format!("msg-{index}"), "chat-a"))
+        .collect::<Vec<_>>();
+    for message in &mut messages {
+        message.content = "客户投诉交付风险，需要今天处理。".repeat(22);
+    }
+
+    let batches = split_analysis_batch_plans(messages, 30, 1_900, 0);
+    assert!(batches.len() > 1);
+    assert!(batches
+        .iter()
+        .skip(1)
+        .any(|batch| batch.overlap_message_count > 0));
+
+    let primary_ids = batches
+        .iter()
+        .flat_map(|batch| {
+            batch
+                .primary_messages()
+                .iter()
+                .map(|message| message.id.clone())
+        })
+        .collect::<HashSet<_>>();
+    assert_eq!(primary_ids.len(), 18);
+}
+
+#[test]
+fn estimate_analysis_request_tokens_includes_existing_action_context() {
+    let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+    conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+        .expect("schema");
+    conn.execute(
+        "insert into action_items(
+           id, type, status, priority, title, description, suggested_reply, profile_id, platform,
+           chat_id, chat_name, source_message_ids, evidence_summary, context_incomplete, carry_over,
+           first_detected_at, last_updated_at
+         )
+         values(
+           'act-1', 'task', 'open', 'high', '跟进客户投诉',
+           '客户持续反馈交付延期，需要协调排期并回复处理方案。',
+           null, 'profile-1', 'wechat', 'chat-a', '客户群',
+           '[\"old-1\"]', '客户已经连续两次催促交付时间。', 0, 1,
+           datetime('now'), datetime('now')
+         )",
+        [],
+    )
+    .expect("action item");
+    let mut message = test_message("msg-1".to_owned(), "chat-a");
+    message.chat_name = "客户群".to_owned();
+    let context = load_analysis_context_for_messages(&conn, &[message.clone()]).expect("context");
+
+    let without_context = estimate_analysis_messages_tokens(&[message.clone()]);
+    let with_context =
+        estimate_analysis_request_tokens(DEFAULT_ANALYSIS_PROMPT, "", &[message], &context);
+
+    assert!(
+        with_context > without_context + 200,
+        "request estimate should include prompt and existingActionItems"
+    );
 }
 
 #[test]
@@ -1000,10 +1174,14 @@ fn summary_prompt_prevents_generic_cross_scene_merges() {
     assert!(DEFAULT_SUMMARY_PROMPT.contains("公司群讨论采购是否已买"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("existingTopics"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("sourceMessageIds"));
-    assert!(DEFAULT_SUMMARY_PROMPT.contains("必须等于去重后的 sourceMessageIds"));
+    assert!(DEFAULT_SUMMARY_PROMPT.contains("旧 sourceMessageIds 由系统自动保留并合并"));
+    assert!(DEFAULT_SUMMARY_PROMPT.contains("系统会自动合并 existingTopics.sourceMessageIds"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("keywordRefine"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("keywordRefine.messages"));
+    assert!(DEFAULT_SUMMARY_PROMPT.contains("至少对应 3 条有效消息"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("scoreMultiplier"));
+    assert!(DEFAULT_SUMMARY_PROMPT.contains("拍一拍"));
+    assert!(DEFAULT_SUMMARY_PROMPT.contains("拍了拍"));
     assert!(!DEFAULT_SUMMARY_PROMPT.contains("keywordRefine.candidates"));
 }
 
@@ -1206,6 +1384,58 @@ fn persist_analysis_can_write_resolved_reply_as_done() {
     assert_eq!(status, "done");
     assert!(completed_at.is_some());
     assert_eq!(first_detected_at, expected_detected_at);
+}
+
+#[test]
+fn persist_analysis_marks_inferred_reply_done_after_user_response() {
+    let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+    conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+        .expect("schema");
+    conn.execute_batch(
+        "insert into daily_messages(
+           id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
+           timestamp, time_text, msg_type, content, content_hash
+         )
+         values
+           ('msg-question', '2026-05-06', 'profile-1', 'wechat', 'chat-1', '何玉玲',
+            0, 'friend', '何玉玲', 100, '11:23', 'text', '你大概明早几点到东丽，我准备好出门时间。', 'hash-question'),
+           ('msg-reply', '2026-05-06', 'profile-1', 'wechat', 'chat-1', '何玉玲',
+            0, 'me', 'me', 101, '11:24', 'text', '9点', 'hash-reply'),
+           ('msg-ack', '2026-05-06', 'profile-1', 'wechat', 'chat-1', '何玉玲',
+            0, 'friend', '何玉玲', 102, '11:24', 'text', '好', 'hash-ack')",
+    )
+    .expect("messages");
+
+    let analysis = AiAnalysis {
+        action_items: vec![AiActionItem {
+            item_type: "reply".to_owned(),
+            status: Some("open".to_owned()),
+            priority: "medium".to_owned(),
+            title: "回复母亲关于明天到达时间".to_owned(),
+            description: "母亲询问明天早上到达东丽的时间。".to_owned(),
+            suggested_reply: None,
+            chat_id: "chat-1".to_owned(),
+            profile_id: Some("profile-1".to_owned()),
+            existing_action_item_id: None,
+            source_message_ids: Vec::new(),
+            evidence_summary: "何玉玲：你大概明早几点到东丽，我准备好出门时间。".to_owned(),
+            context_incomplete: false,
+        }],
+        topics: Vec::new(),
+        keywords: Vec::new(),
+    };
+
+    persist_analysis_across_profiles(&conn, "2026-05-06", &[], analysis).expect("persist analysis");
+    let (status, source_message_ids, completed_at): (String, String, Option<String>) = conn
+        .query_row(
+            "select status, source_message_ids, completed_at from action_items where type = 'reply'",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .expect("action item");
+    assert_eq!(status, "done");
+    assert_eq!(source_message_ids, "[\"msg-question\"]");
+    assert!(completed_at.is_some());
 }
 
 #[test]

@@ -8,7 +8,7 @@ use crate::analysis::local_keywords::{is_generic_single_term, should_skip_keywor
 
 use super::{
     clean_message_content_for_ai, current_keyword_version, truncate_text, upsert_keyword_meta,
-    upsert_stat,
+    upsert_stat, MIN_KEYWORD_CLOUD_COUNT,
 };
 
 const MAX_REFINED_KEYWORDS: usize = 30;
@@ -108,6 +108,7 @@ pub(crate) fn mark_keyword_refine_pending(
     day: &str,
     plan: &KeywordRefinePlan,
 ) -> anyhow::Result<()> {
+    invalidate_aggregate_keyword_cache(conn, day)?;
     for (profile_id, version) in &plan.versions {
         upsert_keyword_meta(conn, day, profile_id, version, "local_pending_ai")?;
         mark_keywords_status(conn, day, profile_id, "local_pending_ai")?;
@@ -120,6 +121,7 @@ pub(crate) fn mark_keyword_refine_failed(
     day: &str,
     plan: &KeywordRefinePlan,
 ) -> anyhow::Result<()> {
+    invalidate_aggregate_keyword_cache(conn, day)?;
     for (profile_id, version) in &plan.versions {
         if current_keyword_version(conn, day, profile_id)?.as_deref() == Some(version.as_str()) {
             upsert_keyword_meta(conn, day, profile_id, version, "ai_failed")?;
@@ -150,19 +152,15 @@ pub(crate) fn persist_refined_keywords_from_analysis(
             .push(item);
     }
 
+    invalidate_aggregate_keyword_cache(conn, day)?;
     let mut replaced = 0;
-    for (profile_id, items) in grouped {
-        let Some(version) = plan.versions.get(&profile_id) else {
+    for (profile_id, version) in &plan.versions {
+        let Some(messages) = plan.messages_by_profile.get(profile_id) else {
             continue;
         };
-        let Some(messages) = plan.messages_by_profile.get(&profile_id) else {
-            continue;
-        };
+        let items = grouped.remove(profile_id).unwrap_or_default();
         let refined = keywords_from_ai_items(messages, items);
-        if refined.is_empty() {
-            continue;
-        }
-        if replace_keywords_if_current(conn, day, &profile_id, version, refined, "ai_refined")? {
+        if replace_keywords_if_current(conn, day, profile_id, version, refined, "ai_refined")? {
             replaced += 1;
         }
     }
@@ -273,7 +271,10 @@ fn keywords_from_ai_items(
         }
         let aliases = normalized_aliases(display, &item.aliases);
         let matched_messages = matched_keyword_messages(messages, &message_by_id, &item, &aliases);
-        let message_count = matched_messages.len().max(1) as i64;
+        let message_count = matched_messages.len() as i64;
+        if message_count < MIN_KEYWORD_CLOUD_COUNT {
+            continue;
+        }
         let chat_count = matched_messages
             .iter()
             .map(|message| message.chat_id.as_str())
@@ -372,6 +373,7 @@ fn replace_keywords_if_current(
     if current_keyword_version(conn, day, profile_id)?.as_deref() != Some(version) {
         return Ok(false);
     }
+    invalidate_aggregate_keyword_cache(conn, day)?;
     let updated_at = Local::now().to_rfc3339();
     for keyword in &mut keywords {
         if let Some(object) = keyword.as_object_mut() {
@@ -383,6 +385,17 @@ fn replace_keywords_if_current(
     upsert_stat(conn, day, profile_id, "keywords", &keywords)?;
     upsert_keyword_meta(conn, day, profile_id, version, status)?;
     Ok(true)
+}
+
+fn invalidate_aggregate_keyword_cache(
+    conn: &rusqlite::Connection,
+    day: &str,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "delete from daily_stats where day = ?1 and profile_id = 'aggregate' and metric = 'keywords'",
+        params![day],
+    )?;
+    Ok(())
 }
 
 fn mark_keywords_status(

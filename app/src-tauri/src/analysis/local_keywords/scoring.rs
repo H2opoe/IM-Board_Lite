@@ -4,7 +4,8 @@ use crate::ai::MIN_KEYWORD_CLOUD_COUNT;
 
 use super::candidates::{
     build_local_keyword_segmenter, is_ascii_keyword, is_generic_single_term, is_local_stopword,
-    keyword_char_count, local_keyword_candidates, looks_like_noise_keyword,
+    is_low_semantic_keyword, keyword_char_count, local_keyword_candidates,
+    looks_like_noise_keyword,
 };
 use super::repository::load_local_keyword_messages;
 use super::text_cleaning::keyword_texts_from_message_content;
@@ -255,6 +256,7 @@ pub(crate) fn is_selectable_local_keyword(text: &str, value: &LocalKeywordScore)
         || looks_like_noise_keyword(text)
         || is_local_stopword(text)
         || is_generic_single_term(text)
+        || is_low_semantic_keyword(text)
         || value.score <= 0.0
     {
         return false;

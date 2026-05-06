@@ -249,4 +249,89 @@ mod tests {
         assert!(texts.contains(&"高频词"), "got {texts:?}");
         assert!(texts.contains(&"聚合词"), "got {texts:?}");
     }
+
+    #[test]
+    fn enrich_keywords_adds_total_and_platform_hits_for_ai_keywords() {
+        let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+        conn.execute_batch(include_str!("../../../migrations/001_init.sql"))
+            .expect("schema");
+        for (id, platform, remark) in [
+            ("wechat-1", "wechat", "工作号"),
+            ("feishu-1", "feishu", "飞书号"),
+        ] {
+            conn.execute(
+                "insert into profiles(id, platform, label, config_json, created_at, updated_at)
+                 values(?1, ?2, ?2, ?3, datetime('now'), datetime('now'))",
+                rusqlite::params![
+                    id,
+                    platform,
+                    serde_json::json!({ "remark": remark }).to_string()
+                ],
+            )
+            .expect("profile");
+        }
+        for (id, profile_id, platform, chat_id, chat_name, content, timestamp) in [
+            (
+                "msg-1",
+                "wechat-1",
+                "wechat",
+                "chat-a",
+                "微信群",
+                "货架自取今天到了",
+                1_i64,
+            ),
+            (
+                "msg-2",
+                "wechat-1",
+                "wechat",
+                "chat-a",
+                "微信群",
+                "货架自取订单放好了",
+                2_i64,
+            ),
+            (
+                "msg-3",
+                "feishu-1",
+                "feishu",
+                "chat-b",
+                "飞书群",
+                "货架自取别漏掉",
+                3_i64,
+            ),
+        ] {
+            conn.execute(
+                "insert into daily_messages(
+                   id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
+                   timestamp, time_text, msg_type, content, content_hash
+                 )
+                 values(?1, '2026-05-01', ?2, ?3, ?4, ?5, 1, 'u-1', '测试用户', ?6, '09:00', 'text', ?7, ?8)",
+                rusqlite::params![id, profile_id, platform, chat_id, chat_name, timestamp, content, format!("hash-{id}")],
+            )
+            .expect("message");
+        }
+
+        let enriched = enrich_keywords(
+            &conn,
+            "2026-05-01",
+            "aggregate",
+            vec![serde_json::json!({
+                "text": "货架自取",
+                "display": "货架自取",
+                "weight": 3,
+                "count": 3,
+                "source": "ai_refined"
+            })],
+        )
+        .expect("enriched keywords");
+        assert_eq!(enriched.len(), 1);
+        assert_eq!(enriched[0]["count"], 3);
+        let sources = enriched[0]["sources"].as_array().expect("sources");
+        assert_eq!(sources.len(), 2);
+        assert!(sources
+            .iter()
+            .any(|source| source["platform"] == "wechat" && source["count"] == 2));
+        assert!(sources
+            .iter()
+            .any(|source| source["platform"] == "feishu" && source["count"] == 1));
+    }
 }

@@ -543,7 +543,9 @@ export function SettingsPage() {
                 <span>{config.analysisBatchSize}条消息/批</span>
               </div>
               <small>
-                {isManagedLocalDeepseek ? "本地DeepSeek建议小批量，范围10-30条/批。" : "根据模型性能，范围10-300条/批。"}
+                {isManagedLocalDeepseek
+                  ? "本地DeepSeek会按完整上下文自动均衡，单批上限10-30条。"
+                  : "系统会按完整上下文自动均衡，单批上限10-300条。"}
               </small>
             </div>
           </label>

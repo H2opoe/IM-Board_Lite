@@ -3,7 +3,8 @@ use std::collections::{HashMap, HashSet};
 use rusqlite::params;
 
 use super::action_items::{
-    analysis_message_sources, load_action_items_for_context, persist_analysis_across_profiles,
+    analysis_message_sources, load_action_items_for_context,
+    load_action_items_for_profiles_context, persist_analysis_across_profiles,
     resolve_action_item_source,
 };
 use super::*;
@@ -88,6 +89,15 @@ pub(crate) fn load_analysis_context_for_messages(
     for (profile_id, chat_ids) in chat_ids_by_profile {
         existing_action_items.extend(load_action_items_for_context(conn, &profile_id, &chat_ids)?);
     }
+    let profile_ids = messages
+        .iter()
+        .map(|message| message.profile_id.clone())
+        .collect::<HashSet<_>>();
+    // 同一次当天首次同步/重新分析会按批落库。后续批必须看到前批已识别事项，
+    // 才能在 AI 层判断“继续推进/已完成/重复事项”，前端整块刷新才不会丢掉前批语义。
+    existing_action_items.extend(load_action_items_for_profiles_context(conn, &profile_ids)?);
+    let mut seen = HashSet::new();
+    existing_action_items.retain(|item| seen.insert(item.id.clone()));
     Ok(AnalysisContext {
         existing_action_items,
         historical_messages: Vec::new(),

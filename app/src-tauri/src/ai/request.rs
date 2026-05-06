@@ -23,27 +23,7 @@ pub(crate) async fn request_profile_analysis(
         "historicalMessages": context.historical_messages,
         "messages": messages,
     });
-    let base_prompt = if config.analysis_prompt.trim().is_empty() {
-        DEFAULT_ANALYSIS_PROMPT
-    } else {
-        config.analysis_prompt.trim()
-    };
-    let mut prompt = base_prompt.to_owned();
-    append_prompt_section_if_missing(&mut prompt, &["主要语言"], PRIMARY_LANGUAGE_OUTPUT_PROMPT);
-    append_prompt_section_if_missing(
-        &mut prompt,
-        &["批内去重", "同一批 messages"],
-        BATCH_DEDUP_PROMPT,
-    );
-    append_prompt_section_if_missing(
-        &mut prompt,
-        &["沟通氛围", "情绪风险"],
-        MANAGEMENT_RISK_PROMPT,
-    );
-    if is_local_provider(config) && !prompt.contains("不要输出 <think>") {
-        prompt.push_str("\n\n");
-        prompt.push_str(LOCAL_MODEL_OUTPUT_PROMPT);
-    }
+    let prompt = analysis_system_prompt(config);
     let output = request_analysis(
         config,
         "待回复和待办事项识别",
@@ -77,6 +57,31 @@ pub(crate) async fn request_profile_analysis(
     })
 }
 
+pub(crate) fn analysis_system_prompt(config: &AiConfig) -> String {
+    let base_prompt = if config.analysis_prompt.trim().is_empty() {
+        DEFAULT_ANALYSIS_PROMPT
+    } else {
+        config.analysis_prompt.trim()
+    };
+    let mut prompt = base_prompt.to_owned();
+    append_prompt_section_if_missing(&mut prompt, &["主要语言"], PRIMARY_LANGUAGE_OUTPUT_PROMPT);
+    append_prompt_section_if_missing(
+        &mut prompt,
+        &["批内去重", "同一批 messages"],
+        BATCH_DEDUP_PROMPT,
+    );
+    append_prompt_section_if_missing(
+        &mut prompt,
+        &["沟通氛围", "情绪风险"],
+        MANAGEMENT_RISK_PROMPT,
+    );
+    if is_local_provider(config) && !prompt.contains("不要输出 <think>") {
+        prompt.push_str("\n\n");
+        prompt.push_str(LOCAL_MODEL_OUTPUT_PROMPT);
+    }
+    prompt
+}
+
 pub(crate) async fn request_profile_summary(
     config: &AiConfig,
     day: &str,
@@ -108,22 +113,64 @@ pub(crate) async fn request_profile_summary(
         prompt.push_str("\n\n");
         prompt.push_str(LOCAL_MODEL_OUTPUT_PROMPT);
     }
+    let max_tokens = summary_output_tokens(config, false);
     let output = request_analysis(
         config,
         "热门话题和关键词识别",
         SUMMARY_REQUEST_TIMEOUT_SECS,
         &prompt,
         &payload,
-        if is_local_provider(config) {
-            1536
-        } else {
-            3072
-        },
+        max_tokens,
     )
     .await?;
+    let (mut summary, diagnostics) = match parse_summary_output(&output) {
+        Ok(summary) => (summary, output.diagnostics),
+        Err(err) if should_retry_summary_parse(&err, &output.diagnostics) => {
+            let retry_output = request_analysis(
+                config,
+                "热门话题和关键词识别",
+                SUMMARY_REQUEST_TIMEOUT_SECS,
+                &summary_retry_prompt(&prompt),
+                &payload,
+                summary_output_tokens(config, true),
+            )
+            .await?;
+            (
+                parse_summary_output(&retry_output)?,
+                retry_output.diagnostics,
+            )
+        }
+        Err(err) => return Err(err.into()),
+    };
+    merge_incremental_summary_topics(&mut summary, existing_topics, candidates);
+    if keyword_refine.is_none() {
+        summary.keywords.clear();
+    }
+    Ok(AiSummaryResult {
+        summary,
+        diagnostics,
+    })
+}
+
+fn summary_output_tokens(config: &AiConfig, retry: bool) -> u32 {
+    let tokens = if is_local_provider(config) {
+        if retry {
+            LOCAL_DEEPSEEK_SUMMARY_OUTPUT_TOKENS + 1_024
+        } else {
+            LOCAL_DEEPSEEK_SUMMARY_OUTPUT_TOKENS
+        }
+    } else if retry {
+        OTHER_MODEL_SUMMARY_OUTPUT_TOKENS * 2
+    } else {
+        OTHER_MODEL_SUMMARY_OUTPUT_TOKENS
+    };
+    tokens.try_into().unwrap_or(u32::MAX)
+}
+
+fn parse_summary_output(output: &AiRequestOutput) -> Result<AiSummary, AiCallError> {
     let json = extract_json_object(&output.content)
         .map_err(|err| AiCallError::new(err.to_string(), Some(output.diagnostics.clone())))?;
-    let mut summary: AiSummary = serde_json::from_str(&json).map_err(|err| {
+    serde_json::from_str(&json).map_err(|err| {
         AiCallError::new(
             format!(
                 "AI返回汇总JSON解析失败：{}；片段：{}",
@@ -132,15 +179,23 @@ pub(crate) async fn request_profile_summary(
             ),
             Some(output.diagnostics.clone()),
         )
-    })?;
-    merge_incremental_summary_topics(&mut summary, existing_topics, candidates);
-    if keyword_refine.is_none() {
-        summary.keywords.clear();
-    }
-    Ok(AiSummaryResult {
-        summary,
-        diagnostics: output.diagnostics,
     })
+}
+
+fn should_retry_summary_parse(err: &AiCallError, diagnostics: &AiCallDiagnostics) -> bool {
+    let message = err.message.as_str();
+    let looks_incomplete = message.contains("不是完整JSON")
+        || message.contains("EOF while parsing")
+        || message.contains("expected")
+        || message.contains("trailing characters");
+    let finish_reason = diagnostics.finish_reason.as_deref().unwrap_or_default();
+    looks_incomplete || matches!(finish_reason, "length" | "max_tokens")
+}
+
+fn summary_retry_prompt(prompt: &str) -> String {
+    format!(
+        "{prompt}\n\n重试输出约束：上一次汇总 JSON 被截断。请压缩 summary，旧话题只返回 id/title/summary 和本批新增 sourceMessageIds；不要重复输出 existingTopics 已有的旧 sourceMessageIds。必须一次性闭合完整 JSON。"
+    )
 }
 
 fn append_prompt_section_if_missing(prompt: &mut String, markers: &[&str], section: &str) {

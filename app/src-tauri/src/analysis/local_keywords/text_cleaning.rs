@@ -62,6 +62,7 @@ pub(crate) fn should_skip_keyword_message(content: &str, msg_type: Option<&str>)
         || compact.contains("撤回了一条消息")
         || compact.contains("修改群名")
         || compact.contains("群公告")
+        || contains_wechat_touch_notice(trimmed)
         || contains_media_placeholder(trimmed)
         || contains_group_membership_notice(trimmed)
         || contains_unsupported_client_notice(trimmed)
@@ -182,6 +183,14 @@ pub(crate) fn contains_group_membership_notice(content: &str) -> bool {
         || (compact.contains("邀请") && compact.contains("加入群聊"))
         || (compact.contains("通过") && compact.contains("加入群聊"))
         || (compact.contains("二维码") && compact.contains("加入"))
+}
+
+fn contains_wechat_touch_notice(content: &str) -> bool {
+    let compact = content
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<String>();
+    compact.contains("拍一拍") || compact.contains("拍了拍")
 }
 
 fn sanitize_keyword_text(content: &str) -> Vec<String> {

@@ -89,11 +89,24 @@ fn is_context_separator(ch: char) -> bool {
                 | '>'
         )
 }
+
+fn contains_wechat_touch_notice(content: &str) -> bool {
+    let compact = content
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<String>();
+    compact.contains("拍一拍") || compact.contains("拍了拍")
+}
+
 pub(crate) fn local_keyword_candidates(
     jieba: &Jieba,
     content: &str,
     context_terms: &HashSet<String>,
 ) -> Vec<LocalKeywordCandidate> {
+    if contains_wechat_touch_notice(content) {
+        return Vec::new();
+    }
+
     let mut candidates = Vec::new();
     let mut phrase_tokens = Vec::<String>::new();
 
@@ -110,6 +123,8 @@ pub(crate) fn local_keyword_candidates(
             });
         }
     }
+
+    candidates.extend(domain_phrase_keyword_candidates(content));
 
     for tag in jieba.tag(content, true) {
         if let Some(token) = normalize_keyword_candidate(tag.word) {
@@ -189,6 +204,66 @@ fn phrase_keyword_candidates(tokens: &[String]) -> Vec<LocalKeywordCandidate> {
         }
     }
     candidates
+}
+
+fn domain_phrase_keyword_candidates(content: &str) -> Vec<LocalKeywordCandidate> {
+    let compact = content
+        .chars()
+        .filter(|ch| is_keyword_body_char(*ch))
+        .collect::<String>();
+    let mut candidates = Vec::new();
+
+    // “无公害蔬菜”这类业务名词容易被 jieba 拆成“无 / 公害 / 蔬菜”，再被短词规则误收成反义词。
+    // 先按完整前缀回收，保证词云展示的是用户实际讨论的业务对象。
+    for phrase in prefixed_cjk_phrase_candidates(&compact, "无公害", 2, 3) {
+        candidates.push(LocalKeywordCandidate {
+            text: phrase,
+            source: LocalKeywordSource::Phrase,
+        });
+    }
+
+    candidates
+}
+
+fn prefixed_cjk_phrase_candidates(
+    content: &str,
+    prefix: &str,
+    min_chars: usize,
+    max_chars: usize,
+) -> Vec<String> {
+    let mut candidates = Vec::new();
+    let prefix_chars = prefix.chars().count();
+    let chars = content.chars().collect::<Vec<_>>();
+    for (index, _) in chars.iter().enumerate() {
+        let suffix = &chars[index..];
+        if suffix.len() < prefix_chars + min_chars {
+            continue;
+        }
+        if !suffix.iter().take(prefix_chars).copied().eq(prefix.chars()) {
+            continue;
+        }
+        let end = (prefix_chars + max_chars).min(suffix.len());
+        for size in (prefix_chars + min_chars)..=end {
+            if suffix
+                .get(size - 1)
+                .is_some_and(|ch| is_generic_business_suffix_char(*ch))
+            {
+                continue;
+            }
+            let value = suffix.iter().take(size).collect::<String>();
+            if let Some(token) = normalize_keyword_candidate(&value) {
+                candidates.push(token);
+            }
+        }
+    }
+    dedupe_strings(candidates)
+}
+
+fn is_generic_business_suffix_char(ch: char) -> bool {
+    matches!(
+        ch,
+        '报' | '价' | '费' | '钱' | '单' | '项' | '目' | '吗' | '呢' | '啊' | '了' | '的'
+    )
 }
 
 fn fallback_keyword_candidates(content: &str) -> Vec<String> {
@@ -279,6 +354,7 @@ fn normalize_keyword_candidate(value: &str) -> Option<String> {
         || looks_like_noise_keyword(&token)
         || is_local_stopword(&token)
         || is_generic_single_term(&token)
+        || is_low_semantic_keyword(&token)
         || token.chars().all(is_weak_cjk_char)
     {
         return None;
@@ -290,7 +366,10 @@ fn should_keep_segment_token(token: &str, tag: &str, context_terms: &HashSet<Str
     if context_terms.contains(token) {
         return true;
     }
-    if looks_like_noise_keyword(token) || is_local_stopword(token) || is_generic_single_term(token)
+    if looks_like_noise_keyword(token)
+        || is_local_stopword(token)
+        || is_generic_single_term(token)
+        || is_low_semantic_keyword(token)
     {
         return false;
     }
@@ -311,7 +390,10 @@ fn should_keep_search_token(token: &str, context_terms: &HashSet<String>) -> boo
     if context_terms.contains(token) {
         return true;
     }
-    if looks_like_noise_keyword(token) || is_local_stopword(token) || is_generic_single_term(token)
+    if looks_like_noise_keyword(token)
+        || is_local_stopword(token)
+        || is_generic_single_term(token)
+        || is_low_semantic_keyword(token)
     {
         return false;
     }
@@ -601,6 +683,12 @@ pub(crate) fn is_local_stopword(value: &str) -> bool {
         "okay",
         "yes",
         "no",
+        "rmb",
+        "cny",
+        "usd",
+        "美元",
+        "美金",
+        "人民币",
         "这个",
         "那个",
         "这些",
@@ -641,14 +729,24 @@ pub(crate) fn is_local_stopword(value: &str) -> bool {
         "消息",
         "聊天",
         "内容",
+        "信息",
         "事情",
         "问题",
         "情况",
         "时间",
         "时候",
         "公司",
+        "企业",
         "系统",
         "市场",
+        "项目",
+        "报告",
+        "主意",
+        "价格",
+        "接龙",
+        "拍一拍",
+        "拍了拍",
+        "拍拍",
         "新鲜",
         "上午",
         "下午",
@@ -720,6 +818,12 @@ pub(crate) fn is_local_stopword(value: &str) -> bool {
         "一个",
         "两个",
         "几个",
+        "飞书",
+        "钉钉",
+        "企微",
+        "企业微信",
+        "微信",
+        "公害蔬菜",
     ];
     STOPWORDS.contains(&value)
         || value.starts_with("msg")
@@ -746,9 +850,19 @@ pub(crate) fn is_generic_single_term(value: &str) -> bool {
         "今天晚上",
         "新鲜",
         "消息",
+        "信息",
         "内容",
         "情况",
         "问题",
+        "项目",
+        "报告",
+        "价格",
+        "主意",
+        "接龙",
+        "拍一拍",
+        "拍了拍",
+        "拍拍",
+        "企业",
         "时间",
         "处理",
         "收到",
@@ -766,8 +880,57 @@ pub(crate) fn is_generic_single_term(value: &str) -> bool {
         "下午",
         "中午",
         "晚上",
+        "飞书",
+        "钉钉",
+        "企微",
+        "企业微信",
+        "微信",
+        "rmb",
+        "cny",
+        "usd",
+        "美金",
+        "美元",
+        "人民币",
+        "公害蔬菜",
     ];
     GENERIC_SINGLE_TERMS.contains(&value.trim())
+}
+
+pub(crate) fn is_low_semantic_keyword(value: &str) -> bool {
+    let value = value.trim().to_ascii_lowercase();
+    if value.is_empty() {
+        return true;
+    }
+    if matches!(value.as_str(), "rmb" | "cny" | "usd") {
+        return true;
+    }
+    looks_like_amount_shorthand(&value)
+}
+
+fn looks_like_amount_shorthand(value: &str) -> bool {
+    let chars = value.chars().collect::<Vec<_>>();
+    if !(2..=5).contains(&chars.len()) {
+        return false;
+    }
+    let digit_count = chars.iter().filter(|ch| ch.is_ascii_digit()).count();
+    let measure_count = chars
+        .iter()
+        .filter(|ch| {
+            matches!(
+                ch,
+                '个' | '份' | '件' | '只' | '支' | '包' | '箱' | '元' | '块'
+            )
+        })
+        .count();
+    digit_count > 0
+        && measure_count > 0
+        && chars.iter().all(|ch| {
+            ch.is_ascii_digit()
+                || matches!(
+                    ch,
+                    '个' | '份' | '件' | '只' | '支' | '包' | '箱' | '元' | '块'
+                )
+        })
 }
 
 pub(crate) fn is_meaningful_compound_term(value: &str) -> bool {
@@ -850,6 +1013,14 @@ mod tests {
     }
 
     #[test]
+    fn skips_wechat_touch_notice_before_segmentation() {
+        assert!(should_skip_keyword_message("张三拍了拍李四", None));
+        assert!(should_skip_keyword_message("张三 拍一拍 李四", None));
+        let texts = candidate_texts("张三拍了拍李四");
+        assert!(texts.is_empty(), "got {texts:?}");
+    }
+
+    #[test]
     fn keeps_business_phrase_without_cjk_sliding_windows() {
         let texts = candidate_texts("下午货架自取的那批货到了吗");
         assert!(texts.contains(&"货架自取".to_owned()), "got {texts:?}");
@@ -859,11 +1030,31 @@ mod tests {
 
     #[test]
     fn filters_generic_terms_but_keeps_specific_compounds() {
-        for term in ["公司", "今天下午", "系统", "问题"] {
+        for term in ["公司", "今天下午", "系统", "问题", "项目", "价格", "rmb"] {
             assert!(is_generic_single_term(term));
         }
         let texts = candidate_texts("订单系统今天又卡了");
         assert!(texts.contains(&"订单系统".to_owned()), "got {texts:?}");
         assert!(!texts.contains(&"系统".to_owned()), "got {texts:?}");
+    }
+
+    #[test]
+    fn filters_low_semantic_word_cloud_terms() {
+        let texts = candidate_texts("飞书里看一下这个项目价格和企业信息，报告接龙 1份6 RMB");
+        for ignored in [
+            "飞书", "项目", "价格", "企业", "信息", "报告", "接龙", "1份6", "rmb",
+        ] {
+            assert!(
+                !texts.contains(&ignored.to_owned()),
+                "low semantic keyword should be ignored: {ignored}; got {texts:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn recovers_prefixed_business_phrase_before_generic_fragments() {
+        let texts = candidate_texts("今天客户反复问无公害蔬菜报价");
+        assert!(texts.contains(&"无公害蔬菜".to_owned()), "got {texts:?}");
+        assert!(!texts.contains(&"公害蔬菜".to_owned()), "got {texts:?}");
     }
 }
