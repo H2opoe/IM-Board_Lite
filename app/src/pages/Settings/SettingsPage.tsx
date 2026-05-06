@@ -229,7 +229,7 @@ export function SettingsPage() {
               checked={config.enabled}
               onChange={(event) => updateConfigDraft({ ...config, enabled: event.target.checked })}
             />
-            <span>启用AI分析队列</span>
+            <span>启用AI分析</span>
           </label>
 
         </article>
