@@ -5,7 +5,6 @@ mod commands;
 mod connectors;
 mod daily_cache;
 mod domain;
-mod macos_permissions;
 mod messages;
 mod profile_manager;
 mod runtime;
@@ -89,7 +88,6 @@ pub fn run() {
             commands::bridge::run_bridge_command,
             commands::bridge::update_platform_cli,
             commands::app::get_app_settings,
-            commands::app::open_macos_privacy_settings,
             commands::app::export_diagnostic_package,
             commands::app::save_app_settings,
             commands::app::set_theme_dock_icon,
@@ -107,14 +105,5 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("构建 Tauri 应用失败");
 
-    app.run(|app, event| {
-        #[cfg(target_os = "macos")]
-        if let tauri::RunEvent::Reopen {
-            has_visible_windows: false,
-            ..
-        } = event
-        {
-            show_main_window(app);
-        }
-    });
+    app.run(|_app, _event| {});
 }

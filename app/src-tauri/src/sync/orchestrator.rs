@@ -8,7 +8,6 @@ use tauri::{Manager, State};
 use crate::analysis::orchestrator::analyze_pending_messages;
 use crate::bridge_runner::{self, BridgeRequest};
 use crate::daily_cache;
-use crate::macos_permissions;
 use crate::messages::repository::{
     clear_dashboard_cache, reset_ai_generated_cache, resolve_all_profiles, resolve_target_profiles,
 };
@@ -42,7 +41,6 @@ async fn run_manual_sync_inner(
     let started_at = chrono::Local::now().to_rfc3339();
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let cache_dir = state.cache_dir.clone();
-    prepare_sync_storage_access(&state);
 
     let (target_profiles, dashboard_day) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
@@ -132,7 +130,6 @@ async fn retry_ai_analysis(
     let started_at = chrono::Local::now().to_rfc3339();
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let cache_dir = state.cache_dir.clone();
-    prepare_sync_storage_access(&state);
     let (target_profiles, day) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
         daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
@@ -184,7 +181,6 @@ async fn run_full_resync(
 ) -> Result<SyncResult, String> {
     state.sync_cancel_requested.store(false, Ordering::SeqCst);
     let cache_dir = state.cache_dir.clone();
-    prepare_sync_storage_access(&state);
     let (target_profiles, all_profiles, day) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
         daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
@@ -216,10 +212,6 @@ async fn run_full_resync(
         );
     }
     run_manual_sync_inner(app, state, profile_id, false).await
-}
-
-fn prepare_sync_storage_access(state: &State<'_, AppState>) {
-    macos_permissions::prepare_sync_storage_access(&state.app_dir, &state.cache_dir);
 }
 
 pub(crate) async fn run_sync_bridge(

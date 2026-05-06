@@ -19,7 +19,6 @@ pub(super) fn resolve_bridge_executable(resource_dir: &Path, request: &BridgeReq
     }
     let platform = request.platform.as_str();
     let file_name = match platform {
-        "wechat" => "bridge_main",
         "wecom" => "wecom-bridge",
         "feishu" => "feishu-bridge",
         "dingtalk" => "dingtalk-bridge",
@@ -140,48 +139,6 @@ fn official_cli_candidates(root: &Path, platform: &str, package: &str, bin: &str
     let package_root = root.join(platform).join("node_modules");
     let package_dir = package.split('/').collect::<PathBuf>();
     let mut candidates = Vec::new();
-    if cfg!(windows) {
-        match platform {
-            "wecom" => candidates.push(
-                package_root
-                    .join("@wecom")
-                    .join("cli-win32-x64")
-                    .join("bin")
-                    .join("wecom-cli.exe"),
-            ),
-            "feishu" => {
-                candidates.push(
-                    package_root
-                        .join(&package_dir)
-                        .join("bin")
-                        .join("lark-cli-windows-x64.exe"),
-                );
-                candidates.push(
-                    package_root
-                        .join(&package_dir)
-                        .join("bin")
-                        .join("lark-cli.exe"),
-                );
-            }
-            "dingtalk" => {
-                candidates.push(
-                    package_root
-                        .join(&package_dir)
-                        .join("vendor")
-                        .join("dws-windows-x64.exe"),
-                );
-                candidates.push(
-                    package_root
-                        .join(&package_dir)
-                        .join("vendor")
-                        .join("dws.exe"),
-                );
-            }
-            _ => {}
-        }
-        candidates.push(package_root.join(".bin").join(format!("{bin}.exe")));
-        return candidates;
-    }
     let npm_arch = current_npm_arch();
     match platform {
         "wecom" => candidates.push(
@@ -231,11 +188,7 @@ fn resolve_existing_command(command: &str) -> Option<PathBuf> {
         return expanded.exists().then_some(expanded);
     }
     let path = std::env::var_os("PATH")?;
-    let extensions: &[&str] = if cfg!(windows) && Path::new(command).extension().is_none() {
-        &["", ".exe", ".cmd", ".bat"]
-    } else {
-        &[""]
-    };
+    let extensions: &[&str] = &[""];
     std::env::split_paths(&path).find_map(|entry| {
         extensions
             .iter()
@@ -253,9 +206,6 @@ pub(super) fn is_dependency_free_cli(path: &Path) -> bool {
     if matches!(extension.as_str(), "js" | "cmd" | "bat") {
         return false;
     }
-    if cfg!(windows) && extension != "exe" {
-        return false;
-    }
     if let Ok(bytes) = std::fs::read(path) {
         let head = String::from_utf8_lossy(&bytes[..bytes.len().min(96)]).to_ascii_lowercase();
         if head.contains("/usr/bin/env node") || head.contains("node ") {
@@ -263,52 +213,4 @@ pub(super) fn is_dependency_free_cli(path: &Path) -> bool {
         }
     }
     true
-}
-
-#[cfg(windows)]
-pub(super) fn is_windows_wechat_python_launcher(path: &Path) -> bool {
-    path.file_name()
-        .and_then(|value| value.to_str())
-        .is_some_and(|name| name.eq_ignore_ascii_case("wechat-cli.cmd"))
-        && path
-            .parent()
-            .and_then(|parent| parent.file_name())
-            .and_then(|value| value.to_str())
-            .is_some_and(|name| name.eq_ignore_ascii_case("bin"))
-        && path
-            .parent()
-            .and_then(|parent| parent.parent())
-            .and_then(|parent| parent.file_name())
-            .and_then(|value| value.to_str())
-            .is_some_and(|name| name.eq_ignore_ascii_case("wechat"))
-        && windows_wechat_launcher_python_exists(path)
-}
-
-#[cfg(windows)]
-fn windows_wechat_launcher_python_exists(path: &Path) -> bool {
-    let Ok(text) = std::fs::read_to_string(path) else {
-        return false;
-    };
-    // AppData中热更新的 Windows微信启动器会引用应用内置Python。
-    // 如果安装包升级或移动后旧路径失效，不能继续把这个 cmd 当成可用入口。
-    text.lines()
-        .find_map(extract_quoted_python_path)
-        .is_some_and(|python| python.exists())
-}
-
-#[cfg(windows)]
-fn extract_quoted_python_path(line: &str) -> Option<PathBuf> {
-    let mut rest = line;
-    while let Some(start) = rest.find('"') {
-        rest = &rest[start + 1..];
-        let Some(end) = rest.find('"') else {
-            return None;
-        };
-        let candidate = &rest[..end];
-        if candidate.to_ascii_lowercase().ends_with("python.exe") {
-            return Some(PathBuf::from(candidate));
-        }
-        rest = &rest[end + 1..];
-    }
-    None
 }

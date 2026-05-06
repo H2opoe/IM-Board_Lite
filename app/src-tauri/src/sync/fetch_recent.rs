@@ -135,9 +135,6 @@ async fn fetch_recent_session_messages(
             warnings.extend(history.warnings);
             if !history.ok {
                 if let Some(error) = history.error {
-                    if is_wechat_key_incomplete_error(profile, &error.code) {
-                        return Err(error.message);
-                    }
                     if !(connector.should_silence_message_error)(&error.code) {
                         warnings.push(format!(
                             "{} / {}：{}",
@@ -180,8 +177,4 @@ async fn fetch_recent_session_messages(
     }
 
     Ok((fetched_messages, inserted_messages))
-}
-
-fn is_wechat_key_incomplete_error(profile: &ImProfile, code: &str) -> bool {
-    profile.platform == "wechat" && code == "WECHAT_KEYS_INCOMPLETE"
 }

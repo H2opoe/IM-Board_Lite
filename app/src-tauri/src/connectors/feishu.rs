@@ -1,7 +1,7 @@
 use super::{
     default_sessions_ready_message, no_fallback_group_search_queries,
     no_prepare_profile_sync_access, no_silent_message_error, official_cli_fetch_concurrency,
-    session_history_mode, ConnectorAdapter, ConnectorKind, ProfileSyncLane, SessionDiscoveryStep,
+    session_history_mode, ConnectorAdapter, ConnectorKind, SessionDiscoveryStep,
 };
 use crate::storage::models::ImProfile;
 
@@ -11,7 +11,6 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
     platform: "feishu",
     kind: ConnectorKind::Feishu,
     is_available,
-    sync_lane,
     sync_mode: session_history_mode,
     session_discovery_steps,
     prepare_profile_sync_access: no_prepare_profile_sync_access,
@@ -24,10 +23,6 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
 
 fn is_available() -> bool {
     true
-}
-
-fn sync_lane() -> ProfileSyncLane {
-    ProfileSyncLane::Concurrent
 }
 
 fn session_discovery_steps() -> &'static [SessionDiscoveryStep] {

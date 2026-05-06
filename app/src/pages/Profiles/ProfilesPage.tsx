@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { Settings2 } from "lucide-react";
-import {
-  deployPlatformBridge,
-  updatePlatformCli
-} from "../../api/bridgeApi";
+import { deployPlatformBridge, updatePlatformCli } from "../../api/bridgeApi";
 import type { PlatformDeployment } from "../../api/bridgeApi";
 import { reorderProfiles } from "../../features/profiles/api/profilesApi";
 import type { ImProfile, Platform } from "../../features/profiles/model/types";
@@ -14,7 +11,6 @@ import { userErrorMessage } from "../../utils/errors";
 import { profileDisplayName } from "../../utils/profiles";
 import { isOfficialCliBindPlatform } from "../../features/profiles/bind-flows/officialCli";
 import { ProfileAccountList, ProfileBatchToolbar, ProfilePlatformEntryPanel } from "../../features/profiles/bind-flows/profileList";
-import { buildOriginalWechatCandidate } from "../../features/profiles/model/profileBuilders";
 import { useProfileDragOrdering } from "../../features/profiles/hooks/useProfileDragOrdering";
 import { useModalEnterGuard } from "../../features/profiles/hooks/useModalEnterGuard";
 import { useProfileBatchManagement } from "../../features/profiles/hooks/useProfileBatchManagement";
@@ -22,9 +18,9 @@ import { useCopiedCommandStatus } from "../../features/profiles/hooks/useCopiedC
 import { useProfileReadNotices } from "../../features/profiles/hooks/useProfileReadNotices";
 import { useProfilesController } from "../../features/profiles/hooks/useProfilesController";
 import { usePlatformCliDeployment } from "../../features/profiles/hooks/usePlatformCliDeployment";
-import { useWechatBindController } from "../../features/profiles/hooks/useWechatBindController";
 import { useOfficialCliBindController } from "../../features/profiles/hooks/useOfficialCliBindController";
 import { ProfilesPageModals } from "./ProfilesPageModals";
+import { DeveloperFeedbackModal } from "../../components/DeveloperFeedbackModal";
 
 interface Props {
   profiles: ImProfile[];
@@ -38,6 +34,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   const [profileMessage, setProfileMessage] = useState("");
   const [profileMessageIsError, setProfileMessageIsError] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isDeveloperContactOpen, setIsDeveloperContactOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [isBatchManaging, setIsBatchManaging] = useState(false);
   const {
@@ -82,61 +79,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     onProfilesChange,
     orderedProfiles,
     preservePersistedProfileState,
-    resetCliDeploymentProgress,
-    resetCopiedCommandStatus,
-    runAfterModalPaint,
-    setFormMessage,
-    setUpdatingCliPlatform,
-    shouldHandleModalEnter,
-    watchDeploymentProgressFor
-  });
-  const {
-    closeWechatSetup,
-    isCheckingWechatVersion,
-    isDeployingWechatBridge,
-    isEditingPersistedWechatProfile,
-    isInitializingWechat,
-    localWechatStepOffset,
-    openWechatPrivacyPane,
-    openWechatSetup,
-    openWindowsWechatSetup,
-    refreshWechatCandidates,
-    restoreWechatDbDir,
-    saveExistingMacWechatProfile,
-    saveExistingWindowsWechatProfile,
-    saveMacWechatSetupFromEnter,
-    saveWindowsWechatSetupFromEnter,
-    selectWechatCandidate,
-    selectedWechatCandidate,
-    selectedWechatId,
-    selectedWechatNeedsResign,
-    setSelectedWechatId,
-    setSudoPassword,
-    setWechatCandidates,
-    setWechatDbDir,
-    setWechatDeployment,
-    setWechatRemark,
-    setWechatVersionStatus,
-    submitMacWechatInitialization,
-    submitWindowsWechatInitialization,
-    sudoPassword,
-    wechatCandidates,
-    wechatDbDir,
-    wechatRemark,
-    wechatSetupProfile,
-    wechatUsesOfficialCliTemplate,
-    windowsWechatDeployment,
-    windowsWechatSaveDisabled,
-    windowsWechatVersionStatus
-  } = useWechatBindController({
-    cancelDeploymentRequest,
-    cleanupPlatformCliIfUnused,
-    isDeploymentRequestActive,
-    nextDeploymentRequest,
-    onProfilesChange,
-    orderedProfiles,
-    preservePersistedProfileState,
-    profiles,
     resetCliDeploymentProgress,
     resetCopiedCommandStatus,
     runAfterModalPaint,
@@ -201,8 +143,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     cleanupPlatformCliIfUnused,
     onProfilesChange,
     openOfficialCliSetup,
-    openWechatSetup,
-    openWindowsWechatSetup,
     orderedProfiles,
     selectedProfiles,
     setDeletingProfileId,
@@ -219,22 +159,20 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     : pendingDeleteId || isBulkDeleteConfirming || profileMessage.startsWith("正在") || profileMessage.startsWith(APP_MESSAGES.confirmDelete)
       ? "info"
       : "success";
-  const modalFormMessageVariant: FloatingNoticeVariant = formMessage.startsWith("微信已完成重新签名，并已自动重启微信和重新检测。")
-    ? "info"
-    : "error";
+  const modalFormMessageVariant: FloatingNoticeVariant = "error";
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (!isAboutOpen && !wechatSetupProfile && !officialCliFlow.profile && !isBatchManaging) return;
+      if (!isAboutOpen && !isDeveloperContactOpen && !officialCliFlow.profile && !isBatchManaging) return;
       event.preventDefault();
 
       if (isAboutOpen) {
         setIsAboutOpen(false);
         return;
       }
-      if (wechatSetupProfile) {
-        closeWechatSetup();
+      if (isDeveloperContactOpen) {
+        setIsDeveloperContactOpen(false);
         return;
       }
       if (officialCliFlow.profile) {
@@ -246,12 +184,12 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
 
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [isAboutOpen, isBatchManaging, officialCliFlow.profile, wechatSetupProfile]);
+  }, [isAboutOpen, isBatchManaging, isDeveloperContactOpen, officialCliFlow.profile]);
 
   useEffect(() => {
-    if (wechatSetupProfile || officialCliFlow.profile) return;
+    if (officialCliFlow.profile) return;
     resetModalCompositionState();
-  }, [officialCliFlow.profile, wechatSetupProfile]);
+  }, [officialCliFlow.profile]);
 
   function setProfileNotice(message: string, isError = false) {
     setProfileMessageIsError(isError);
@@ -294,16 +232,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     setFormMessage("");
     try {
       const status = await updatePlatformCli(platform);
-      if (platform === "wechat") {
-        setWechatVersionStatus(status);
-        const deployment = wechatSetupProfile ? await deployPlatformBridge("wechat", wechatSetupProfile.id) : null;
-        setWechatDeployment((current) => deployment ?? (current ? { ...current, currentVersion: status.currentVersion } : current));
-        if (deployment && wechatSetupProfile) {
-          const candidate = buildOriginalWechatCandidate(wechatSetupProfile, deployment);
-          setWechatCandidates([candidate]);
-          setSelectedWechatId(candidate.id);
-        }
-      } else if (isOfficialCliBindPlatform(platform)) {
+      if (isOfficialCliBindPlatform(platform)) {
         updateOfficialCliFlow(platform, { versionStatus: status });
         const setupProfile = officialCliFlow.platform === platform ? officialCliFlow.profile : null;
         const deployment = setupProfile ? await deployPlatformBridge(platform, setupProfile.id) : null;
@@ -322,10 +251,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     } finally {
       setUpdatingCliPlatform(null);
     }
-  }
-
-  async function copyWindowsWechatInitCommand() {
-    await copyOfficialCliCommand("wechat", windowsWechatDeployment);
   }
 
   function isPersistedProfile(profile: ImProfile) {
@@ -412,7 +337,12 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
       )}
 
       <section className="profile-layout">
-        <ProfilePlatformEntryPanel orderedProfiles={orderedProfiles} onAddProfile={addProfile} onOpenAbout={() => setIsAboutOpen(true)} />
+        <ProfilePlatformEntryPanel
+          orderedProfiles={orderedProfiles}
+          onAddProfile={addProfile}
+          onOpenAbout={() => setIsAboutOpen(true)}
+          onOpenDeveloperContact={() => setIsDeveloperContactOpen(true)}
+        />
 
         <article className="panel profile-list-panel">
           <header className="panel-header">
@@ -485,44 +415,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
             onCompositionStart: handleModalCompositionStart,
             onCompositionEnd: handleModalCompositionEnd
           },
-          wechatOfficial: {
-            isOpen: Boolean(wechatSetupProfile && wechatUsesOfficialCliTemplate),
-            deployment: windowsWechatDeployment,
-            versionStatus: windowsWechatVersionStatus,
-            isCheckingVersion: isCheckingWechatVersion,
-            isDeployingBridge: isDeployingWechatBridge,
-            isCopied: copiedCommandPlatform === "wechat",
-            remark: wechatRemark,
-            saveDisabled: windowsWechatSaveDisabled,
-            onCopy: copyWindowsWechatInitCommand,
-            onRemarkChange: setWechatRemark,
-            onClose: closeWechatSetup,
-            onSave: isEditingPersistedWechatProfile ? saveExistingWindowsWechatProfile : submitWindowsWechatInitialization,
-            onKeyDown: saveWindowsWechatSetupFromEnter
-          },
-          wechatLocal: {
-            isOpen: Boolean(wechatSetupProfile && !wechatUsesOfficialCliTemplate),
-            candidates: wechatCandidates,
-            selectedCandidate: selectedWechatCandidate,
-            selectedWechatId,
-            wechatDbDir,
-            sudoPassword,
-            remark: wechatRemark,
-            isInitializingWechat,
-            isEditingPersistedProfile: isEditingPersistedWechatProfile,
-            selectedWechatNeedsResign,
-            stepOffset: localWechatStepOffset,
-            onClose: closeWechatSetup,
-            onRefreshCandidates: refreshWechatCandidates,
-            onSelectCandidate: selectWechatCandidate,
-            onWechatDbDirChange: setWechatDbDir,
-            onRestoreAutoDbDir: restoreWechatDbDir,
-            onSudoPasswordChange: setSudoPassword,
-            onRemarkChange: setWechatRemark,
-            onOpenPrivacyPane: openWechatPrivacyPane,
-            onSave: isEditingPersistedWechatProfile ? saveExistingMacWechatProfile : submitMacWechatInitialization,
-            onKeyDown: saveMacWechatSetupFromEnter
-          },
           officialCli: {
             state: officialCliFlow,
             isCopied: Boolean(officialCliFlow.platform && copiedCommandPlatform === officialCliFlow.platform),
@@ -534,6 +426,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
           }
         }}
       />
+      {isDeveloperContactOpen && <DeveloperFeedbackModal onClose={() => setIsDeveloperContactOpen(false)} />}
     </div>
   );
 }

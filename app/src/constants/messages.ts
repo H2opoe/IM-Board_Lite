@@ -50,6 +50,7 @@ export const APP_SETTINGS_MESSAGES = {
 };
 
 export const PROFILE_MESSAGES = {
+  wechatPaidOnly: "微信功能仅限付费用户使用，请联系开发者开通。",
   selectForManage: "请先选择需要管理的账号。",
   selectForDelete: "请先选择需要删除的账号。",
   selectForReadTest: "请先选择需要测试读取的账号。",

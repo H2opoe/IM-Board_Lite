@@ -9,9 +9,7 @@ use crate::analysis::orchestrator::{
     emit_sync_progress, ensure_sync_not_cancelled, is_sync_cancelled_message,
 };
 use crate::bridge_runner::BridgeRequest;
-use crate::connectors::{
-    self, ConnectorAdapter, ProfileSyncLane, ProfileSyncMode, SessionDiscoveryStep,
-};
+use crate::connectors::{self, ConnectorAdapter, ProfileSyncMode, SessionDiscoveryStep};
 use crate::messages::normalizer::{
     bool_value, dedupe_sessions, first_string, normalize_message, platform_label, profile_remark,
     session_last_message_timestamp, should_skip_chat_history, should_sync_session, value_array,
@@ -83,83 +81,31 @@ pub(crate) async fn sync_target_profiles_messages(
     resource_dir: std::path::PathBuf,
     cache_dir: std::path::PathBuf,
 ) -> Result<Vec<ProfileSyncOutcome>, String> {
-    let mut serial_profiles = Vec::new();
     let mut concurrent_profiles = Vec::new();
 
     for profile in target_profiles {
         let connector = connector_for_profile(profile)?;
-        match (connector.sync_lane)() {
-            ProfileSyncLane::Serial => serial_profiles.push(profile.clone()),
-            ProfileSyncLane::Concurrent => concurrent_profiles.push(profile.clone()),
-        }
+        let _ = connector;
+        concurrent_profiles.push(profile.clone());
     }
 
-    // connector 决定账号进入串行或并发车道；同步编排不再直接关心具体平台名。
-    let (serial_outcomes, concurrent_outcomes) = tokio::join!(
-        sync_serial_profiles_messages(
-            app,
-            state,
-            serial_profiles,
-            window,
-            day_start,
-            day_start_text,
-            sync_end_text,
-            resource_dir.clone(),
-            cache_dir.clone(),
-        ),
-        sync_concurrent_profiles_messages(
-            app,
-            state,
-            concurrent_profiles,
-            window,
-            day_start,
-            day_start_text,
-            sync_end_text,
-            resource_dir,
-            cache_dir,
-        )
-    );
-
-    let mut outcomes = serial_outcomes?;
-    outcomes.extend(concurrent_outcomes?);
-    Ok(outcomes)
+    sync_concurrent_profiles_messages(
+        app,
+        state,
+        concurrent_profiles,
+        window,
+        day_start,
+        day_start_text,
+        sync_end_text,
+        resource_dir,
+        cache_dir,
+    )
+    .await
 }
 
 fn connector_for_profile(profile: &ImProfile) -> Result<ConnectorAdapter, String> {
     connectors::find(&profile.platform)
         .ok_or_else(|| format!("暂不支持{}账号同步。", profile.label))
-}
-
-async fn sync_serial_profiles_messages(
-    app: &tauri::AppHandle,
-    state: &State<'_, AppState>,
-    profiles: Vec<ImProfile>,
-    window: &MessageImportWindow,
-    day_start: i64,
-    day_start_text: &str,
-    sync_end_text: &str,
-    resource_dir: std::path::PathBuf,
-    cache_dir: std::path::PathBuf,
-) -> Result<Vec<ProfileSyncOutcome>, String> {
-    let mut outcomes = Vec::new();
-    for profile in profiles {
-        ensure_sync_not_cancelled(state)?;
-        outcomes.push(
-            sync_profile_messages_with_notice(
-                app,
-                state,
-                profile,
-                window,
-                day_start,
-                day_start_text,
-                sync_end_text,
-                resource_dir.clone(),
-                cache_dir.clone(),
-            )
-            .await?,
-        );
-    }
-    Ok(outcomes)
 }
 
 async fn sync_concurrent_profiles_messages(

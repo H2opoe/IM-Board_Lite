@@ -13,51 +13,9 @@ use crate::storage::AppState;
 pub async fn run_bridge_command(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
-    mut request: BridgeRequest,
+    request: BridgeRequest,
 ) -> Result<BridgeEnvelope, String> {
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
-    // macOS微信使用应用内置Python bridge，实例发现不能被官方CLI热更新阻塞；
-    // Windows微信才走热更新的原版wechat-cli。
-    if request.platform == "wechat" && cfg!(windows) {
-        if let Some(spec) = official_cli::cli_spec("wechat") {
-            let needs_cli_arg = request
-                .args
-                .get("cli_path")
-                .map_or(true, |value| value.trim().is_empty())
-                && request
-                    .profile
-                    .as_ref()
-                    .and_then(|profile| profile.config_json.get("cliPath"))
-                    .and_then(|value| value.as_str())
-                    .map_or(true, |value| value.trim().is_empty());
-            let cli_path = if needs_cli_arg || cfg!(windows) {
-                match official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec) {
-                    Some(path) => Some(path),
-                    None => {
-                        match official_cli::ensure_platform_cli_ready(
-                            &resource_dir,
-                            &state.app_dir,
-                            spec,
-                            None,
-                        )
-                        .await
-                        {
-                            Ok(path) => Some(path),
-                            Err(err) => return Err(err),
-                        }
-                    }
-                }
-            } else {
-                None
-            };
-            if let (true, Some(cli_path)) = (needs_cli_arg, cli_path) {
-                request.args.insert(
-                    "cli_path".to_owned(),
-                    cli_path.to_string_lossy().to_string(),
-                );
-            }
-        }
-    }
     bridge_runner::run_bridge(request, resource_dir, state.cache_dir.clone())
         .await
         .map_err(|err| err.to_string())

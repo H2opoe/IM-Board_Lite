@@ -1,9 +1,0 @@
-#!/bin/sh
-'''exec' "$(dirname "$0")/python3.10" "$0" "$@"
-' '''
-import sys
-from wechat_cli.main import cli
-
-if __name__ == '__main__':
-    sys.argv[0] = sys.argv[0].removesuffix('.exe')
-    sys.exit(cli())

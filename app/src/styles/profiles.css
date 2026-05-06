@@ -39,15 +39,76 @@
   position: relative;
   display: grid;
   justify-items: start;
-  gap: 10px;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
   min-height: 112px;
   border: 1px solid #deddd6;
   border-radius: 8px;
   padding: 16px;
   background: #fbfbf8;
   color: #17201f;
-  cursor: pointer;
+  cursor: default;
   text-align: left;
+}
+
+.bind-card-hit-area {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  border-radius: inherit;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.bind-card.disabled {
+  border-color: #e4e1d8;
+  background: #f3f1eb;
+}
+
+.bind-card.disabled .platform-icon-lg,
+.bind-card.disabled strong {
+  opacity: 0.62;
+}
+
+.bind-card-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  max-width: calc(100% - 82px);
+}
+
+.bind-card-title-row strong {
+  flex: 0 0 auto;
+}
+
+.bind-paid-only-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #697774;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.bind-card-footer {
+  display: flex;
+  align-items: flex-end;
+  min-height: 30px;
+  margin-top: auto;
+}
+
+.bind-auth-label {
+  line-height: 30px;
+}
+
+.bind-contact-button {
+  position: relative;
+  z-index: 1;
+  min-height: 30px;
+  padding: 0 10px;
 }
 
 .bind-count-badge {
@@ -65,7 +126,7 @@
   white-space: nowrap;
 }
 
-.bind-card:hover {
+.bind-card:not(.disabled):hover {
   border-color: rgba(47, 111, 104, 0.45);
   box-shadow: 0 10px 26px rgba(47, 111, 104, 0.1);
 }
@@ -353,4 +414,3 @@
   background: #e8e8e2;
   color: #70807d;
 }
-

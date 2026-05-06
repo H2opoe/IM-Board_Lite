@@ -29,12 +29,3 @@ export async function exportDiagnosticPackage(filePath: string): Promise<Diagnos
   void filePath;
   return requireTauri("导出诊断包");
 }
-
-export async function openMacosPrivacySettings(
-  pane: "app_management" | "full_disk_access",
-  appPath = "",
-  dataDir = ""
-): Promise<void> {
-  if (isTauri) return invoke("open_macos_privacy_settings", { pane, appPath, dataDir });
-  return requireTauri("打开系统设置");
-}

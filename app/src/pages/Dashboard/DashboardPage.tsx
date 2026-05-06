@@ -28,7 +28,6 @@ interface Props {
   syncProgressNotices: SyncProgressNotice[];
   syncFrequencyMinutes: number;
   isSyncCancelArmed: boolean;
-  isDemoMode: boolean;
   onOpenSource: (action: ActionItem) => void;
   onDashboardChange: (data: DashboardData) => void;
   onSyncNow: () => void;
@@ -50,7 +49,6 @@ export function DashboardPage({
   syncProgressNotices,
   syncFrequencyMinutes,
   isSyncCancelArmed,
-  isDemoMode,
   onOpenSource,
   onDashboardChange,
   onSyncNow,
@@ -117,7 +115,6 @@ export function DashboardPage({
         <div>
           <div className="topbar-title-row">
             <h1>{activeName}</h1>
-            {isDemoMode && <span className="demo-mode-badge">演示数据</span>}
           </div>
           <span>
             {data.day}｜同步状态 {syncStatusLabel}｜AI状态 {aiStatusLabel}

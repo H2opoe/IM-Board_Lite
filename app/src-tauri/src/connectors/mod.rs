@@ -1,7 +1,5 @@
 pub mod dingtalk;
 pub mod feishu;
-pub mod wechat_local;
-pub mod wechat_official;
 pub mod wecom;
 
 use crate::storage::models::ImProfile;
@@ -10,17 +8,9 @@ pub const OFFICIAL_CLI_FETCH_CONCURRENCY: usize = 4;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ConnectorKind {
-    WechatLocal,
-    WechatOfficial,
     Wecom,
     Feishu,
     Dingtalk,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ProfileSyncLane {
-    Serial,
-    Concurrent,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -40,7 +30,6 @@ pub struct ConnectorAdapter {
     pub platform: &'static str,
     pub kind: ConnectorKind,
     pub is_available: fn() -> bool,
-    pub sync_lane: fn() -> ProfileSyncLane,
     pub sync_mode: fn() -> ProfileSyncMode,
     pub session_discovery_steps: fn() -> &'static [SessionDiscoveryStep],
     pub prepare_profile_sync_access: fn(&ImProfile),
@@ -58,8 +47,6 @@ impl ConnectorAdapter {
 }
 
 const CONNECTOR_REGISTRY: &[ConnectorAdapter] = &[
-    wechat_official::ADAPTER,
-    wechat_local::ADAPTER,
     wecom::ADAPTER,
     feishu::ADAPTER,
     dingtalk::ADAPTER,
@@ -72,14 +59,6 @@ pub fn find(platform: &str) -> Option<ConnectorAdapter> {
         .find(|adapter| adapter.matches(platform))
 }
 
-pub fn default_session_discovery_steps() -> &'static [SessionDiscoveryStep] {
-    &[]
-}
-
-pub fn no_empty_session_warning(_profile: &ImProfile) -> Option<String> {
-    None
-}
-
 pub fn no_prepare_profile_sync_access(_profile: &ImProfile) {}
 
 pub fn default_sessions_ready_message(profile: &ImProfile, total: i64) -> String {
@@ -89,10 +68,6 @@ pub fn default_sessions_ready_message(profile: &ImProfile, total: i64) -> String
         profile_remark(profile),
         total
     )
-}
-
-pub fn serial_fetch_concurrency() -> usize {
-    1
 }
 
 pub fn official_cli_fetch_concurrency() -> usize {

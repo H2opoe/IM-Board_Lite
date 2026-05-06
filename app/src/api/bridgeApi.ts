@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { ImProfile, Platform, WechatCandidate } from "../features/profiles/model/types";
+import type { ImProfile, Platform } from "../features/profiles/model/types";
 import { isTauri, requireTauri } from "./tauri";
 
 const PLATFORM_CLI_DEPLOYMENT_PROGRESS_EVENT = "platform-cli-deployment-progress";
@@ -61,63 +61,6 @@ export async function runBridgeCommand(profile: ImProfile, command: string, args
   return envelope;
 }
 
-export async function discoverWechatInstances(): Promise<WechatCandidate[]> {
-  if (isTauri) {
-    const envelope = await invoke<BridgeEnvelope<WechatCandidate[]>>("run_bridge_command", {
-      request: {
-        platform: "wechat",
-        command: "discover",
-        profile: null,
-        args: {}
-      }
-    });
-    if (!envelope.ok) {
-      const detail = formatBridgeError(envelope);
-      throw new Error(detail || "微信实例发现失败");
-    }
-    return envelope.data;
-  }
-  return requireTauri("发现微信实例");
-}
-
-export async function initializeWechatFiles(profile: ImProfile, candidate: WechatCandidate, sudoPassword = ""): Promise<ImProfile> {
-  const requiresPassword = candidate.requiresPassword !== false && candidate.runtime !== "windows_original_cli" && candidate.runtime !== "original_cli";
-  if (requiresPassword && !sudoPassword.trim()) throw new Error("请输入本机sudo密码用于一次性初始化。");
-  const dbDir = typeof profile.configJson.dbDir === "string" ? profile.configJson.dbDir : candidate.dbDir;
-  if (isTauri) {
-    const args: Record<string, string> = {};
-    if (candidate.pid) args.pid = String(candidate.pid);
-    if (candidate.bundleId) args.bundle_id = candidate.bundleId;
-    if (candidate.appPath) args.app_path = candidate.appPath;
-    if (candidate.cliPath) args.cli_path = candidate.cliPath;
-    if (dbDir) args.db_dir = dbDir;
-    const envelope = await invoke<BridgeEnvelope>("run_bridge_command", {
-      request: {
-        platform: "wechat",
-        command: "init-profile",
-        profile,
-        ...(requiresPassword ? { stdinSecret: sudoPassword } : {}),
-        args
-      }
-    });
-    if (!envelope.ok) {
-      const detail = formatBridgeError(envelope);
-      const error = new Error(detail || "微信初始化失败") as Error & { code?: string };
-      error.code = envelope.error?.code;
-      throw error;
-    }
-    const initConfig = wechatInitConfig(envelope.data);
-    return {
-      ...profile,
-      configJson: {
-        ...profile.configJson,
-        ...initConfig
-      }
-    };
-  }
-  return requireTauri("初始化微信账号");
-}
-
 export async function deployPlatformBridge(platform: Platform, profileId: string): Promise<PlatformDeployment> {
   if (isTauri) return invoke("deploy_platform_bridge", { platform, profileId });
   return requireTauri("准备平台CLI");
@@ -148,26 +91,6 @@ export async function cleanupUnusedPlatformCli(platform: Platform): Promise<bool
   return requireTauri("清理未使用的平台CLI");
 }
 
-function wechatInitConfig(data: unknown) {
-  if (!data || typeof data !== "object") return {};
-  const record = data as Record<string, unknown>;
-  const cacheDir = recordString(record, ["cacheDir"]);
-  const tmpDir = cacheDir ? `${cacheDir.replace(/[\\/]+$/, "")}${cacheDir.includes("\\") ? "\\" : "/"}tmp` : "";
-  return {
-    ...(recordString(record, ["cliPath"]) ? { cliPath: recordString(record, ["cliPath"]) } : {}),
-    ...(recordString(record, ["configPath"]) ? { configPath: recordString(record, ["configPath"]) } : {}),
-    ...(recordString(record, ["keysPath"]) ? { keysPath: recordString(record, ["keysPath"]) } : {}),
-    ...(cacheDir ? { cacheDir, tmpDir } : {})
-  };
-}
-
-function recordString(value: unknown, keys: string[]) {
-  if (!value || typeof value !== "object") return "";
-  const record = value as Record<string, unknown>;
-  const matched = keys.map((key) => record[key]).find((item): item is string => typeof item === "string" && item.trim().length > 0);
-  return matched?.trim() ?? "";
-}
-
 function formatBridgeError(envelope: { warnings?: string[]; error?: { code?: string; message: string } }) {
   if (
     envelope.error?.code === "WECOM_MESSAGE_PERMISSION_UNSUPPORTED" ||
@@ -180,40 +103,9 @@ function formatBridgeError(envelope: { warnings?: string[]; error?: { code?: str
   }
   const label = bridgeErrorCodeLabel(envelope.error?.code);
   const message = envelope.error?.message;
-  const wechatMessage = formatWechatBridgeError(envelope.error?.code, message, envelope.warnings);
-  if (wechatMessage) return wechatMessage;
   return [isBridgeErrorLabelRedundant(label, message) ? "" : label, message, ...(envelope.warnings ?? [])]
     .filter(Boolean)
     .join("\n");
-}
-
-function formatWechatBridgeError(code?: string, message?: string, warnings?: string[]) {
-  const rawDetail = [message, ...(warnings ?? [])].filter(Boolean).join("\n");
-  if (
-    code === "WECHAT_SIGN_PERMISSION_DENIED" ||
-    (code === "WECHAT_SIGN_FAILED" && /Operation not permitted|已阻止修改|App 管理/i.test(rawDetail))
-  ) {
-    return [
-      "微信签名被 macOS 权限拦截：请到 系统设置>隐私与安全性 >App管理，允许 IM-Board 修改 App。",
-      "授权后继续开始绑定，已输入的电脑用户密码和备注会保留。",
-      rawDetail ? `底层返回：${rawDetail}` : ""
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-  if (code === "WECHAT_RESTART_REQUIRED") {
-    return message || "微信已完成重新签名，并已自动重启微信和重新检测。请在微信窗口重新登录账号。";
-  }
-  if (code === "WECHAT_KEYS_EMPTY") {
-    return [
-      "微信当前未登录：请先在微信窗口完成登录，然后回到 IM-Board 重试绑定。",
-      "如果已经登录，请刷新微信实例并确认选中的是当前登录账号的数据文件夹。",
-      warnings?.length ? `诊断信息：${warnings.join("；")}` : ""
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-  return "";
 }
 
 function isBridgeErrorLabelRedundant(label?: string, message?: string) {
@@ -233,16 +125,6 @@ function bridgeErrorCodeLabel(code?: string) {
     BRIDGE_CRASHED: "桥接进程执行失败",
     BRIDGE_SPAWN_FAILED: "桥接进程启动失败",
     MISSING_CHAT: "缺少会话参数",
-    WECHAT_UNSUPPORTED_COMMAND: "微信命令不支持",
-    WECHAT_CLI_MISSING: "微信CLI不可用",
-    WECHAT_ORIGINAL_CLI_MISSING: "微信CLI不可用",
-    WECHAT_ORIGINAL_CLI_INIT_FAILED: "微信CLI初始化失败",
-    WECHAT_ORIGINAL_CLI_FAILED: "微信CLI执行失败",
-    WECHAT_PROFILE_NOT_FOUND: "缺少微信账号配置",
-    WECHAT_RESTART_REQUIRED: "需要重启微信",
-    WECHAT_SIGN_PERMISSION_DENIED: "微信签名权限不足",
-    WECHAT_SIGN_FAILED: "微信签名失败",
-    WECHAT_KEYS_EMPTY: "微信密钥文件为空",
     WECOM_PROFILE_NOT_FOUND: "缺少企业微信账号配置",
     WECOM_UNSUPPORTED_COMMAND: "企业微信命令不支持",
     WECOM_CLI_MISSING: "企业微信CLI不可用",

@@ -3,19 +3,12 @@ use std::io::{Cursor, Write};
 use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
-use tauri::{Manager, State};
+use tauri::State;
 use zip::write::SimpleFileOptions;
 
 use crate::daily_cache;
-#[cfg(target_os = "macos")]
-use crate::macos_permissions;
 use crate::security::sanitize_log;
 use crate::storage::AppState;
-
-#[cfg(target_os = "windows")]
-const MAIN_WINDOW_LABEL: &str = "main";
-#[cfg(target_os = "windows")]
-const MAIN_TRAY_ID: &str = "main-tray";
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,62 +53,11 @@ pub fn export_diagnostic_package(
 }
 
 #[tauri::command]
-pub fn set_theme_dock_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
+pub fn set_theme_dock_icon(_app: tauri::AppHandle, theme: String) -> Result<(), String> {
     match theme.as_str() {
-        "light" | "dark" => set_theme_dock_icon_impl(app, &theme),
+        "light" | "dark" => Ok(()),
         _ => Err("主题参数无效。".to_string()),
     }
-}
-
-#[tauri::command]
-pub fn open_macos_privacy_settings(
-    pane: String,
-    app_path: Option<String>,
-    data_dir: Option<String>,
-) -> Result<(), String> {
-    open_macos_privacy_settings_impl(
-        &pane,
-        app_path.as_deref().unwrap_or(""),
-        data_dir.as_deref().unwrap_or(""),
-    )
-}
-
-#[cfg(target_os = "macos")]
-fn open_macos_privacy_settings_impl(
-    pane: &str,
-    app_path: &str,
-    data_dir: &str,
-) -> Result<(), String> {
-    macos_permissions::trigger_privacy_registration(pane, app_path, data_dir);
-    let url = match pane {
-        "app_management" => {
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_AppBundles"
-        }
-        "full_disk_access" => {
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
-        }
-        _ => return Err("系统设置授权页参数无效。".to_string()),
-    };
-    std::process::Command::new("open")
-        .arg(url)
-        .status()
-        .map_err(|error| format!("打开系统设置失败：{error}"))
-        .and_then(|status| {
-            if status.success() {
-                Ok(())
-            } else {
-                Err("打开系统设置失败，请手动前往 系统设置>隐私与安全性。".to_string())
-            }
-        })
-}
-
-#[cfg(not(target_os = "macos"))]
-fn open_macos_privacy_settings_impl(
-    _pane: &str,
-    _app_path: &str,
-    _data_dir: &str,
-) -> Result<(), String> {
-    Ok(())
 }
 
 fn export_diagnostic_package_impl(
@@ -477,87 +419,6 @@ fn truncate_for_diagnostic(value: &str, limit: usize) -> String {
     let mut output = value.chars().take(limit).collect::<String>();
     output.push_str("...");
     output
-}
-
-#[cfg(target_os = "macos")]
-fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), String> {
-    let icon_path = dock_icon_path(&app, theme_icon_file_name(theme));
-    let icon_bytes = std::fs::read(&icon_path)
-        .map_err(|error| format!("读取 Dock图标失败（{}）：{error}", icon_path.display()))?;
-    let (sender, receiver) = std::sync::mpsc::channel();
-
-    app.run_on_main_thread(move || {
-        let _ = sender.send(set_macos_app_icon(&icon_bytes));
-    })
-    .map_err(|error| format!("切换 Dock图标失败：{error}"))?;
-
-    receiver
-        .recv()
-        .map_err(|error| format!("等待 Dock图标切换结果失败：{error}"))?
-}
-
-#[cfg(target_os = "windows")]
-fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), String> {
-    let icon = tauri::image::Image::from_path(desktop_icon_path(&app, theme_icon_file_name(theme)))
-        .map_err(|error| format!("读取应用图标失败：{error}"))?;
-
-    // Windows 的 exe 与快捷方式图标来自安装包静态资源；运行中同步窗口任务栏图标与后台托盘图标。
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        window
-            .set_icon(icon.clone())
-            .map_err(|error| format!("切换窗口图标失败：{error}"))?;
-    }
-    if let Some(tray) = app.tray_by_id(MAIN_TRAY_ID) {
-        tray.set_icon(Some(icon))
-            .map_err(|error| format!("切换后台图标失败：{error}"))?;
-    }
-    Ok(())
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-fn set_theme_dock_icon_impl(_app: tauri::AppHandle, _theme: &str) -> Result<(), String> {
-    Ok(())
-}
-
-fn theme_icon_file_name(theme: &str) -> &'static str {
-    if theme == "dark" {
-        "icon-dark.png"
-    } else {
-        "icon-light.png"
-    }
-}
-
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-fn desktop_icon_path(app: &tauri::AppHandle, file_name: &str) -> std::path::PathBuf {
-    if let Ok(resource_dir) = app.path().resource_dir() {
-        let bundled_icon = resource_dir.join("icons").join(file_name);
-        if bundled_icon.exists() {
-            return bundled_icon;
-        }
-    }
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("icons")
-        .join(file_name)
-}
-
-#[cfg(target_os = "macos")]
-fn dock_icon_path(app: &tauri::AppHandle, file_name: &str) -> std::path::PathBuf {
-    desktop_icon_path(app, file_name)
-}
-
-#[cfg(target_os = "macos")]
-fn set_macos_app_icon(icon_bytes: &[u8]) -> Result<(), String> {
-    use objc2::{AllocAnyThread, MainThreadMarker};
-    use objc2_app_kit::{NSApplication, NSImage};
-    use objc2_foundation::NSData;
-
-    let marker = unsafe { MainThreadMarker::new_unchecked() };
-    let application = NSApplication::sharedApplication(marker);
-    let data = NSData::with_bytes(icon_bytes);
-    let icon = NSImage::initWithData(NSImage::alloc(), &data)
-        .ok_or_else(|| "创建 Dock图标图片失败。".to_string())?;
-    unsafe { application.setApplicationIconImage(Some(&icon)) };
-    Ok(())
 }
 
 fn parse_time_to_minutes(value: &str) -> Result<i64, String> {

@@ -19,8 +19,6 @@ mod normalizers;
 mod paths;
 mod process;
 mod wecom_runner;
-#[cfg(windows)]
-mod windows_wechat;
 use dingtalk_runner::run_official_dingtalk_cli;
 #[cfg(test)]
 use errors::*;
@@ -30,11 +28,7 @@ use normalizers::*;
 use paths::resolve_bridge_executable;
 use process::{bridge_process_spec, bridge_spawn_error};
 use wecom_runner::run_official_wecom_cli;
-#[cfg(windows)]
-use windows_wechat::*;
 
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x08000000;
 pub(super) const APP_DATA_DIR_NAME: &str = "IMBoard";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -83,19 +77,6 @@ pub async fn run_bridge_tracked(
     let started_at = Instant::now();
     if let Some(adapter) = connectors::find(&request.platform) {
         match adapter.kind {
-            ConnectorKind::WechatOfficial => {
-                #[cfg(windows)]
-                {
-                    return run_windows_original_wechat_cli(
-                        request,
-                        resource_dir,
-                        cache_dir,
-                        active_pids,
-                        started_at,
-                    )
-                    .await;
-                }
-            }
             ConnectorKind::Wecom => {
                 return run_official_wecom_cli(
                     request,
@@ -126,44 +107,12 @@ pub async fn run_bridge_tracked(
                 )
                 .await;
             }
-            ConnectorKind::WechatLocal => {}
         }
     }
     let executable = resolve_bridge_executable(&resource_dir, &request);
     let process = bridge_process_spec(&request.platform, executable, &resource_dir);
-    if request.platform == "wechat"
-        && process.script_path.is_some()
-        && process.prefix_args.is_empty()
-    {
-        let script = process
-            .script_path
-            .as_ref()
-            .map(|path| path.to_string_lossy().to_string());
-        return Ok(BridgeEnvelope {
-            ok: false,
-            data: serde_json::Value::Null,
-            warnings: vec![
-                "应用内置Python运行时缺失或不可用，macOS微信bridge无法运行。请重新安装或使用重新打包后的应用。"
-                    .to_owned(),
-            ],
-            error: Some(BridgeError {
-                code: "BRIDGE_PYTHON_MISSING".to_owned(),
-                message: "微信Bridge缺少可运行的内置Python运行时。".to_owned(),
-                recoverable: true,
-            }),
-            meta: serde_json::json!({
-                "platform": request.platform,
-                "executable": process.executable.to_string_lossy(),
-                "script": script,
-                "duration_ms": started_at.elapsed().as_millis()
-            }),
-        });
-    }
     let mut command = Command::new(&process.executable);
     command.args(&process.prefix_args);
-    if request.platform == "wechat" && process.script_path.is_some() {
-        command.env("PYTHONDONTWRITEBYTECODE", "1");
-    }
 
     command.arg(&request.command).arg("--format").arg("json");
 
@@ -187,9 +136,6 @@ pub async fn run_bridge_tracked(
     }
 
     for (key, value) in request.args {
-        if request.platform == "wechat" && matches!(key.as_str(), "chat_name" | "chat_type") {
-            continue;
-        }
         command
             .arg(format!("--{}", key.replace('_', "-")))
             .arg(value);
@@ -284,12 +230,6 @@ pub async fn run_bridge_tracked(
     }
     Ok(envelope)
 }
-
-// Windows微信走热更新的原版wechat-cli；这些实现只在 Windows 构建中参与编译，避免 macOS 检查时产生误导性的 dead_code 警告。
-#[cfg(windows)]
-mod windows_original;
-#[cfg(windows)]
-use windows_original::run_windows_original_wechat_cli;
 
 include!("command.rs");
 fn merge_meta(mut left: serde_json::Value, right: serde_json::Value) -> serde_json::Value {

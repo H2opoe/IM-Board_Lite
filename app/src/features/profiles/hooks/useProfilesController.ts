@@ -4,7 +4,6 @@ import { userErrorMessage } from "../../../utils/errors";
 import { profileDisplayName } from "../../../utils/profiles";
 import { createProfileDraft, deleteProfile, upsertProfile } from "../api/profilesApi";
 import { isOfficialCliBindPlatform, type OfficialCliBindPlatform } from "../bind-flows/officialCli";
-import { isWindowsRuntime, usesWindowsWechatRuntime } from "../model/profilePathUtils";
 import type { ImProfile, Platform } from "../model/types";
 
 interface UseProfilesControllerParams {
@@ -13,8 +12,6 @@ interface UseProfilesControllerParams {
   onProfilesChange: () => Promise<void>;
   cleanupPlatformCliIfUnused: (platform: Platform) => Promise<void>;
   openOfficialCliSetup: (platform: OfficialCliBindPlatform, profile: ImProfile) => void;
-  openWechatSetup: (profile: ImProfile) => void;
-  openWindowsWechatSetup: (profile: ImProfile) => void;
   setDeletingProfileId: (profileId: string) => void;
   setFormMessage: (message: string) => void;
   setPendingBulkDeleteIds: (profileIds: string[]) => void;
@@ -31,8 +28,6 @@ export function useProfilesController({
   onProfilesChange,
   cleanupPlatformCliIfUnused,
   openOfficialCliSetup,
-  openWechatSetup,
-  openWindowsWechatSetup,
   setDeletingProfileId,
   setFormMessage,
   setPendingBulkDeleteIds,
@@ -44,15 +39,11 @@ export function useProfilesController({
 }: UseProfilesControllerParams) {
   function addProfile(platform: Platform) {
     setFormMessage("");
-    const draft = createProfileDraft(platform, nextProfileSortOrder());
     if (platform === "wechat") {
-      if (isWindowsRuntime()) {
-        openWindowsWechatSetup(draft);
-      } else {
-        openWechatSetup(draft);
-      }
+      setProfileNotice(PROFILE_MESSAGES.wechatPaidOnly);
       return;
     }
+    const draft = createProfileDraft(platform, nextProfileSortOrder());
     if (isOfficialCliBindPlatform(platform)) {
       openOfficialCliSetup(platform, draft);
     }
@@ -135,11 +126,7 @@ export function useProfilesController({
   function editProfile(profile: ImProfile) {
     setFormMessage("");
     if (profile.platform === "wechat") {
-      if (usesWindowsWechatRuntime(profile) || isWindowsRuntime()) {
-        openWindowsWechatSetup(profile);
-      } else {
-        openWechatSetup(profile);
-      }
+      setProfileNotice(PROFILE_MESSAGES.wechatPaidOnly);
       return;
     }
     if (isOfficialCliBindPlatform(profile.platform)) {

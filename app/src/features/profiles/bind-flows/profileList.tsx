@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, RefObject } from "react";
-import { CheckCircle2, GripVertical, Info, Pause, Search, Settings2, Trash2 } from "lucide-react";
+import { CheckCircle2, GripVertical, Info, MessageCircle, Pause, Search, Settings2, Trash2 } from "lucide-react";
 import { PlatformIcon } from "../../../components/shared/PlatformIcon";
 import { APP_MESSAGES, EMPTY_STATE_MESSAGES, PROFILE_MESSAGES } from "../../../constants/messages";
 import { PLATFORM_BINDING_OPTIONS, PROFILE_STATUS_LABELS } from "../../../constants/platforms";
@@ -13,6 +13,7 @@ interface PlatformEntryPanelProps {
   orderedProfiles: ImProfile[];
   onAddProfile: (platform: Platform) => void;
   onOpenAbout: () => void;
+  onOpenDeveloperContact: () => void;
 }
 
 interface ProfileBatchToolbarProps {
@@ -54,7 +55,7 @@ interface ProfileAccountListProps {
   onConfirmRemoveProfile: (profile: ImProfile) => void;
 }
 
-export function ProfilePlatformEntryPanel({ orderedProfiles, onAddProfile, onOpenAbout }: PlatformEntryPanelProps) {
+export function ProfilePlatformEntryPanel({ orderedProfiles, onAddProfile, onOpenAbout, onOpenDeveloperContact }: PlatformEntryPanelProps) {
   return (
     <article className="panel profile-bind-panel">
       <header className="panel-header">
@@ -69,13 +70,27 @@ export function ProfilePlatformEntryPanel({ orderedProfiles, onAddProfile, onOpe
       <div className="bind-grid">
         {PLATFORM_BINDING_OPTIONS.map((platform) => {
           const boundCount = orderedProfiles.filter((profile) => profile.platform === platform.id).length;
+          const isDisabled = Boolean(platform.disabled);
           return (
-            <button className="bind-card" key={platform.id} onClick={() => onAddProfile(platform.id)}>
+            <div className={`bind-card ${isDisabled ? "disabled" : ""}`.trim()} key={platform.id} aria-disabled={isDisabled}>
               <span className="bind-count-badge">已绑定{boundCount}个</span>
               <PlatformIcon platform={platform.id} className="platform-icon-lg" />
-              <strong>{platform.label}</strong>
-              <span>{platform.auth}</span>
-            </button>
+              <div className="bind-card-title-row">
+                <strong>{platform.label}</strong>
+                {isDisabled && platform.disabledReason ? <span className="bind-paid-only-label">{platform.disabledReason}</span> : null}
+              </div>
+              <div className="bind-card-footer">
+                {isDisabled ? (
+                  <button className="secondary-button bind-contact-button" onClick={onOpenDeveloperContact}>
+                    <MessageCircle size={16} />
+                    加入付费群组
+                  </button>
+                ) : (
+                  <span className="bind-auth-label">{platform.auth}</span>
+                )}
+              </div>
+              {!isDisabled && <button className="bind-card-hit-area" onClick={() => onAddProfile(platform.id)} aria-label={`绑定${platform.label}`} />}
+            </div>
           );
         })}
       </div>

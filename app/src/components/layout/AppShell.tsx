@@ -1,5 +1,4 @@
 import { ChevronRight, KeyRound, LayoutDashboard, Link2, Monitor, Moon, Settings, SunMedium, X } from "lucide-react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useRef, useState } from "react";
 import type { ThemeChoice, ThemeMode } from "../../hooks/useThemeController";
 import type { ActionItem } from "../../features/dashboard/model/types";
@@ -33,11 +32,6 @@ function profileSubtitle(profile: ImProfile) {
   const label = platformLabel(profile.platform);
   if (remark) return remark;
   return profile.label !== label ? profile.label : "";
-}
-
-function startWindowDrag(event: React.MouseEvent<HTMLElement>) {
-  if (event.button !== 0) return;
-  void getCurrentWindow().startDragging().catch(() => {});
 }
 
 export function AppShell({
@@ -104,12 +98,14 @@ export function AppShell({
 
   return (
     <div className={`app-shell theme-${effectiveThemeMode} theme-choice-${themeChoice}${isTauri ? " tauri-window" : ""}`}>
-      {isTauri && <div className="window-drag-region" data-tauri-drag-region onMouseDown={startWindowDrag} />}
       <aside className="sidebar">
-        <div className="brand" data-tauri-drag-region={isTauri ? "" : undefined} onMouseDown={isTauri ? startWindowDrag : undefined}>
+        <div className="brand">
           <AppIcon className="brand-mark" variant={effectiveThemeMode} />
           <div>
-            <strong>IM-Board</strong>
+            <strong className="brand-title">
+              IM-Board{" "}
+              <small className="lite-edition-badge">Lite版</small>
+            </strong>
             <span>聊天汇总看板</span>
           </div>
         </div>

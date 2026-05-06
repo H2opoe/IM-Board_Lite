@@ -16,7 +16,6 @@ use archives::{
 };
 pub use bind_commands::{default_bind_command, platform_label};
 pub use npm_registry::npm_latest_version;
-use resolver::package_dir;
 pub use resolver::{
     cli_spec, official_cli_version, resolve_official_cli, writable_cli_install_root,
 };
@@ -31,12 +30,6 @@ pub struct PlatformCliSpec {
 }
 
 pub const OFFICIAL_CLIS: &[PlatformCliSpec] = &[
-    PlatformCliSpec {
-        platform: "wechat",
-        package: "@canghe_ai/wechat-cli",
-        bin: "wechat-cli",
-        source: "https://github.com/huohuoer/wechat-cli",
-    },
     PlatformCliSpec {
         platform: "wecom",
         package: "@wecom/cli",
@@ -56,20 +49,6 @@ pub const OFFICIAL_CLIS: &[PlatformCliSpec] = &[
         source: "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
     },
 ];
-
-#[cfg(windows)]
-const WECHAT_CLI_SOURCE_ARCHIVES: &[&str] = &[
-    "https://gh-proxy.com/https://github.com/huohuoer/wechat-cli/archive/refs/heads/main.zip",
-    "https://gh.llkk.cc/https://github.com/huohuoer/wechat-cli/archive/refs/heads/main.zip",
-    "https://codeload.github.com/huohuoer/wechat-cli/zip/refs/heads/main",
-    "https://github.com/huohuoer/wechat-cli/archive/refs/heads/main.zip",
-];
-#[cfg(windows)]
-const PYPI_MIRROR_INDEX_URL: &str = "https://pypi.tuna.tsinghua.edu.cn/simple";
-#[cfg(windows)]
-const PYPI_MIRROR_TRUSTED_HOST: &str = "pypi.tuna.tsinghua.edu.cn";
-#[cfg(windows)]
-const PYTHON_STANDALONE_VERSION: &str = "20260414";
 
 const PLATFORM_CLI_PROGRESS_EVENT: &str = "platform-cli-deployment-progress";
 const WINDOWS_DINGTALK_REGISTRY_KEY: &str = r"HKCU:\Software\DwsCli\keychain\dws-cli";
@@ -166,18 +145,6 @@ pub async fn install_package(
         )
     })?;
     let install_result = async {
-        #[cfg(windows)]
-        {
-            if package == "@canghe_ai/wechat-cli" {
-                return install_windows_wechat_python_cli(
-                    &staging_root,
-                    version,
-                    resource_dir,
-                    progress,
-                )
-                .await;
-            }
-        }
         install_npm_package_tree(&staging_root, package, version).await?;
         ensure_platform_binary(&staging_root, package, version).await
     }
@@ -313,17 +280,6 @@ async fn ensure_platform_binary(
     version: &str,
 ) -> Result<(), String> {
     match package {
-        "@canghe_ai/wechat-cli" => {
-            #[cfg(windows)]
-            {
-                let _ = (install_root, version);
-                Ok(())
-            }
-            #[cfg(not(windows))]
-            {
-                ensure_wechat_binary(install_root, version).await
-            }
-        }
         "@wecom/cli" => ensure_wecom_binary(install_root),
         "@larksuite/cli" => ensure_feishu_binary(install_root, version).await,
         "dingtalk-workspace-cli" => ensure_dingtalk_binary(install_root),
@@ -340,9 +296,6 @@ fn current_npm_arch() -> &'static str {
         std::env::consts::ARCH
     }
 }
-
-#[cfg(windows)]
-include!("official_cli/wechat_python.rs");
 
 include!("official_cli/platform_binaries.rs");
 pub fn emit_platform_cli_progress(

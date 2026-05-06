@@ -1,6 +1,6 @@
 use super::{
     default_sessions_ready_message, no_prepare_profile_sync_access, official_cli_fetch_concurrency,
-    ConnectorAdapter, ConnectorKind, ProfileSyncLane, ProfileSyncMode, SessionDiscoveryStep,
+    ConnectorAdapter, ConnectorKind, ProfileSyncMode, SessionDiscoveryStep,
 };
 use crate::storage::models::ImProfile;
 
@@ -8,7 +8,6 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
     platform: "dingtalk",
     kind: ConnectorKind::Dingtalk,
     is_available,
-    sync_lane,
     sync_mode,
     session_discovery_steps,
     prepare_profile_sync_access: no_prepare_profile_sync_access,
@@ -21,10 +20,6 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
 
 fn is_available() -> bool {
     true
-}
-
-fn sync_lane() -> ProfileSyncLane {
-    ProfileSyncLane::Concurrent
 }
 
 fn sync_mode() -> ProfileSyncMode {

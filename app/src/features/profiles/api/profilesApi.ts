@@ -1,13 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { platformLabel } from "../../../constants/platforms";
 import { APP_CACHE_ROOT, APP_SUPPORT_ROOT } from "../../../constants/storage";
-import { demoProfiles } from "../../../demo/demoData";
-import { isDemoMode } from "../../../api/demoMode";
 import { isTauri, requireTauri } from "../../../api/tauri";
 import type { ImProfile, Platform } from "../model/types";
 
 export async function listProfiles(): Promise<ImProfile[]> {
-  if (isDemoMode()) return [...demoProfiles].sort((left, right) => left.sortOrder - right.sortOrder);
   if (isTauri) return invoke("list_profiles");
   return requireTauri("读取账号配置");
 }
@@ -37,6 +34,9 @@ export async function reorderProfiles(profiles: ImProfile[]): Promise<void> {
 }
 
 export function createProfileDraft(platform: Platform, sortOrder = 0): ImProfile {
+  if (platform === "wechat") {
+    throw new Error("微信功能仅限付费用户使用，请联系开发者开通。");
+  }
   const now = new Date().toISOString();
   const id = `${platform}_${Date.now()}`;
   const baseDir = `${APP_SUPPORT_ROOT}/Profiles/${id}`;
@@ -46,15 +46,10 @@ export function createProfileDraft(platform: Platform, sortOrder = 0): ImProfile
     label: platformLabel(platform),
     enabled: true,
     configJson: {
-      authType: platform === "wechat" ? "local_db" : "cli_session",
+      authType: "cli_session",
       configPath: `${baseDir}/config.json`,
       cacheDir: `${APP_CACHE_ROOT}/${id}`,
-      ...(platform === "wechat"
-        ? {
-            keysPath: `${baseDir}/all_keys.json`,
-            bundleId: "com.tencent.xinWeChat"
-          }
-        : platform === "wecom"
+      ...(platform === "wecom"
           ? {
               authType: "cli_session",
               configDir: `${baseDir}/wecom`,

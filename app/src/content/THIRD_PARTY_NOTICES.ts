@@ -1,6 +1,6 @@
 export const THIRD_PARTY_NOTICES = `# THIRD_PARTY_NOTICES
 
-IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整许可文本应随正式发行包一并提供。
+IM-Board·聊天汇总看板（Lite版）包含或调用以下第三方开源组件。完整许可文本应随正式发行包一并提供。
 
 ## CLI Components
 
@@ -18,12 +18,6 @@ IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整�
 - License: Apache-2.0
 - Source: https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli
 - Distribution: hot-updated into the application support directory when needed; not bundled in the base installer.
-
-### @canghe_ai/wechat-cli
-
-- License: Apache-2.0
-- Source: https://github.com/huohuoer/wechat-cli
-- Distribution: app-managed resources for WeChat integration; the built-in macOS bridge is adapted from the same wechat-cli codebase.
 
 ## Optional Hot-Updated AI Models
 

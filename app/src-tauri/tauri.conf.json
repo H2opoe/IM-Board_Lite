@@ -7,7 +7,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "npm run prepare:macos-deps && npm run build",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -17,13 +17,7 @@
         "width": 1320,
         "height": 860,
         "minWidth": 1100,
-        "minHeight": 720,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true,
-        "trafficLightPosition": {
-          "x": 16,
-          "y": 18
-        }
+        "minHeight": 720
       }
     ],
     "security": {
@@ -36,16 +30,9 @@
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+      "icons/128x128@2x.png"
     ],
     "resources": [
-      "../bridges/wechat/bridge_main",
-      "../runtime/llama.cpp/*/darwin-arm64/**/*",
-      "../runtime/llama.cpp/*/darwin-x64/**/*",
-      "../runtime/python/*/darwin-arm64/**/*",
-      "../runtime/python/*/darwin-x64/**/*",
       "icons/icon-light.png",
       "icons/icon-dark.png"
     ]

@@ -1,75 +1,9 @@
-#[cfg(not(windows))]
-async fn ensure_wechat_binary(install_root: &Path, version: &str) -> Result<(), String> {
+fn ensure_wecom_binary(install_root: &Path) -> Result<(), String> {
     let binary_path = install_root
         .join("node_modules")
-        .join(format!(
-            "@canghe_ai/wechat-cli-darwin-{}",
-            current_npm_arch()
-        ))
+        .join(format!("@wecom/cli-darwin-{}", current_npm_arch()))
         .join("bin")
-        .join("wechat-cli");
-    if binary_path.exists() {
-        make_executable(&binary_path)?;
-        return Ok(());
-    }
-    {
-        let js_path = install_root
-            .join("node_modules")
-            .join(package_dir("@canghe_ai/wechat-cli"))
-            .join("bin")
-            .join("wechat-cli.js");
-        if js_path.exists() {
-            make_executable(&js_path)?;
-            return Ok(());
-        }
-    }
-    let package_name = format!("@canghe_ai/wechat-cli-darwin-{}", current_npm_arch());
-    let package_name = package_name.as_str();
-    install_npm_package_tree(install_root, package_name, version)
-        .await
-        .map_err(|err| {
-            format!(
-                "{}官方源尚未发布当前系统可用的原生执行包{}@{}，IM-Board不能依赖用户安装Node.js或npm来运行微信CLI。上游发布后可直接在应用内热更新。原始错误：{err}",
-                platform_label("wechat"),
-                package_name,
-                version
-            )
-        })?;
-    if !binary_path.exists() {
-        {
-            let js_path = install_root
-                .join("node_modules")
-                .join(package_dir("@canghe_ai/wechat-cli"))
-                .join("bin")
-                .join("wechat-cli.js");
-            if js_path.exists() {
-                make_executable(&js_path)?;
-                return Ok(());
-            }
-        }
-        return Err(format!(
-            "微信官方CLI已下载，但缺少无需用户依赖的原生执行文件：{}",
-            binary_path.display()
-        ));
-    }
-    make_executable(&binary_path)
-}
-
-fn ensure_wecom_binary(install_root: &Path) -> Result<(), String> {
-    let binary_path = if cfg!(windows) {
-        install_root
-            .join("node_modules")
-            .join("@wecom")
-            .join("cli-win32-x64")
-            .join("bin")
-            .join("wecom-cli.exe")
-    } else {
-        install_root
-            .join("node_modules")
-            .join(format!("@wecom/cli-darwin-{}", current_npm_arch()))
-            .join("bin")
-            .join("wecom-cli")
-    };
+        .join("wecom-cli");
     if !binary_path.exists() {
         return Err(format!(
             "企业微信官方CLI已下载，但缺少无需用户依赖的原生执行文件：{}",
@@ -84,16 +18,13 @@ async fn ensure_feishu_binary(install_root: &Path, version: &str) -> Result<(), 
         .join("node_modules")
         .join("@larksuite")
         .join("cli");
-    let (platform, archive_arch, target_arch, binary_name, archive_ext) = if cfg!(windows) {
-        ("windows", "amd64", "x64", "lark-cli.exe", "zip")
-    } else if cfg!(target_arch = "aarch64") {
+    let (platform, archive_arch, target_arch, binary_name, archive_ext) = if cfg!(target_arch = "aarch64") {
         ("darwin", "arm64", "arm64", "lark-cli", "tar.gz")
     } else {
         ("darwin", "amd64", "x64", "lark-cli", "tar.gz")
     };
     let binary_path = package_root.join("bin").join(format!(
-        "lark-cli-{platform}-{target_arch}{}",
-        if cfg!(windows) { ".exe" } else { "" }
+        "lark-cli-{platform}-{target_arch}"
     ));
     if binary_path.exists() {
         return Ok(());
@@ -107,11 +38,7 @@ async fn ensure_feishu_binary(install_root: &Path, version: &str) -> Result<(), 
     let temp_dir = install_root.join(".tmp").join("lark-cli");
     fs::remove_dir_all(&temp_dir).ok();
     fs::create_dir_all(&temp_dir).map_err(|err| err.to_string())?;
-    if archive_ext == "zip" {
-        extract_zip_bytes(&bytes, &temp_dir)?;
-    } else {
-        extract_tgz_bytes(&bytes, &temp_dir, false)?;
-    }
+    extract_tgz_bytes(&bytes, &temp_dir, false)?;
     let extracted = find_file_named(&temp_dir, binary_name)
         .ok_or_else(|| format!("{binary_name} not found in {archive_name}"))?;
     fs::create_dir_all(binary_path.parent().unwrap()).map_err(|err| err.to_string())?;
@@ -130,16 +57,13 @@ fn ensure_dingtalk_binary(install_root: &Path) -> Result<(), String> {
     let package_root = install_root
         .join("node_modules")
         .join("dingtalk-workspace-cli");
-    let (platform, archive_arch, target_arch, binary_name, archive_ext) = if cfg!(windows) {
-        ("windows", "amd64", "x64", "dws.exe", "zip")
-    } else if cfg!(target_arch = "aarch64") {
+    let (platform, archive_arch, target_arch, binary_name, archive_ext) = if cfg!(target_arch = "aarch64") {
         ("darwin", "arm64", "arm64", "dws", "tar.gz")
     } else {
         ("darwin", "amd64", "x64", "dws", "tar.gz")
     };
     let binary_path = package_root.join("vendor").join(format!(
-        "dws-{platform}-{target_arch}{}",
-        if cfg!(windows) { ".exe" } else { "" }
+        "dws-{platform}-{target_arch}"
     ));
     if binary_path.exists() {
         return Ok(());
@@ -152,11 +76,7 @@ fn ensure_dingtalk_binary(install_root: &Path) -> Result<(), String> {
     let temp_dir = install_root.join(".tmp").join("dws");
     fs::remove_dir_all(&temp_dir).ok();
     fs::create_dir_all(&temp_dir).map_err(|err| err.to_string())?;
-    if archive_ext == "zip" {
-        extract_zip_bytes(&bytes, &temp_dir)?;
-    } else {
-        extract_tgz_bytes(&bytes, &temp_dir, false)?;
-    }
+    extract_tgz_bytes(&bytes, &temp_dir, false)?;
     let extracted = find_file_named(&temp_dir, binary_name)
         .ok_or_else(|| format!("{binary_name} not found in {}", archive_path.display()))?;
     fs::create_dir_all(binary_path.parent().unwrap()).map_err(|err| err.to_string())?;
@@ -170,4 +90,3 @@ fn ensure_dingtalk_binary(install_root: &Path) -> Result<(), String> {
     fs::remove_dir_all(&temp_dir).ok();
     Ok(())
 }
-
