@@ -50,7 +50,29 @@ export interface DashboardData {
   speakerTop: Array<{ speaker: string; count: number; sourceLabel?: string }>;
   hourlyActivity: Array<{ hour: string; count: number; sources?: SourceStat[] }>;
   messageTypes: Array<{ type: string; count: number; sources?: SourceStat[] }>;
-  keywords: Array<{ text: string; weight: number; count?: number; sources?: SourceStat[] }>;
+  keywords: Array<{
+    text: string;
+    display?: string;
+    score?: number;
+    localScore?: number;
+    aiScore?: number;
+    weight: number;
+    count?: number;
+    messageCount?: number;
+    chatCount?: number;
+    category?: string;
+    confidence?: number;
+    aliases?: string[];
+    source?: "local" | "ai_refined";
+    status?: "local_pending_ai" | "local_final" | "ai_refined" | "ai_failed";
+    version?: string;
+    updatedAt?: string;
+    sources?: SourceStat[];
+  }>;
+  keywordStatus?: "local_pending_ai" | "local_final" | "ai_refined" | "ai_failed";
+  keywordSource?: "local" | "ai";
+  keywordVersion?: string;
+  keywordUpdatedAt?: string;
   aiStatus: "not_configured" | "ready" | "analyzing" | "failed";
   syncStatus: string;
 }

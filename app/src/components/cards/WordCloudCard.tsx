@@ -27,12 +27,15 @@ export function WordCloudCard({ keywords }: { keywords: DashboardData["keywords"
   const runStartedAtRef = useRef(0);
   const [motion, setMotion] = useState<CloudMotion>({ elapsed: 0, y: 0, x: 0 });
   const [isAnimating, setIsAnimating] = useState(false);
-  const weights = keywords.map((item) => item.weight);
+  const weights = keywords.map((item) => item.score ?? item.weight);
   const max = Math.max(...weights, 1);
   const min = Math.min(...weights, max);
   const range = Math.max(max - min, 1);
   const visibleKeywords = useMemo(
-    () => [...keywords].sort((left, right) => right.weight - left.weight).slice(0, maxCloudWords),
+    () =>
+      [...keywords]
+        .sort((left, right) => (right.score ?? right.weight) - (left.score ?? left.weight))
+        .slice(0, maxCloudWords),
     [keywords]
   );
   const points = useMemo(() => spherePoints(visibleKeywords.length), [visibleKeywords.length]);
@@ -142,7 +145,9 @@ export function WordCloudCard({ keywords }: { keywords: DashboardData["keywords"
           <div className="empty-state">{EMPTY_STATE_MESSAGES.noKeywords}</div>
         ) : (
           visibleKeywords.map((keyword, index) => {
-            const normalized = (keyword.weight - min) / range;
+            const keywordWeight = keyword.score ?? keyword.weight;
+            const label = keyword.display ?? keyword.text;
+            const normalized = (keywordWeight - min) / range;
             const keywordCount =
               keyword.count ?? keyword.sources?.reduce((sum, source) => sum + source.count, 0) ?? keyword.weight;
             const point = keywordMotionPoint(points[index], motion, index);
@@ -152,9 +157,9 @@ export function WordCloudCard({ keywords }: { keywords: DashboardData["keywords"
             const keywordScale = Math.min(weightedScale * depthScale, 1.48);
             return (
               <button
-                key={keyword.text}
+                key={keyword.version ? `${keyword.version}:${label}` : label}
                 className="keyword"
-                title={`${keyword.text}：${keywordCount}次\n${keywordSourcesTitle(keyword.sources)}`}
+                title={`${label}：${keywordCount}次\n${keywordSourcesTitle(keyword.sources)}`}
                 style={{
                   left: `${50 + point.x * 36}%`,
                   top: `${50 + point.y * 31}%`,
@@ -164,7 +169,7 @@ export function WordCloudCard({ keywords }: { keywords: DashboardData["keywords"
                   zIndex: Math.round(depth * 100)
                 } as CSSProperties}
               >
-                {keyword.text}
+                {label}
               </button>
             );
           })

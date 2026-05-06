@@ -8,7 +8,7 @@ export const EMPTY_STATE_MESSAGES = {
   noKeywords: "今天暂未发现",
   noActionItems: "今天暂未发现",
   aiActionPending: "AI分析中，完成后写入列表",
-  aiTopicPending: "AI正在汇总今天话题"
+  aiTopicPending: "AI分析中，完成后写入列表"
 };
 
 export const APP_MESSAGES = {
@@ -57,6 +57,40 @@ export const OFFICIAL_CLI_MESSAGES = {
   cleanupFailed: (platform: Platform) => `清理${platformDisplayName(platform)}官方 CLI 失败`,
   placeholder: (platform: Platform) => `正在准备${platformDisplayName(platform)}官方 CLI…`
 };
+
+export const AI_SETTINGS_MESSAGES = {
+  clearModelConfirm: "再次点击“确认清除”将删除本地模型文件和运行时部署。",
+  downloadOrRuntimeFailed: "本地DeepSeek模型下载或本地运行时配置失败，请按提示检查后重试。",
+  downloadCancelled: "本地DeepSeek模型下载已取消，临时下载文件已清除。",
+  configSaved: "AI配置已保存。",
+  testingConnection: "正在测试AI连接，请稍候。",
+  downloadStarted: "本地DeepSeek模型已开始后台下载，离开AI配置页也会继续。",
+  aiDisabled: "AI当前未启用。",
+  connectionPassed: "API连接测试通过，模型已返回响应。",
+  testFailed: "测试连接失败。",
+  configuringRuntime: "正在配置并启动本地DeepSeek运行环境。",
+  localModelStatusFailed: "本地DeepSeek模型状态读取失败。",
+  localDeepseekEnabled: "本地DeepSeek已启用，后续AI分析不再要求云端API Key。",
+  downloadFailed: "本地DeepSeek模型下载失败。",
+  cancelDownloadFailed: "取消本地DeepSeek模型下载失败。",
+  modelCleared: "本地DeepSeek模型文件和运行时部署已清除。",
+  clearModelFailed: "清除本地DeepSeek模型失败。",
+  modelPathCopied: "本地DeepSeek模型存储路径已复制。",
+  modelDownloaded: "本地DeepSeek模型已下载完成。",
+  downloadedAndEnabled: "本地DeepSeek已下载并启用，后续AI分析不再要求云端API Key。"
+};
+
+export const SETTINGS_SUCCESS_MESSAGES = new Set([
+  AI_SETTINGS_MESSAGES.configSaved,
+  AI_SETTINGS_MESSAGES.downloadStarted,
+  AI_SETTINGS_MESSAGES.connectionPassed,
+  AI_SETTINGS_MESSAGES.modelDownloaded,
+  AI_SETTINGS_MESSAGES.localDeepseekEnabled,
+  AI_SETTINGS_MESSAGES.downloadCancelled,
+  AI_SETTINGS_MESSAGES.modelCleared,
+  AI_SETTINGS_MESSAGES.modelPathCopied,
+  AI_SETTINGS_MESSAGES.downloadedAndEnabled
+]);
 
 function platformDisplayName(platform: Platform): string {
   return PLATFORM_LABELS[platform] ?? "平台";

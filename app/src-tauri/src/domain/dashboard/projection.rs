@@ -22,6 +22,26 @@ pub fn build_dashboard(
     let ai_configured = ai::get_config(conn)
         .map(|config| ai_commands::is_configured_for_current_runtime(&config, state))
         .unwrap_or(false);
+    let keywords = enrich_keywords(
+        conn,
+        day,
+        profile_filter,
+        dashboard_stats(conn, day, profile_filter, "keywords").unwrap_or_default(),
+    )
+    .unwrap_or_default();
+    let keyword_status = keyword_field(&keywords, "status").unwrap_or_else(|| {
+        if ai_configured {
+            "local_pending_ai".to_owned()
+        } else {
+            "local_final".to_owned()
+        }
+    });
+    let keyword_source = match keyword_field(&keywords, "source").as_deref() {
+        Some("ai_refined") => "ai".to_owned(),
+        _ => "local".to_owned(),
+    };
+    let keyword_version = keyword_field(&keywords, "version").unwrap_or_default();
+    let keyword_updated_at = keyword_field(&keywords, "updatedAt").unwrap_or_default();
 
     Ok(DashboardData {
         day: day.to_owned(),
@@ -39,13 +59,11 @@ pub fn build_dashboard(
         speaker_top: speaker_top(conn, day, profile_filter).unwrap_or_default(),
         hourly_activity: hourly_activity(conn, day, profile_filter).unwrap_or_default(),
         message_types: message_types(conn, day, profile_filter).unwrap_or_default(),
-        keywords: enrich_keywords(
-            conn,
-            day,
-            profile_filter,
-            dashboard_stats(conn, day, profile_filter, "keywords").unwrap_or_default(),
-        )
-        .unwrap_or_default(),
+        keywords,
+        keyword_status,
+        keyword_source,
+        keyword_version,
+        keyword_updated_at,
         ai_status: if ai_configured {
             "ready".to_owned()
         } else {
@@ -53,4 +71,12 @@ pub fn build_dashboard(
         },
         sync_status: "idle".to_owned(),
     })
+}
+
+fn keyword_field(keywords: &[serde_json::Value], field: &str) -> Option<String> {
+    keywords
+        .first()
+        .and_then(|keyword| keyword.get(field))
+        .and_then(|value| value.as_str())
+        .map(str::to_owned)
 }

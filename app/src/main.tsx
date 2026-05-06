@@ -1,7 +1,19 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import "./styles.css";
+import "./styles/base.css";
+import "./styles/app-shell.css";
+import "./styles/notices.css";
+import "./styles/dashboard.css";
+import "./styles/profiles.css";
+import "./styles/settings.css";
+import "./styles/modals.css";
+import "./styles/drawer.css";
+import "./styles/theme-core.css";
+import "./styles/theme-overrides.css";
+import "./styles/theme-light.css";
+import "./styles/page-overrides.css";
+import "./styles/responsive.css";
 
 type AppPlatform = "macos" | "windows" | "other";
 

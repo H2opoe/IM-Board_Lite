@@ -1,4 +1,12 @@
-fn profile_remark(profile: &ImProfile) -> String {
+use std::collections::{HashMap, HashSet};
+
+use chrono::{Local, NaiveDateTime, TimeZone};
+use sha2::{Digest, Sha256};
+
+use crate::storage::models::ImProfile;
+use crate::sync::fetch::MessageImportWindow;
+
+pub(crate) fn profile_remark(profile: &ImProfile) -> String {
     profile
         .config_json
         .get("remark")
@@ -8,7 +16,7 @@ fn profile_remark(profile: &ImProfile) -> String {
         .to_owned()
 }
 
-fn platform_label(platform: &str) -> &str {
+pub(crate) fn platform_label(platform: &str) -> &str {
     match platform {
         "wechat" => "微信",
         "wecom" => "企业微信",
@@ -19,28 +27,28 @@ fn platform_label(platform: &str) -> &str {
 }
 
 #[derive(Debug)]
-struct DailyMessage {
-    id: String,
-    day: String,
-    profile_id: String,
-    platform: String,
-    chat_id: String,
-    chat_name: String,
-    is_group: bool,
-    sender_id: String,
-    sender_name: String,
-    timestamp: i64,
-    time_text: String,
-    msg_type: String,
-    content: String,
-    raw_type: Option<String>,
-    local_id: Option<String>,
-    raw_json: String,
-    content_hash: String,
-    partial: bool,
+pub(crate) struct DailyMessage {
+    pub(crate) id: String,
+    pub(crate) day: String,
+    pub(crate) profile_id: String,
+    pub(crate) platform: String,
+    pub(crate) chat_id: String,
+    pub(crate) chat_name: String,
+    pub(crate) is_group: bool,
+    pub(crate) sender_id: String,
+    pub(crate) sender_name: String,
+    pub(crate) timestamp: i64,
+    pub(crate) time_text: String,
+    pub(crate) msg_type: String,
+    pub(crate) content: String,
+    pub(crate) raw_type: Option<String>,
+    pub(crate) local_id: Option<String>,
+    pub(crate) raw_json: String,
+    pub(crate) content_hash: String,
+    pub(crate) partial: bool,
 }
 
-fn normalize_message(
+pub(crate) fn normalize_message(
     profile: &ImProfile,
     value: &serde_json::Value,
     window: &MessageImportWindow,
@@ -251,7 +259,7 @@ fn normalize_text_message(
     })
 }
 
-fn value_array(value: &serde_json::Value) -> Vec<&serde_json::Value> {
+pub(crate) fn value_array(value: &serde_json::Value) -> Vec<&serde_json::Value> {
     if let Some(items) = value.as_array() {
         return items.iter().collect();
     }
@@ -263,7 +271,7 @@ fn value_array(value: &serde_json::Value) -> Vec<&serde_json::Value> {
     Vec::new()
 }
 
-fn dedupe_sessions(sessions: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
+pub(crate) fn dedupe_sessions(sessions: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
     let mut seen = HashSet::new();
     let mut deduped = Vec::new();
     for session in sessions {
@@ -280,7 +288,7 @@ fn dedupe_sessions(sessions: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
     deduped
 }
 
-fn should_sync_session(value: &serde_json::Value) -> bool {
+pub(crate) fn should_sync_session(value: &serde_json::Value) -> bool {
     let username = first_string(value, &["username", "userName", "chatId", "chat_id", "id"])
         .unwrap_or_default();
     !is_gh_account(&username) && !is_wechat_pseudo_session(&username)
@@ -297,7 +305,7 @@ fn is_wechat_pseudo_session(value: &str) -> bool {
     )
 }
 
-fn should_skip_chat_history(
+pub(crate) fn should_skip_chat_history(
     local_latest_by_chat: &HashMap<String, i64>,
     chat_id: &str,
     remote_latest_timestamp: Option<i64>,
@@ -311,7 +319,7 @@ fn should_skip_chat_history(
     *local_latest_timestamp >= remote_latest_timestamp
 }
 
-fn session_last_message_timestamp(value: &serde_json::Value) -> Option<i64> {
+pub(crate) fn session_last_message_timestamp(value: &serde_json::Value) -> Option<i64> {
     number_value(
         value,
         &[
@@ -329,7 +337,7 @@ fn session_last_message_timestamp(value: &serde_json::Value) -> Option<i64> {
     )
 }
 
-fn first_string(value: &serde_json::Value, keys: &[&str]) -> Option<String> {
+pub(crate) fn first_string(value: &serde_json::Value, keys: &[&str]) -> Option<String> {
     for key in keys {
         if let Some(text) = value.get(*key).and_then(|inner| inner.as_str()) {
             if !text.trim().is_empty() {
@@ -343,7 +351,7 @@ fn first_string(value: &serde_json::Value, keys: &[&str]) -> Option<String> {
     None
 }
 
-fn bool_value(value: &serde_json::Value, keys: &[&str]) -> Option<bool> {
+pub(crate) fn bool_value(value: &serde_json::Value, keys: &[&str]) -> Option<bool> {
     keys.iter()
         .find_map(|key| value.get(*key).and_then(|inner| inner.as_bool()))
 }

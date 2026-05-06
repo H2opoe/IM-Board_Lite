@@ -73,6 +73,10 @@ pub struct DashboardData {
     pub hourly_activity: Vec<serde_json::Value>,
     pub message_types: Vec<serde_json::Value>,
     pub keywords: Vec<serde_json::Value>,
+    pub keyword_status: String,
+    pub keyword_source: String,
+    pub keyword_version: String,
+    pub keyword_updated_at: String,
     pub ai_status: String,
     pub sync_status: String,
 }

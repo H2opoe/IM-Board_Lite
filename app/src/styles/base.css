@@ -1,0 +1,89 @@
+:root {
+  --im-font-sans: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --im-font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Cascadia Code", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--im-font-sans);
+  font-size: 14px;
+  color: #17201f;
+  background: #f5f4ef;
+  --im-bg-app: #070b0d;
+  --im-bg-window: #0c1214;
+  --im-bg-sidebar: rgba(14, 22, 24, 0.92);
+  --im-bg-surface: rgba(18, 27, 30, 0.82);
+  --im-bg-surface-solid: #121b1e;
+  --im-bg-surface-hover: rgba(28, 43, 46, 0.88);
+  --im-bg-elevated: rgba(22, 33, 36, 0.92);
+  --im-bg-input: rgba(8, 13, 15, 0.72);
+  --im-border-soft: rgba(255, 255, 255, 0.075);
+  --im-border-strong: rgba(255, 255, 255, 0.13);
+  --im-border-accent: rgba(74, 185, 159, 0.34);
+  --im-text-primary: #f4f7f6;
+  --im-text-secondary: #b5c0bd;
+  --im-text-tertiary: #788783;
+  --im-text-muted: #5d6b67;
+  --im-primary: #2c8f78;
+  --im-primary-hover: #36a98e;
+  --im-primary-soft: rgba(44, 143, 120, 0.18);
+  --im-primary-faint: rgba(44, 143, 120, 0.1);
+  --im-accent: #d86b3d;
+  --im-accent-hover: #ee7d4a;
+  --im-accent-soft: rgba(216, 107, 61, 0.16);
+  --im-success: #45b87f;
+  --im-warning: #d7a642;
+  --im-danger: #ef6a61;
+  --im-info: #579ee6;
+  --im-chart-green: #2f9b83;
+  --im-chart-orange: #d86b3d;
+  --im-chart-blue: #4b83d4;
+  --im-chart-yellow: #c7a246;
+  --im-chart-purple: #8d6bd6;
+  --im-chart-gray: #74838c;
+  --im-radius-window: 22px;
+  --im-radius-panel: 18px;
+  --im-radius-card: 14px;
+  --im-radius-control: 10px;
+  --im-radius-pill: 999px;
+  --im-shadow-window: 0 28px 80px rgba(0, 0, 0, 0.46);
+  --im-shadow-panel: 0 18px 48px rgba(0, 0, 0, 0.28);
+  --im-shadow-card: 0 10px 28px rgba(0, 0, 0, 0.18);
+  --im-shadow-glow: 0 0 0 1px rgba(255,255,255,0.06), 0 18px 60px rgba(44,143,120,0.08);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+:root[data-platform="macos"] {
+  --im-font-sans: "PingFang SC", "PingFang TC", "Hiragino Sans GB", sans-serif;
+}
+
+:root[data-platform="windows"] {
+  --im-font-sans: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--im-font-sans);
+}
+
+button {
+  font: inherit;
+}
+
+a,
+a:visited,
+a:hover,
+a:active {
+  color: inherit;
+  text-decoration: none;
+}
+

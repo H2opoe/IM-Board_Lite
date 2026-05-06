@@ -1,35 +1,21 @@
-use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::future::Future;
 use std::sync::atomic::Ordering;
-use std::time::Duration as StdDuration;
 
-use chrono::{Datelike, Duration, Local, NaiveDate, NaiveDateTime, TimeZone};
-use futures::future::join_all;
+use crate::analysis::orchestrator::{emit_sync_progress, ensure_sync_not_cancelled};
 use rusqlite::params;
-use sha2::{Digest, Sha256};
-use tauri::{Emitter, Manager, State};
-use uuid::Uuid;
+use tauri::{Manager, State};
 
-use crate::ai;
+use crate::analysis::orchestrator::analyze_pending_messages;
 use crate::bridge_runner::{self, BridgeRequest};
-use crate::commands::ai as ai_commands;
 use crate::daily_cache;
 use crate::macos_permissions;
-use crate::storage::models::{ImProfile, SyncResult};
+use crate::messages::repository::{
+    clear_dashboard_cache, reset_ai_generated_cache, resolve_all_profiles, resolve_target_profiles,
+};
+use crate::storage::models::SyncResult;
 use crate::storage::AppState;
-use crate::sync::job::{SyncJobMode, SyncProgress};
-
-struct AiCallFailure {
-    message: String,
-    diagnostic: Option<serde_json::Value>,
-}
-
-const CONTEXT_BACKFILL_DAYS: i64 = 7;
-const CONTEXT_BACKFILL_LIMIT_PER_DAY: usize = 80;
-const CONTEXT_EVIDENCE_LIMIT: usize = 12;
-const CONCURRENT_PROFILE_SYNC_CONCURRENCY: usize = 4;
-const SYNC_CANCELLED_MESSAGE: &str = "同步已终止。";
+use crate::sync::fetch::{sync_target_profiles_messages, MessageImportWindow};
+use crate::sync::job::SyncJobMode;
 
 pub async fn run_sync_job(
     app: tauri::AppHandle,
@@ -164,6 +150,16 @@ pub async fn retry_ai_analysis(
         (target_profiles, day)
     };
     reset_ai_generated_cache(&state, &day, &target_profiles).map_err(|err| err.to_string())?;
+    if let Some(profile) = target_profiles.first() {
+        emit_sync_progress(
+            &app,
+            profile,
+            "clear_cache_done",
+            "今天AI结果已清空，历史待回复和待办已保留，正在重新生成...".to_owned(),
+            0,
+            0,
+        );
+    }
 
     let mut warnings = Vec::new();
     let (ai_status, analyzed_messages) = analyze_pending_messages(
@@ -188,8 +184,6 @@ pub async fn retry_ai_analysis(
         finished_at: chrono::Local::now().to_rfc3339(),
     })
 }
-
-include!("../messages/repository.rs");
 
 pub async fn run_full_resync(
     app: tauri::AppHandle,
@@ -236,7 +230,7 @@ fn prepare_sync_storage_access(state: &State<'_, AppState>) {
     macos_permissions::prepare_sync_storage_access(&state.app_dir, &state.cache_dir);
 }
 
-async fn run_sync_bridge(
+pub(crate) async fn run_sync_bridge(
     state: &State<'_, AppState>,
     request: BridgeRequest,
     resource_dir: std::path::PathBuf,
@@ -254,15 +248,16 @@ async fn run_sync_bridge(
     result
 }
 
-include!("fetch.rs");
-
-include!("../analysis/orchestrator.rs");
-
-include!("../messages/normalizer.rs");
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::NaiveDate;
+
+    use crate::analysis::orchestrator::apply_context_evidence_conn;
+    use crate::messages::repository::{
+        delete_regenerable_action_items, reset_ai_generated_cache_conn,
+    };
+    use crate::storage::models::ImProfile;
 
     #[test]
     fn reset_ai_generated_cache_clears_generated_state_and_requeues_messages() {
@@ -382,6 +377,47 @@ mod tests {
         reset_ai_generated_cache_conn(&conn, &day, &[profile]).expect("reset");
 
         assert_eq!(action_item_ids(&conn), vec!["act-history-reply".to_owned()]);
+    }
+
+    #[test]
+    fn reset_ai_generated_cache_preserves_historical_item_by_chat_time() {
+        let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+        conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+            .expect("schema");
+        let profile = test_profile("profile-1");
+        conn.execute(
+            "insert into daily_messages(
+               id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
+               timestamp, time_text, msg_type, content, content_hash, analyzed_at
+             )
+             values('msg-yesterday', '2026-05-05', 'profile-1', 'wechat', 'chat-1', '客户群', 1,
+                    'u-1', '客户', cast(strftime('%s', '2026-05-05 18:30:00') as integer), '18:30',
+                    'text', '昨天产生但今天才进入看板的待办', 'hash-yesterday', datetime('now')),
+                   ('msg-today', '2026-05-06', 'profile-1', 'wechat', 'chat-1', '客户群', 1,
+                    'u-1', '客户', cast(strftime('%s', '2026-05-06 09:30:00') as integer), '09:30',
+                    'text', '今天产生的待办', 'hash-today', datetime('now'))",
+            [],
+        )
+        .expect("messages");
+        conn.execute(
+            "insert into action_items(
+               id, type, status, priority, title, description, profile_id, platform, chat_id,
+               chat_name, source_message_ids, evidence_summary, carry_over, first_detected_at, last_updated_at
+             )
+             values('act-yesterday', 'task', 'open', 'medium', '昨天聊天待办', '今天才进入看板',
+                    'profile-1', 'wechat', 'chat-1', '客户群', '[\"msg-yesterday\"]',
+                    '昨天证据', 1, '2026-05-06 10:00:00', '2026-05-06 10:00:00'),
+                   ('act-today', 'reply', 'open', 'high', '今天待回复', '今天聊天产生',
+                    'profile-1', 'wechat', 'chat-1', '客户群', '[\"msg-today\"]',
+                    '今天证据', 1, '2026-05-06 10:00:00', '2026-05-06 10:00:00')",
+            [],
+        )
+        .expect("action items");
+
+        let day = test_dashboard_day("2026-05-06");
+        reset_ai_generated_cache_conn(&conn, &day, &[profile]).expect("reset");
+
+        assert_eq!(action_item_ids(&conn), vec!["act-yesterday".to_owned()]);
     }
 
     #[test]

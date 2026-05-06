@@ -194,7 +194,10 @@ pub fn enrich_keywords(
                 .get("text")
                 .and_then(|value| value.as_str())
                 .unwrap_or_default();
-            let sources = source_chats_for_terms(conn, day, profile_id, &[text], false)?;
+            let mut terms = vec![text.to_owned()];
+            terms.extend(keyword_aliases(&keyword));
+            let term_refs = terms.iter().map(String::as_str).collect::<Vec<_>>();
+            let sources = source_chats_for_terms(conn, day, profile_id, &term_refs, false)?;
             let count = sources.iter().map(|source| source.count).sum::<i64>();
             // 兼容旧缓存：即使 daily_stats 里已有低频词，展示前也用消息命中次数兜底过滤。
             if count < ai::MIN_KEYWORD_CLOUD_COUNT {
@@ -208,6 +211,22 @@ pub fn enrich_keywords(
         })
         .filter_map(Result::transpose)
         .collect()
+}
+
+fn keyword_aliases(keyword: &serde_json::Value) -> Vec<String> {
+    keyword
+        .get("aliases")
+        .and_then(|value| value.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.as_str())
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 #[cfg(test)]

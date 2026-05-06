@@ -1,6 +1,27 @@
+use std::collections::{HashMap, HashSet};
+
+use chrono::{Datelike, Duration, Local, NaiveDate, TimeZone};
+use futures::future::join_all;
+use tauri::State;
+
+use crate::ai;
+use crate::analysis::orchestrator::{
+    emit_sync_progress, ensure_sync_not_cancelled, is_sync_cancelled_message,
+};
+use crate::bridge_runner::BridgeRequest;
 use crate::connectors::{
     self, ConnectorAdapter, ProfileSyncLane, ProfileSyncMode, SessionDiscoveryStep,
 };
+use crate::messages::normalizer::{
+    bool_value, dedupe_sessions, first_string, normalize_message, platform_label, profile_remark,
+    session_last_message_timestamp, should_skip_chat_history, should_sync_session, value_array,
+};
+use crate::messages::repository::{insert_messages, latest_saved_message_timestamps};
+use crate::storage::models::ImProfile;
+use crate::storage::AppState;
+use crate::sync::orchestrator::run_sync_bridge;
+
+const CONCURRENT_PROFILE_SYNC_CONCURRENCY: usize = 4;
 
 #[derive(Debug, Clone)]
 struct FetchJob {
@@ -12,14 +33,14 @@ struct FetchJob {
 }
 
 #[derive(Debug, Clone)]
-struct MessageImportWindow {
-    day: String,
-    start_timestamp: i64,
-    end_timestamp: i64,
+pub(crate) struct MessageImportWindow {
+    pub(crate) day: String,
+    pub(crate) start_timestamp: i64,
+    pub(crate) end_timestamp: i64,
 }
 
 impl MessageImportWindow {
-    fn from_dashboard_day(day: &daily_cache::DashboardDay) -> Self {
+    pub(crate) fn from_dashboard_day(day: &crate::daily_cache::DashboardDay) -> Self {
         Self {
             day: day.day.clone(),
             start_timestamp: day.day_start_timestamp,
@@ -27,7 +48,7 @@ impl MessageImportWindow {
         }
     }
 
-    fn natural_day(day: &str) -> Option<Self> {
+    pub(crate) fn natural_day(day: &str) -> Option<Self> {
         let date = NaiveDate::parse_from_str(day, "%Y-%m-%d").ok()?;
         let start = Local
             .with_ymd_and_hms(date.year(), date.month(), date.day(), 0, 0, 0)
@@ -40,18 +61,18 @@ impl MessageImportWindow {
         })
     }
 
-    fn contains(&self, timestamp: i64) -> bool {
+    pub(crate) fn contains(&self, timestamp: i64) -> bool {
         timestamp >= self.start_timestamp && timestamp <= self.end_timestamp
     }
 }
 
 #[derive(Debug)]
-struct ProfileSyncOutcome {
-    inserted_messages: i64,
-    warnings: Vec<String>,
+pub(crate) struct ProfileSyncOutcome {
+    pub(crate) inserted_messages: i64,
+    pub(crate) warnings: Vec<String>,
 }
 
-async fn sync_target_profiles_messages(
+pub(crate) async fn sync_target_profiles_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
     target_profiles: &[ImProfile],
@@ -549,7 +570,7 @@ async fn fetch_dingtalk_window_messages(
     let fetched = messages.len();
     let inserted = insert_messages(state, &messages).map_err(|err| err.to_string())?;
     if inserted > 0 {
-        refresh_local_keyword_stats(state, profile, &window.day, warnings);
+        refresh_local_keyword_stats(app, state, profile, &window.day, warnings);
     }
     let chat_count = messages
         .iter()
@@ -847,7 +868,7 @@ async fn fetch_recent_session_messages(
             let inserted = insert_messages(state, &chat_messages).map_err(|err| err.to_string())?;
             inserted_messages += inserted;
             if inserted > 0 {
-                refresh_local_keyword_stats(state, profile, &window.day, warnings);
+                refresh_local_keyword_stats(app, state, profile, &window.day, warnings);
             }
             emit_sync_progress(
                 app,
@@ -863,7 +884,8 @@ async fn fetch_recent_session_messages(
     Ok((fetched_messages, inserted_messages))
 }
 
-fn refresh_local_keyword_stats(
+pub(crate) fn refresh_local_keyword_stats(
+    _app: &tauri::AppHandle,
     state: &State<'_, AppState>,
     profile: &ImProfile,
     day: &str,
@@ -874,7 +896,8 @@ fn refresh_local_keyword_stats(
         .lock()
         .map_err(|err| err.to_string())
         .and_then(|conn| {
-            ai::persist_local_keyword_stats(&conn, day, &profile.id).map_err(|err| err.to_string())
+            ai::persist_local_keyword_stats_with_status(&conn, day, &profile.id, "local_final")
+                .map_err(|err| err.to_string())
         });
     if let Err(err) = result {
         warnings.push(format!(

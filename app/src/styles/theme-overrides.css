@@ -1,0 +1,704 @@
+.dashboard-page,
+.page-surface {
+  --page-notice-edge-x: 28px;
+  --page-notice-top: 86px;
+  gap: 16px;
+  padding: 24px 28px 30px;
+}
+
+.dashboard-page {
+  --dashboard-edge-x: clamp(16px, 2.1vw, 28px);
+  --dashboard-edge-y: clamp(14px, 2.1vh, 24px);
+  --page-notice-edge-x: var(--dashboard-edge-x);
+  --page-notice-top: calc(var(--dashboard-edge-y) + 68px);
+  --dashboard-gap: clamp(10px, 1.55vh, 16px);
+  --dashboard-card-gap: clamp(10px, 1.35vh, 14px);
+  --dashboard-card-padding: clamp(12px, 1.65vh, 18px);
+  --dashboard-panel-padding: clamp(12px, 1.55vh, 16px);
+  --dashboard-metric-height: clamp(76px, 11vh, 102px);
+  --dashboard-panel-height: clamp(258px, 34vh, 330px);
+  --dashboard-action-list-height: clamp(500px, 64vh, 700px);
+  --dashboard-rank-height: clamp(460px, 56vh, 560px);
+  --dashboard-topic-height: clamp(432px, 48vh, 520px);
+  --dashboard-analytics-height: clamp(324px, 36vh, 390px);
+  --dashboard-action-row-height: clamp(70px, 9.5vh, 82px);
+  gap: var(--dashboard-gap);
+  padding: var(--dashboard-edge-y) var(--dashboard-edge-x) max(16px, var(--dashboard-edge-y));
+}
+
+/* 每个看板模块露出 80% 后只启动数字、排行条和图表增长；卡片与文字始终保持可见。 */
+.dashboard-count-trigger.is-intro-pending .rank-bar-fill {
+  transform: scaleX(0);
+}
+
+.dashboard-count-trigger.is-intro-animating .rank-bar-fill {
+  animation: dashboard-rank-bar-grow 720ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.dashboard-count,
+.topic-count,
+.rank-count,
+.legend-count {
+  display: inline-block;
+}
+
+.dashboard-count {
+  margin-right: 1px;
+  color: inherit;
+  font: inherit;
+}
+
+.count-up-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-value .count-up-number {
+  color: inherit;
+  font: inherit;
+}
+
+.app-shell.tauri-window .dashboard-page {
+  --page-notice-top: calc(max(44px, calc(var(--dashboard-edge-y) + 30px)) + 68px);
+  padding-top: max(44px, calc(var(--dashboard-edge-y) + 30px));
+}
+
+.app-shell.tauri-window .floating-notice-layer.page {
+  top: var(--page-notice-top, 126px);
+  left: calc(var(--im-sidebar-width, 260px) + var(--page-notice-edge-x, 28px));
+  right: var(--page-notice-edge-x, 28px);
+}
+
+.topbar {
+  min-height: 58px;
+}
+
+.topbar h1 {
+  color: var(--im-text-primary);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.topbar-title-row {
+  margin-bottom: 4px;
+}
+
+.topbar-actions {
+  gap: 9px;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button,
+.icon-button,
+.floating-notice-close,
+.bind-card,
+.wechat-candidate,
+.wechat-db-candidate {
+  transition:
+    transform 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+
+.primary-button {
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: var(--im-radius-control);
+  background: linear-gradient(135deg, var(--im-primary), #247262);
+  color: #f4fffb;
+  box-shadow: 0 10px 24px rgba(44, 143, 120, 0.18);
+  font-weight: 650;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--im-primary-hover), var(--im-primary));
+  box-shadow: 0 12px 28px rgba(44, 143, 120, 0.24);
+  transform: translateY(-1px);
+}
+
+.secondary-button,
+.icon-button,
+.keyword {
+  border-color: var(--im-border-soft);
+  border-radius: var(--im-radius-control);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--im-text-secondary);
+}
+
+.secondary-button:hover:not(:disabled),
+.icon-button:hover:not(:disabled),
+.floating-notice-close:hover {
+  border-color: var(--im-border-strong);
+  background: var(--im-bg-surface-hover);
+  color: var(--im-text-primary);
+}
+
+.danger-button {
+  border-color: rgba(239, 106, 97, 0.34);
+  border-radius: var(--im-radius-control);
+  background: rgba(239, 106, 97, 0.16);
+  color: #ffaaa4;
+  font-weight: 700;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: rgba(239, 106, 97, 0.22);
+}
+
+.icon-button.danger {
+  color: #ff938c;
+}
+
+.frequency-popover,
+.profile-modal,
+.detail-drawer {
+  border-color: var(--im-border-strong);
+  border-radius: var(--im-radius-panel);
+  background:
+    linear-gradient(180deg, rgba(22, 33, 36, 0.98), rgba(12, 19, 21, 0.98)),
+    var(--im-bg-elevated);
+  color: var(--im-text-primary);
+  box-shadow: var(--im-shadow-panel);
+}
+
+.frequency-popover {
+  min-width: 380px;
+  backdrop-filter: blur(18px);
+}
+
+.frequency-popover label span,
+.frequency-popover > span,
+.frequency-resync p,
+.field-row span,
+.toggle-row span,
+.bind-card span,
+.profile-platform span,
+.modal-header span,
+.wechat-step-title span,
+.wechat-candidate span,
+.wechat-candidate small,
+.wechat-db-candidate span,
+.wechat-db-candidate small,
+.wecom-deploy-status span,
+.license-note,
+.profile-delete-confirm,
+.drawer-body,
+.drawer-source-meta span,
+.drawer-meta {
+  color: var(--im-text-tertiary);
+}
+
+.frequency-resync,
+.frequency-maintenance-row + .frequency-maintenance-row,
+.prompt-editor,
+.modal-header,
+.modal-actions,
+.profile-modal:not(.wechat-setup-modal) .modal-actions,
+.about-section,
+.drawer-header,
+.drawer-block,
+.profile-delete-confirm,
+.wechat-setup-section {
+  border-color: var(--im-border-soft);
+}
+
+.frequency-popover input,
+.field-row input,
+.field-row select,
+.field-row textarea,
+.wechat-setup-modal .field-row input,
+.wechat-setup-modal .field-row select {
+  border-color: rgba(255, 255, 255, 0.085);
+  border-radius: var(--im-radius-control);
+  background: var(--im-bg-input);
+  color: var(--im-text-primary);
+  outline: none;
+}
+
+.field-row input::placeholder,
+.field-row textarea::placeholder {
+  color: var(--im-text-muted);
+}
+
+.frequency-popover input:focus,
+.field-row input:focus,
+.field-row select:focus,
+.field-row textarea:focus {
+  border-color: rgba(54, 169, 142, 0.72);
+  box-shadow: 0 0 0 3px rgba(44, 143, 120, 0.16);
+}
+
+.field-row textarea[readonly] {
+  background: rgba(8, 13, 15, 0.46);
+  color: var(--im-text-secondary);
+}
+
+.local-model-box {
+  border-color: rgba(74, 185, 159, 0.2);
+  background: rgba(44, 143, 120, 0.1);
+}
+
+.local-model-box.installed {
+  border-color: rgba(125, 224, 173, 0.34);
+  background: rgba(69, 184, 127, 0.12);
+}
+
+.local-model-box strong {
+  color: var(--im-text-primary);
+}
+
+.local-model-box span,
+.model-download-progress small {
+  color: var(--im-text-secondary);
+}
+
+.model-download-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-page .prompt-field textarea {
+  min-height: 380px;
+  font-family: var(--im-font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.settings-page .user-prompt-field textarea {
+  font-family: var(--im-font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.toggle-row input {
+  accent-color: var(--im-primary);
+}
+
+.metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--dashboard-card-gap);
+}
+
+.metric-card,
+.panel,
+.bind-card,
+.profile-row,
+.action-item,
+.drawer-source-meta span,
+.wechat-candidate,
+.wechat-db-candidate,
+.wecom-deploy-status,
+.command-box,
+.setup-checklist,
+.cli-version-box,
+.drawer-meta,
+.empty-state,
+.word-cloud,
+.chart-tooltip {
+  border-color: var(--im-border-soft);
+  border-radius: var(--im-radius-card);
+  background:
+    linear-gradient(180deg, rgba(22, 32, 35, 0.92), rgba(14, 22, 24, 0.92)),
+    var(--im-bg-surface);
+  color: var(--im-text-primary);
+  box-shadow: var(--im-shadow-card);
+}
+
+.metric-card,
+.panel {
+  backdrop-filter: blur(16px);
+}
+
+.metric-card:hover,
+.panel:hover,
+.bind-card:hover,
+.profile-row:hover {
+  border-color: var(--im-border-strong);
+}
+
+.metric-card {
+  min-height: var(--dashboard-metric-height);
+  padding: var(--dashboard-card-padding);
+}
+
+.metric-card > div > span {
+  color: var(--im-text-tertiary);
+  font-size: 12px;
+}
+
+.metric-card strong {
+  color: var(--im-text-primary);
+  font-size: 40px;
+  line-height: 1;
+}
+
+.metric-card svg {
+  color: var(--im-primary-hover);
+  opacity: 0.78;
+}
+
+.dashboard-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--dashboard-card-gap);
+}
+
+.panel {
+  height: var(--dashboard-panel-height);
+  padding: var(--dashboard-panel-padding);
+}
+
+.fixed-list {
+  height: var(--dashboard-action-list-height);
+}
+
+.ten-row-panel,
+.word-cloud-panel {
+  height: var(--dashboard-rank-height);
+}
+
+.topic-panel {
+  height: var(--dashboard-topic-height);
+}
+
+.analytics-panel {
+  display: flex;
+  flex-direction: column;
+  height: var(--dashboard-analytics-height);
+}
+
+.panel-header {
+  align-items: flex-start;
+}
+
+.panel-header strong {
+  color: var(--im-text-primary);
+  font-weight: 650;
+}
+
+.action-main p,
+.topic-row p,
+.chart-tooltip span,
+.chart-tooltip pre {
+  color: var(--im-text-secondary);
+}
+
+.license-note button,
+.about-entry-button {
+  color: #7de0ca;
+}
+
+.action-list {
+  grid-auto-rows: var(--dashboard-action-row-height);
+  gap: clamp(7px, 1vh, 9px);
+}
+
+.action-item {
+  height: var(--dashboard-action-row-height);
+  min-height: var(--dashboard-action-row-height);
+  max-height: var(--dashboard-action-row-height);
+  background: rgba(8, 13, 15, 0.38);
+  box-shadow: none;
+}
+
+.action-item:hover {
+  border-color: rgba(125, 224, 173, 0.18);
+  background: rgba(31, 47, 49, 0.78);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+}
+
+.action-item.done {
+  opacity: 0.5;
+}
+
+.action-main strong,
+.topic-row strong,
+.rank-row em,
+.profile-platform strong,
+.drawer-section h2,
+.drawer-source-meta strong,
+.drawer-block strong,
+.cli-version-box strong,
+.command-box code,
+.wecom-deploy-status code,
+.about-section h2 {
+  color: var(--im-text-primary);
+}
+
+.action-main blockquote {
+  border-left-color: var(--im-primary);
+  color: #8fe6d0;
+}
+
+.action-index,
+.rank-index,
+.rank-row b {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--im-text-secondary);
+}
+
+.action-index.open-index {
+  background: rgba(216, 107, 61, 0.18);
+  color: #ffbc98;
+}
+
+.action-index.done-check {
+  background: rgba(69, 184, 127, 0.14);
+  color: #9ce7bd;
+}
+
+.empty-state {
+  border-style: dashed;
+  background: rgba(8, 13, 15, 0.28);
+  color: var(--im-text-tertiary);
+  box-shadow: none;
+}
+
+.topic-row {
+  border-color: var(--im-border-soft);
+  background: rgba(8, 13, 15, 0.26);
+}
+
+.topic-row:hover,
+.rank-row:hover {
+  background: rgba(31, 47, 49, 0.66);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+}
+
+.topic-row > span:last-child {
+  color: var(--im-accent-hover);
+}
+
+.word-cloud {
+  background:
+    radial-gradient(circle at 24% 26%, rgba(44, 143, 120, 0.16), transparent 28%),
+    radial-gradient(circle at 78% 70%, rgba(216, 107, 61, 0.12), transparent 30%),
+    rgba(8, 13, 15, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.keyword {
+  border-color: rgba(74, 185, 159, 0.22);
+  background: rgba(44, 143, 120, 0.14);
+  color: #9be9d5;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
+}
+
+.keyword:hover {
+  border-color: rgba(74, 185, 159, 0.42);
+  background: rgba(44, 143, 120, 0.22);
+}
+
+.keyword:nth-child(2n) {
+  border-color: rgba(216, 107, 61, 0.24);
+  background: rgba(216, 107, 61, 0.14);
+  color: #ffb58f;
+}
+
+.keyword:nth-child(3n) {
+  border-color: rgba(75, 131, 212, 0.24);
+  background: rgba(75, 131, 212, 0.13);
+  color: #a9c6ff;
+}
+
+.legend-list {
+  color: var(--im-text-secondary);
+  font-size: 12px;
+}
+
+.rank-row .rank-bar {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.rank-row .rank-bar-fill {
+  background: linear-gradient(90deg, var(--im-accent), var(--im-accent-hover));
+}
+
+.rank-row strong {
+  color: var(--im-text-secondary);
+}
+
+.chart-tooltip {
+  background: rgba(12, 19, 21, 0.96);
+  box-shadow: var(--im-shadow-card);
+}
+
+.bind-grid {
+  gap: 14px;
+}
+
+.bind-card {
+  min-height: 118px;
+  background: rgba(8, 13, 15, 0.28);
+  box-shadow: none;
+}
+
+.bind-card .bind-count-badge {
+  border-color: rgba(74, 185, 159, 0.24);
+  background: rgba(44, 143, 120, 0.14);
+  color: #9be9d5;
+}
+
+.bind-card:hover {
+  border-color: var(--im-border-accent);
+  box-shadow: var(--im-shadow-glow);
+  transform: translateY(-1px);
+}
+
+.profile-row {
+  grid-template-columns: minmax(200px, 1fr) max-content minmax(0, max-content);
+  padding: 9px 12px;
+  background: rgba(8, 13, 15, 0.32);
+  box-shadow: none;
+}
+
+.profile-row.batch-mode {
+  grid-template-columns: max-content minmax(200px, 1fr) max-content max-content;
+}
+
+.profile-row.selected {
+  border-color: rgba(125, 224, 173, 0.3);
+  background: rgba(44, 143, 120, 0.12);
+}
+
+.profile-batch-toolbar {
+  border-color: var(--im-border-soft);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.profile-batch-count,
+.profile-batch-select-all,
+.profile-sort-handle {
+  color: var(--im-text-tertiary);
+}
+
+.profile-sort-handle {
+  border-color: var(--im-border-soft);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.profile-select input,
+.profile-batch-select-all input,
+.toggle-row input {
+  accent-color: var(--im-primary);
+}
+
+.secondary-button.active {
+  border-color: rgba(125, 224, 173, 0.26);
+  background: rgba(44, 143, 120, 0.16);
+  color: #9be9d5;
+}
+
+.profile-status {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--im-text-secondary);
+}
+
+.profile-status.normal,
+.badge-success {
+  border-color: rgba(69, 184, 127, 0.18);
+  background: rgba(69, 184, 127, 0.12);
+  color: #7de0ad;
+}
+
+.profile-status.needs_auth,
+.profile-status.needs_key_refresh,
+.badge-warning {
+  border-color: rgba(216, 107, 61, 0.2);
+  background: rgba(216, 107, 61, 0.14);
+  color: #ffc071;
+}
+
+.profile-status.disabled {
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--im-text-tertiary);
+}
+
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(8px);
+}
+
+.profile-modal {
+  max-height: min(80vh, calc(100vh - 44px));
+}
+
+.modal-header,
+.modal-actions {
+  background: rgba(12, 19, 21, 0.96);
+}
+
+.wechat-candidate,
+.wechat-db-candidate,
+.wecom-deploy-status,
+.command-box,
+.setup-checklist,
+.cli-version-box {
+  background: rgba(8, 13, 15, 0.34);
+  box-shadow: none;
+}
+
+.theme-dark .wechat-signing-guide.attention {
+  border-color: rgba(215, 166, 66, 0.3);
+  background: rgba(215, 166, 66, 0.1);
+}
+
+.theme-dark .wechat-signing-guide.ready {
+  border-color: rgba(74, 185, 159, 0.24);
+  background: rgba(44, 143, 120, 0.1);
+}
+
+.theme-dark .wechat-signing-guide .setup-checkline {
+  color: var(--im-text-secondary);
+}
+
+.theme-dark .wechat-signing-guide.attention .setup-checkline svg {
+  color: #ffc071;
+}
+
+.theme-dark .wechat-signing-guide .wechat-restart-warning {
+  border-color: rgba(255, 192, 113, 0.24);
+  background: rgba(215, 166, 66, 0.13);
+  color: #f1d9ad;
+}
+
+.theme-dark .wechat-signing-guide .wechat-restart-warning svg {
+  color: #ffc071;
+}
+
+.theme-dark .wechat-signing-guide.ready .setup-checkline svg {
+  color: var(--im-primary-hover);
+}
+
+.wechat-candidate.selected,
+.wechat-db-candidate.selected {
+  border-color: var(--im-border-accent);
+  box-shadow: 0 0 0 2px rgba(44, 143, 120, 0.14);
+}
+
+.wechat-step-title svg {
+  color: var(--im-primary-hover);
+}
+
+.cli-version-box.update {
+  border-color: rgba(215, 166, 66, 0.28);
+  background: rgba(215, 166, 66, 0.1);
+}
+
+.notice-section pre {
+  border-color: var(--im-border-soft);
+  border-radius: var(--im-radius-card);
+  background: rgba(8, 13, 15, 0.68);
+  color: var(--im-text-secondary);
+}
+
+.about-modal {
+  width: min(780px, calc(100vw - 44px));
+}
+
+.detail-drawer {
+  border-left-color: var(--im-border-soft);
+  backdrop-filter: blur(18px);
+}
+

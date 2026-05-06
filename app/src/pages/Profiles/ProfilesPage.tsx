@@ -64,9 +64,9 @@ import {
   usesWindowsWechatRuntime
 } from "../../features/profiles/model/profilePathUtils";
 import { useProfileDragOrdering } from "../../features/profiles/hooks/useProfileDragOrdering";
+import { useModalEnterGuard } from "../../features/profiles/hooks/useModalEnterGuard";
 
 const COMMAND_COPIED_RESET_MS = 1800;
-const MODAL_COMPOSITION_ENTER_GUARD_MS = 120;
 const BULK_DELETE_ID = "__bulk_delete__";
 
 interface Props {
@@ -113,8 +113,12 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   const [cliDeploymentProgress, setCliDeploymentProgress] = useState<PlatformCliDeploymentProgress[]>([]);
   const deploymentRequestRef = useRef(0);
   const copiedCommandResetTimerRef = useRef<number | null>(null);
-  const modalInputComposingRef = useRef(false);
-  const modalCompositionEndedAtRef = useRef(0);
+  const {
+    resetModalCompositionState,
+    handleModalCompositionStart,
+    handleModalCompositionEnd,
+    shouldHandleModalEnter
+  } = useModalEnterGuard();
   const {
     visibleProfiles,
     draggedProfile,
@@ -128,6 +132,14 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     startProfilePointerDrag,
     startProfileRowPointerDrag
   } = useProfileDragOrdering({ orderedProfiles, isBatchManaging, saveProfileOrder });
+
+  function exitBatchManagement() {
+    setIsBatchManaging(false);
+    setSelectedProfileIds(new Set());
+    setPendingBulkDeleteIds([]);
+    resetProfileDragState();
+  }
+
   const selectedProfiles = orderedProfiles.filter((profile) => selectedProfileIds.has(profile.id));
   const selectedProfileCount = selectedProfiles.length;
   const isAllProfilesSelected = orderedProfiles.length > 0 && selectedProfileCount === orderedProfiles.length;
@@ -147,7 +159,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (!isAboutOpen && !wechatSetupProfile && !officialCliFlow.profile && !editingProfile) return;
+      if (!isAboutOpen && !wechatSetupProfile && !officialCliFlow.profile && !editingProfile && !isBatchManaging) return;
       event.preventDefault();
 
       if (isAboutOpen) {
@@ -162,12 +174,16 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
         closeOfficialCliSetup();
         return;
       }
-      setEditingProfile(null);
+      if (editingProfile) {
+        setEditingProfile(null);
+        return;
+      }
+      exitBatchManagement();
     }
 
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [editingProfile, isAboutOpen, officialCliFlow.profile, wechatSetupProfile]);
+  }, [editingProfile, isAboutOpen, isBatchManaging, officialCliFlow.profile, wechatSetupProfile]);
 
   useEffect(() => {
     return () => clearCopiedCommandResetTimer();
@@ -199,11 +215,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   function resetCopiedCommandStatus() {
     clearCopiedCommandResetTimer();
     setCopiedCommandPlatform(null);
-  }
-
-  function resetModalCompositionState() {
-    modalInputComposingRef.current = false;
-    modalCompositionEndedAtRef.current = 0;
   }
 
   function scheduleCopiedCommandReset(platform: Platform) {
@@ -248,15 +259,11 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   }
 
   function toggleBatchManagement() {
-    setIsBatchManaging((isManaging) => {
-      const nextIsManaging = !isManaging;
-      if (!nextIsManaging) {
-        setSelectedProfileIds(new Set());
-        setPendingBulkDeleteIds([]);
-        resetProfileDragState();
-      }
-      return nextIsManaging;
-    });
+    if (isBatchManaging) {
+      exitBatchManagement();
+      return;
+    }
+    setIsBatchManaging(true);
   }
 
   function toggleProfileSelection(profileId: string) {
@@ -871,35 +878,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   function configValue(key: string) {
     const value = editingProfile?.configJson[key];
     return typeof value === "string" || typeof value === "number" ? String(value) : "";
-  }
-
-  function handleModalCompositionStart() {
-    modalInputComposingRef.current = true;
-  }
-
-  function handleModalCompositionEnd() {
-    modalInputComposingRef.current = false;
-    modalCompositionEndedAtRef.current = performance.now();
-  }
-
-  function isModalInputMethodEnter(event: ReactKeyboardEvent<HTMLElement>) {
-    const nativeEvent = event.nativeEvent as KeyboardEvent & { isComposing?: boolean };
-    const legacyCompositionKeyCode = 229;
-    const nativeKeyCode = nativeEvent.keyCode || nativeEvent.which;
-    const isJustAfterComposition = performance.now() - modalCompositionEndedAtRef.current < MODAL_COMPOSITION_ENTER_GUARD_MS;
-
-    // macOS 中文输入法用回车放弃候选词时，不同输入法对 isComposing 的上报不稳定，这里同时记录弹窗内的 composition 生命周期。
-    return nativeEvent.isComposing || modalInputComposingRef.current || nativeKeyCode === legacyCompositionKeyCode || isJustAfterComposition;
-  }
-
-  function shouldHandleModalEnter(event: ReactKeyboardEvent<HTMLElement>) {
-    if (event.key !== "Enter" || event.repeat || event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) return false;
-    if (isModalInputMethodEnter(event)) return false;
-    const target = event.target as HTMLElement | null;
-    if (!target) return true;
-    const tagName = target.tagName.toLowerCase();
-    if (tagName === "textarea" || tagName === "button" || target.closest("button")) return false;
-    return true;
   }
 
   function saveWechatSetupFromEnter(event: ReactKeyboardEvent<HTMLElement>) {

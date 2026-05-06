@@ -1,4 +1,34 @@
-async fn analyze_pending_messages(
+use std::collections::HashMap;
+use std::future::Future;
+use std::sync::atomic::Ordering;
+use std::time::Duration as StdDuration;
+
+use chrono::Duration;
+use rusqlite::params;
+use tauri::{Emitter, State};
+use uuid::Uuid;
+
+use crate::ai;
+use crate::bridge_runner::BridgeRequest;
+use crate::commands::ai as ai_commands;
+use crate::messages::normalizer::{normalize_message, platform_label, profile_remark, value_array};
+use crate::storage::models::ImProfile;
+use crate::storage::AppState;
+use crate::sync::fetch::{refresh_local_keyword_stats, MessageImportWindow};
+use crate::sync::job::SyncProgress;
+use crate::sync::orchestrator::run_sync_bridge;
+
+struct AiCallFailure {
+    message: String,
+    diagnostic: Option<serde_json::Value>,
+}
+
+const CONTEXT_BACKFILL_DAYS: i64 = 7;
+const CONTEXT_BACKFILL_LIMIT_PER_DAY: usize = 80;
+const CONTEXT_EVIDENCE_LIMIT: usize = 12;
+const SYNC_CANCELLED_MESSAGE: &str = "同步已终止。";
+
+pub(crate) async fn analyze_pending_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
     day: &str,
@@ -7,25 +37,20 @@ async fn analyze_pending_messages(
     cache_dir: std::path::PathBuf,
     warnings: &mut Vec<String>,
 ) -> Result<(String, i64), String> {
-    let (ai_config, analysis_batches) = {
+    let (ai_config, analysis_messages) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
         let config = ai::get_config(&conn).map_err(|err| err.to_string())?;
-        let batches = if ai_commands::is_configured_for_current_runtime(&config, state) {
+        let messages = if ai_commands::is_configured_for_current_runtime(&config, state) {
             let profile_ids = target_profiles
                 .iter()
                 .map(|profile| profile.id.clone())
                 .collect::<Vec<_>>();
-            let messages = ai::load_analysis_messages_for_profiles(&conn, day, &profile_ids)
-                .map_err(|err| err.to_string())?;
-            ai::split_analysis_batches(
-                messages,
-                config.analysis_batch_size,
-                ai::analysis_batch_token_budget(&config),
-            )
+            ai::load_analysis_messages_for_profiles(&conn, day, &profile_ids)
+                .map_err(|err| err.to_string())?
         } else {
             Vec::new()
         };
-        (config, batches)
+        (config, messages)
     };
 
     let ai_configured = ai_commands::is_configured_for_current_runtime(&ai_config, state);
@@ -38,8 +63,15 @@ async fn analyze_pending_messages(
 
     for profile in target_profiles {
         ensure_sync_not_cancelled(state)?;
-        refresh_local_keyword_stats(state, profile, day, warnings);
+        refresh_local_keyword_stats(app, state, profile, day, warnings);
     }
+
+    let analysis_message_count = analysis_messages.len();
+    let analysis_batches = ai::split_analysis_batches(
+        analysis_messages,
+        ai_config.analysis_batch_size,
+        ai::analysis_batch_token_budget(&ai_config),
+    );
 
     let profile_by_id = target_profiles
         .iter()
@@ -77,7 +109,7 @@ async fn analyze_pending_messages(
             Some(batch_index + 1),
             Some(total_batches),
         );
-        match await_ai_call_or_cancel(
+        let analysis_result = await_ai_call_or_cancel(
             state,
             ai::request_profile_analysis(
                 &ai_config,
@@ -87,8 +119,8 @@ async fn analyze_pending_messages(
                 &context,
             ),
         )
-        .await
-        {
+        .await;
+        match analysis_result {
             Ok(analysis_result) => {
                 finish_ai_analysis_run(
                     state,
@@ -223,7 +255,7 @@ async fn analyze_pending_messages(
                         }
                         ai_status = "failed".to_owned();
                         warnings.push(format!(
-                            "AI 分析结果保存失败（{}第 {}/{} 批）：{}",
+                            "{}待回复和待办事项识别结果保存失败（第 {}/{} 批）：{}",
                             analysis_scope_label,
                             batch_index + 1,
                             total_batches,
@@ -239,7 +271,7 @@ async fn analyze_pending_messages(
                 }
                 ai_status = "failed".to_owned();
                 warnings.push(format!(
-                    "AI 分析失败（{}第 {}/{} 批）：{}",
+                    "{}待回复和待办事项识别失败（第 {}/{} 批）：{}",
                     analysis_scope_label,
                     batch_index + 1,
                     total_batches,
@@ -249,6 +281,24 @@ async fn analyze_pending_messages(
         }
     }
 
+    let keyword_refine_plan: Option<ai::KeywordRefinePlan> = if ai_configured {
+        let profile_ids = target_profiles
+            .iter()
+            .map(|profile| profile.id.clone())
+            .collect::<Vec<_>>();
+        let plan = {
+            let conn = state.db.lock().map_err(|err| err.to_string())?;
+            ai::build_keyword_refine_plan(&conn, day, &profile_ids, analysis_message_count)
+                .map_err(|err| err.to_string())?
+        };
+        if let Some(plan) = &plan {
+            let conn = state.db.lock().map_err(|err| err.to_string())?;
+            ai::mark_keyword_refine_pending(&conn, day, plan).map_err(|err| err.to_string())?;
+        }
+        plan
+    } else {
+        None
+    };
     if ai_configured {
         let summary_profile_id = analysis_scope_profile_id(target_profiles);
         if !target_profiles.is_empty() {
@@ -257,7 +307,7 @@ async fn analyze_pending_messages(
                 app,
                 target_profiles,
                 "summary",
-                format!("正在汇总{}今天热门话题...", analysis_scope_label),
+                format!("正在识别{}热门话题和关键词...", analysis_scope_label),
                 0,
                 0,
             );
@@ -274,13 +324,13 @@ async fn analyze_pending_messages(
                 }
                 .map_err(|err| err.to_string())?
             };
-            if summary_candidates.is_empty() {
+            if summary_candidates.is_empty() && keyword_refine_plan.is_none() {
                 emit_summary_progress_for_scope(
                     app,
                     target_profiles,
                     "summary_done",
                     format!(
-                        "{}暂无新的热门话题候选，正在刷新看板...",
+                        "{}暂无新的热门话题和关键词候选，正在刷新看板...",
                         analysis_scope_label
                     ),
                     0,
@@ -293,18 +343,29 @@ async fn analyze_pending_messages(
                 ai::load_existing_summary_topics(&conn, day, &summary_profile_id)
                     .map_err(|err| err.to_string())?
             };
-            let summary_batches = ai::split_summary_candidate_batches(summary_candidates.clone());
+            let mut summary_batches =
+                ai::split_summary_candidate_batches(summary_candidates.clone());
+            if summary_batches.is_empty() {
+                summary_batches.push(Vec::new());
+            }
             let total_summary_batches = summary_batches.len();
             let mut rolling_topics = existing_topics;
-            let mut summary = ai::AiSummary { topics: Vec::new() };
+            let mut summary = ai::AiSummary {
+                topics: Vec::new(),
+                keywords: Vec::new(),
+            };
             for (summary_batch_index, summary_batch) in summary_batches.into_iter().enumerate() {
                 ensure_sync_not_cancelled(state)?;
+                let is_last_summary_batch = summary_batch_index + 1 == total_summary_batches;
+                let keyword_refine_for_batch = keyword_refine_plan
+                    .as_ref()
+                    .filter(|_| is_last_summary_batch);
                 emit_summary_progress_for_scope(
                     app,
                     target_profiles,
                     "summary",
                     format!(
-                        "正在汇总{}今天热门话题第 {}/{} 批...",
+                        "正在识别{}热门话题和关键词第 {}/{} 批...",
                         analysis_scope_label,
                         summary_batch_index + 1,
                         total_summary_batches
@@ -321,7 +382,10 @@ async fn analyze_pending_messages(
                     summary_batch
                         .iter()
                         .map(|candidate| candidate.source_message_count())
-                        .sum(),
+                        .sum::<usize>()
+                        + keyword_refine_for_batch
+                            .map(keyword_refine_message_count)
+                            .unwrap_or_default(),
                     &ai_config,
                     Some(summary_batch_index + 1),
                     Some(total_summary_batches),
@@ -334,6 +398,7 @@ async fn analyze_pending_messages(
                         &summary_profile_id,
                         &rolling_topics,
                         &summary_batch,
+                        keyword_refine_for_batch.map(|plan| &plan.payload),
                     ),
                 )
                 .await
@@ -349,6 +414,11 @@ async fn analyze_pending_messages(
                         result.summary
                     }
                     Err(err) => {
+                        if let Some(plan) = keyword_refine_for_batch {
+                            if let Ok(conn) = state.db.lock() {
+                                let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
+                            }
+                        }
                         finish_ai_analysis_run(
                             state,
                             summary_run_id,
@@ -357,7 +427,7 @@ async fn analyze_pending_messages(
                             err.diagnostic,
                         );
                         warnings.push(format!(
-                            "{}热门话题汇总失败（第 {}/{} 批）：{}",
+                            "{}热门话题和关键词识别失败（第 {}/{} 批）：{}",
                             analysis_scope_label,
                             summary_batch_index + 1,
                             total_summary_batches,
@@ -371,6 +441,23 @@ async fn analyze_pending_messages(
             }
             let persist_result = {
                 let conn = state.db.lock().map_err(|err| err.to_string())?;
+                if let Some(plan) = &keyword_refine_plan {
+                    match ai::persist_refined_keywords_from_analysis(
+                        &conn,
+                        day,
+                        plan,
+                        &summary.keywords,
+                    ) {
+                        Ok(0) => {
+                            let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
+                        }
+                        Ok(_) => {}
+                        Err(err) => {
+                            let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
+                            warnings.push(format!("关键词 AI 识别结果保存失败：{}", err));
+                        }
+                    }
+                }
                 ai::persist_summary_stats(
                     &conn,
                     day,
@@ -380,14 +467,17 @@ async fn analyze_pending_messages(
                 )
             };
             if let Err(err) = persist_result {
-                warnings.push(format!("{}热门话题保存失败：{}", analysis_scope_label, err));
+                warnings.push(format!(
+                    "{}热门话题和关键词保存失败：{}",
+                    analysis_scope_label, err
+                ));
             } else {
                 emit_summary_progress_for_scope(
                     app,
                     target_profiles,
                     "summary_done",
                     format!(
-                        "已更新{}今天热门话题，正在刷新看板...",
+                        "已更新{}热门话题和关键词，正在刷新看板...",
                         analysis_scope_label
                     ),
                     0,
@@ -406,6 +496,14 @@ fn analysis_scope_profile_id(target_profiles: &[ImProfile]) -> String {
     } else {
         "aggregate".to_owned()
     }
+}
+
+fn keyword_refine_message_count(plan: &ai::KeywordRefinePlan) -> usize {
+    plan.payload
+        .get("messages")
+        .and_then(|value| value.as_array())
+        .map(Vec::len)
+        .unwrap_or_default()
 }
 
 fn analysis_scope_label(target_profiles: &[ImProfile]) -> String {
@@ -438,7 +536,7 @@ fn emit_analysis_progress_for_scope(
             "全平台".to_owned(),
             "analysis",
             format!(
-                "正在进行全平台 AI 分析第 {}/{} 批（{} 条消息）...",
+                "正在识别全平台待回复和待办事项第 {}/{} 批（{} 条消息）...",
                 batch_index, total_batches, total
             ),
             batch_index as i64,
@@ -459,7 +557,7 @@ fn emit_analysis_done_for_scope(
             &target_profiles[0],
             "analysis_done",
             format!(
-                "已完成【{} · {}】第 {}/{} 批 AI 分析，正在更新看板...",
+                "已完成【{} · {}】待回复和待办事项识别第 {}/{} 批，正在更新看板...",
                 platform_label(&target_profiles[0].platform),
                 profile_remark(&target_profiles[0]),
                 batch_index,
@@ -477,7 +575,7 @@ fn emit_analysis_done_for_scope(
             "全平台".to_owned(),
             "analysis_done",
             format!(
-                "已完成全平台第 {}/{} 批 AI 分析，正在更新看板...",
+                "已完成全平台待回复和待办事项识别第 {}/{} 批，正在更新看板...",
                 batch_index, total_batches
             ),
             batch_index as i64,
@@ -500,7 +598,14 @@ fn emit_summary_progress_for_scope(
     }
     let _ = app.emit(
         "sync-progress",
-        SyncProgress::new("aggregate".to_owned(), "全平台".to_owned(), phase, message, current, total),
+        SyncProgress::new(
+            "aggregate".to_owned(),
+            "全平台".to_owned(),
+            phase,
+            message,
+            current,
+            total,
+        ),
     );
 }
 
@@ -817,7 +922,7 @@ fn apply_context_evidence(
     apply_context_evidence_conn(&conn, action_id, evidence)
 }
 
-fn apply_context_evidence_conn(
+pub(crate) fn apply_context_evidence_conn(
     conn: &rusqlite::Connection,
     action_id: &str,
     evidence: &[String],
@@ -859,7 +964,7 @@ fn truncate_context_text(value: &str, max_chars: usize) -> String {
     value.chars().take(max_chars).collect()
 }
 
-fn ensure_sync_not_cancelled(state: &State<'_, AppState>) -> Result<(), String> {
+pub(crate) fn ensure_sync_not_cancelled(state: &State<'_, AppState>) -> Result<(), String> {
     if state.sync_cancel_requested.load(Ordering::SeqCst) {
         Err(SYNC_CANCELLED_MESSAGE.to_owned())
     } else {
@@ -867,7 +972,7 @@ fn ensure_sync_not_cancelled(state: &State<'_, AppState>) -> Result<(), String> 
     }
 }
 
-fn is_sync_cancelled_message(message: &str) -> bool {
+pub(crate) fn is_sync_cancelled_message(message: &str) -> bool {
     message == SYNC_CANCELLED_MESSAGE
 }
 
@@ -920,6 +1025,7 @@ fn start_ai_analysis_run(
         "requestKind": request_kind,
         "provider": ai_config.provider,
         "model": ai_config.model,
+        "analysisInputTokenBudget": ai::analysis_batch_token_budget(ai_config),
         "inputMessageCount": input_message_count,
         "batchIndex": batch_index,
         "totalBatches": total_batches,
@@ -995,7 +1101,7 @@ fn emit_analysis_progress(
             profile.label.clone(),
             "analysis",
             format!(
-                "正在进行 AI 分析【{} · {}】第 {}/{} 批（{} 条消息）...",
+                "正在识别【{} · {}】待回复和待办事项第 {}/{} 批（{} 条消息）...",
                 platform_label(&profile.platform),
                 profile_remark(profile),
                 batch_index,
@@ -1008,7 +1114,7 @@ fn emit_analysis_progress(
     );
 }
 
-fn emit_sync_progress(
+pub(crate) fn emit_sync_progress(
     app: &tauri::AppHandle,
     profile: &ImProfile,
     phase: &str,

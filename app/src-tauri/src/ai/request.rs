@@ -46,7 +46,7 @@ pub(crate) async fn request_profile_analysis(
     }
     let output = request_analysis(
         config,
-        "AI分析",
+        "待回复和待办事项识别",
         ANALYSIS_REQUEST_TIMEOUT_SECS,
         &prompt,
         &payload,
@@ -83,8 +83,9 @@ pub(crate) async fn request_profile_summary(
     profile_id: &str,
     existing_topics: &[SummaryTopicContext],
     candidates: &[SummaryCandidate],
+    keyword_refine: Option<&serde_json::Value>,
 ) -> anyhow::Result<AiSummaryResult> {
-    let payload = serde_json::json!({
+    let mut payload = serde_json::json!({
         "day": day,
         "profileId": profile_id,
         "summaryMode": "incremental",
@@ -93,6 +94,9 @@ pub(crate) async fn request_profile_summary(
         "userPrompt": config.user_prompt.trim(),
         "candidateTopics": candidates,
     });
+    if let Some(keyword_refine) = keyword_refine {
+        payload["keywordRefine"] = keyword_refine.clone();
+    }
     let base_prompt = if config.summary_prompt.trim().is_empty() {
         DEFAULT_SUMMARY_PROMPT
     } else {
@@ -106,7 +110,7 @@ pub(crate) async fn request_profile_summary(
     }
     let output = request_analysis(
         config,
-        "热门话题汇总",
+        "热门话题和关键词识别",
         SUMMARY_REQUEST_TIMEOUT_SECS,
         &prompt,
         &payload,
@@ -130,6 +134,9 @@ pub(crate) async fn request_profile_summary(
         )
     })?;
     merge_incremental_summary_topics(&mut summary, existing_topics, candidates);
+    if keyword_refine.is_none() {
+        summary.keywords.clear();
+    }
     Ok(AiSummaryResult {
         summary,
         diagnostics: output.diagnostics,
@@ -270,16 +277,7 @@ pub(crate) fn describe_request_error(prefix: &str, err: reqwest::Error) -> Strin
         source = cause.source();
     }
 
-    let mut hints = Vec::new();
-    if err.is_timeout() {
-        hints.push("请求超时，请检查网络、代理或服务商响应速度");
-    }
-    if err.is_connect() {
-        hints.push("连接失败，请检查 DNS、代理/VPN、防火墙或公司网络策略");
-    }
-    if err.is_request() {
-        hints.push("请求未能发出，请确认 Base URL 可访问且系统时间正常");
-    }
+    let hints = request_error_hints(&err, &details);
 
     let hint_text = if hints.is_empty() {
         String::new()
@@ -293,7 +291,61 @@ pub(crate) fn describe_request_error(prefix: &str, err: reqwest::Error) -> Strin
     )
 }
 
-async fn request_analysis(
+fn request_error_hints(err: &reqwest::Error, details: &[String]) -> Vec<&'static str> {
+    let mut hints = Vec::new();
+    // rustls 的 unexpected-eof 常发生在 TLS 连接被服务商或中间网络提前断开时，
+    // reqwest 可能把它归为 request/send 阶段，这里单独提示，避免误导用户只检查 Base URL。
+    let tls_closed_early = details_contain(
+        details,
+        &[
+            "peer closed connection without sending tls close_notify",
+            "unexpected-eof",
+            "unexpected eof",
+        ],
+    );
+    if err.is_timeout() {
+        hints.push("请求超时，请检查网络、代理或服务商响应速度");
+    }
+    if err.is_connect() {
+        hints.push("连接失败，请检查 DNS、代理/VPN、防火墙或公司网络策略");
+    }
+    if tls_closed_early {
+        hints.push("TLS 连接被对端或中间网络提前断开，通常是服务商、代理/VPN、网关或公司网络临时中断，可稍后重试或切换网络/代理");
+    } else if err.is_request() {
+        hints.push("请求未能发出，请确认 Base URL 可访问且系统时间正常");
+    }
+    hints
+}
+
+fn is_retryable_request_error(err: &reqwest::Error) -> bool {
+    err.is_timeout() || err.is_connect() || is_tls_closed_early(err)
+}
+
+fn is_tls_closed_early(err: &reqwest::Error) -> bool {
+    let mut details = vec![err.to_string()];
+    let mut source = err.source();
+    while let Some(cause) = source {
+        details.push(cause.to_string());
+        source = cause.source();
+    }
+    details_contain(
+        &details,
+        &[
+            "peer closed connection without sending tls close_notify",
+            "unexpected-eof",
+            "unexpected eof",
+        ],
+    )
+}
+
+fn details_contain(details: &[String], needles: &[&str]) -> bool {
+    details.iter().any(|detail| {
+        let detail = detail.to_lowercase();
+        needles.iter().any(|needle| detail.contains(needle))
+    })
+}
+
+pub(super) async fn request_analysis(
     config: &AiConfig,
     request_label: &str,
     timeout_secs: u64,
@@ -509,7 +561,7 @@ where
     for attempt in 0..3 {
         match build_request().send().await {
             Ok(response) => return Ok(response),
-            Err(err) if (err.is_timeout() || err.is_connect()) && attempt < 2 => {
+            Err(err) if is_retryable_request_error(&err) && attempt < 2 => {
                 last_error = Some(err);
                 tokio::time::sleep(std::time::Duration::from_millis(600 * (attempt + 1) as u64))
                     .await;

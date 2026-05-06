@@ -4,11 +4,13 @@ use rusqlite::{params, OptionalExtension};
 use crate::storage::models::AiConfig;
 
 use super::{
-    DEFAULT_ANALYSIS_PROMPT, DEFAULT_SUMMARY_PROMPT,
+    ANALYSIS_REQUEST_RESERVED_TOKENS, DEFAULT_ANALYSIS_PROMPT, DEFAULT_SUMMARY_PROMPT,
     LOCAL_DEEPSEEK_ANALYSIS_BATCH_ESTIMATED_TOKENS, LOCAL_DEEPSEEK_ANALYSIS_BATCH_SIZE,
-    LOCAL_DEEPSEEK_MAX_ANALYSIS_BATCH_MESSAGES, LOCAL_DEEPSEEK_MODEL, LOCAL_DEEPSEEK_PROVIDER,
-    MIN_ANALYSIS_BATCH_MESSAGES, OPENROUTER_PROVIDER, OTHER_MODEL_ANALYSIS_BATCH_ESTIMATED_TOKENS,
-    OTHER_MODEL_DEFAULT_ANALYSIS_BATCH_SIZE, OTHER_MODEL_MAX_ANALYSIS_BATCH_MESSAGES,
+    LOCAL_DEEPSEEK_ANALYSIS_OUTPUT_TOKENS, LOCAL_DEEPSEEK_MAX_ANALYSIS_BATCH_MESSAGES,
+    LOCAL_DEEPSEEK_MODEL, LOCAL_DEEPSEEK_PROVIDER, MIN_ANALYSIS_BATCH_MESSAGES,
+    OPENROUTER_PROVIDER, OTHER_MODEL_ANALYSIS_BATCH_ESTIMATED_TOKENS,
+    OTHER_MODEL_ANALYSIS_OUTPUT_TOKENS, OTHER_MODEL_DEFAULT_ANALYSIS_BATCH_SIZE,
+    OTHER_MODEL_MAX_ANALYSIS_BATCH_MESSAGES,
 };
 
 pub fn get_config(conn: &rusqlite::Connection) -> anyhow::Result<AiConfig> {
@@ -164,11 +166,22 @@ fn is_managed_local_deepseek(config: &AiConfig) -> bool {
 }
 
 pub(crate) fn analysis_batch_token_budget(config: &AiConfig) -> usize {
-    if is_managed_local_deepseek(config) {
+    let full_context_budget = if is_managed_local_deepseek(config) {
         LOCAL_DEEPSEEK_ANALYSIS_BATCH_ESTIMATED_TOKENS
     } else {
         OTHER_MODEL_ANALYSIS_BATCH_ESTIMATED_TOKENS
-    }
+    };
+    let output_budget = if is_managed_local_deepseek(config) {
+        LOCAL_DEEPSEEK_ANALYSIS_OUTPUT_TOKENS
+    } else {
+        OTHER_MODEL_ANALYSIS_OUTPUT_TOKENS
+    };
+    // 切批预算按完整请求反推：总上下文先扣掉输出空间和固定提示词/JSON结构余量，剩余才给 messages。
+    // 这样小模型不会因为提示词、已有事项或历史上下文挤占而把消息批次塞满到上下文边界。
+    full_context_budget
+        .saturating_sub(output_budget)
+        .saturating_sub(ANALYSIS_REQUEST_RESERVED_TOKENS)
+        .max(1_200)
 }
 
 pub fn is_local_provider(config: &AiConfig) -> bool {
@@ -253,9 +266,19 @@ fn is_known_default_summary_prompt(value: &str) -> bool {
         && value.contains("请返回严格 JSON")
         && value.contains("candidateTopics")
         && !value.contains("主要语言");
+    let missing_keyword_refine_section = trimmed.starts_with("你是一个本地即时通讯工作助理。")
+        && value.contains("请返回严格 JSON")
+        && value.contains("candidateTopics")
+        && !value.contains("keywordRefine");
+    let old_keyword_refine_candidates_prompt = trimmed
+        .starts_with("你是一个本地即时通讯工作助理。")
+        && value.contains("请返回严格 JSON")
+        && value.contains("keywordRefine.candidates");
     trimmed.is_empty()
         || trimmed == DEFAULT_SUMMARY_PROMPT.trim()
         || old_frontend_default
         || date_limited_default
         || missing_primary_language_constraint
+        || missing_keyword_refine_section
+        || old_keyword_refine_candidates_prompt
 }

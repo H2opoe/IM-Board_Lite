@@ -58,7 +58,7 @@ export const defaultSummaryPrompt = `你是一个本地即时通讯工作助理�
 5. 话题表示多人或多轮围绕同一主题的讨论，不要按群名/联系人名简单排行。
 6. 普通寒暄、表情、单条孤立消息不要形成热门话题。
 7. 图片、视频、语音、文件、链接等媒介分享本身不是话题；只有 snippets 明确展示了图片/文件内容，并且多人围绕该具体内容讨论时，才可归纳成内容话题，标题不能写“图片分享/文件分享/链接分享”。
-8. “微信版本不支持展示内容”“当前版本不支持”“请升级微信查看”等客户端兼容性或系统提示不是用户讨论，不要形成话题，也不要写入 summary。
+8. “微信版本不支持展示内容”“当前版本不支持”“请升级微信查看”、成员通过二维码加入群聊、邀请入群、退群等客户端兼容性或系统提示不是用户讨论，不要形成话题，也不要写入 summary。
 9. count 表示相关有效消息条数，必须等于去重后的 sourceMessageIds 数量；sourceMessageIds 只能来自 existingTopics.sourceMessageIds 和 candidateTopics.sourceMessageIds，不要估算，不要使用群聊总消息数。
 10. sourceChats 只能使用 existingTopics 或 candidateTopics 中的 chatName，同一 chatName 只出现一次。
 11. summary 要反映当前进展，不要写入对话名/群聊名/联系人名。
@@ -66,6 +66,18 @@ export const defaultSummaryPrompt = `你是一个本地即时通讯工作助理�
 13. 合并候选时不能只因为共享“买”“采购”“东西”“确认”“处理”“安排”等泛动作词就合并。
 14. 如果不同 sourceChats 的 snippets 只表现出相似动作、但人物关系、业务场景或办理对象不同，必须拆成不同话题。例如“女朋友让我买东西”和“公司群讨论采购是否已买”不能合并。
 15. 先根据 candidateTopics 的 snippets 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title 和 summary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
+
+关键词词云识别规则：
+1. 如果输入 payload 存在 keywordRefine，请根据 keywordRefine.messages 直接生成顶层 keywords 字段；不要把整句消息直接当作关键词。
+2. display 和 aliases 必须来自聊天消息中的明确表达，可以做轻微归一化，例如“自取货架/货架自取”合并为更自然的展示词。
+3. 每个 keyword 必须包含 profileId、display、aliases、category、valid、confidence、scoreMultiplier、sourceMessageIds；profileId 和 sourceMessageIds 必须来自 keywordRefine.messages。
+4. 过滤系统通知、入群通知、退群通知、扫码入群、撤回消息、群欢迎语、营销模板、技术 payload。
+5. 过滤低信息密度泛词，例如：时候、公司、系统、市场、问题、情况、时间、消息、内容、处理、收到、回复、今天、下午、上午、现在、可以、需要。
+6. 如果泛词和具体业务词组成明确话题，可以保留，例如：订单系统、库存问题、华东市场、售后问题。
+7. 普通人名不要进入主热词词云；确实返回时 category=person 且 valid=false 或 scoreMultiplier 不超过 0.3。
+8. 对“二维码加入群聊”“通过扫描”“加入群聊”必须 category=system_noise、valid=false、scoreMultiplier=0。
+9. keywords 最多返回 30 个 valid=true 的关键词；category 只能使用 business_topic、issue_or_risk、product_or_sku、project、organization、person、tool_or_platform、system_or_project、generic、system_noise、marketing_noise、technical_noise、unknown。
+10. scoreMultiplier 范围 0~1.5；confidence 范围 0~1。没有 keywordRefine 时，keywords 返回空数组或省略。
 
 请返回严格 JSON，不要 Markdown，不要解释：
 {
@@ -79,6 +91,18 @@ export const defaultSummaryPrompt = `你是一个本地即时通讯工作助理�
       "sourceChats": [
         { "chatName": "必须来自输入", "isGroup": false }
       ]
+    }
+  ],
+  "keywords": [
+    {
+      "profileId": "必须来自 keywordRefine.messages",
+      "display": "词云展示词",
+      "aliases": ["来自聊天消息"],
+      "category": "business_topic | issue_or_risk | product_or_sku | project | organization | person | tool_or_platform | system_or_project | generic | system_noise | marketing_noise | technical_noise | unknown",
+      "valid": true,
+      "confidence": 0.9,
+      "scoreMultiplier": 1.0,
+      "sourceMessageIds": ["必须来自 keywordRefine.messages"]
     }
   ]
 }`;
@@ -118,18 +142,6 @@ export const emptyConfig: AiConfig = {
   testStatus: "untested"
 };
 
-export const successSettingsMessages = new Set([
-  "AI配置已保存。",
-  "本地DeepSeek模型已开始后台下载，离开AI配置页也会继续。",
-  "API连接测试通过，模型已返回响应。",
-  "本地DeepSeek已启用，后续AI分析不再要求云端API Key。",
-  "本地DeepSeek模型下载已取消，临时下载文件已清除。",
-  "本地DeepSeek模型文件和运行时部署已清除。",
-  "本地DeepSeek模型存储路径已复制。",
-  "本地DeepSeek模型已下载完成。",
-  "本地DeepSeek已下载并启用，后续AI分析不再要求云端API Key。"
-]);
-
 function isKnownDefaultAnalysisPrompt(prompt: string): boolean {
   const trimmed = prompt.trim();
   // 旧默认提示词把消息限定成“今天”，已保存旧默认值时需要迁移到新的分析范围表述。
@@ -157,6 +169,8 @@ function isKnownDefaultSummaryPrompt(prompt: string): boolean {
       || trimmed.includes("今天已经汇总好的热门话题")
       || trimmed.includes("群聊当天总消息数")
       || !trimmed.includes("主要语言")
+      || !trimmed.includes("keywordRefine")
+      || trimmed.includes("keywordRefine.candidates")
     );
 }
 

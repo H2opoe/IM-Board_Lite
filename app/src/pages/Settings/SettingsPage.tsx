@@ -12,7 +12,7 @@ import {
   watchLocalModelDownloadProgress
 } from "../../api/aiApi";
 import { FloatingNotice, FloatingNoticeStack, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
-import { APP_MESSAGES } from "../../constants/messages";
+import { AI_SETTINGS_MESSAGES, APP_MESSAGES, SETTINGS_SUCCESS_MESSAGES } from "../../constants/messages";
 import type { AiConfig, LocalModelDownloadProgress, LocalModelStatus } from "../../features/ai/model/types";
 import { userErrorMessage } from "../../utils/errors";
 import {
@@ -25,13 +25,11 @@ import {
   localDeepseekEnablePendingKey,
   normalizeConfig,
   providerDefaults,
-  providerOptions,
-  successSettingsMessages
+  providerOptions
 } from "./aiConfigDefaults";
 
 const CLEAR_MODEL_CONFIRM_TIMEOUT_MS = 3_000;
 const CLEAR_MODEL_DONE_TIMEOUT_MS = 1_800;
-const CLEAR_MODEL_CONFIRM_MESSAGE = "再次点击“确认清除”将删除本地模型文件和运行时部署。";
 
 let cachedConfigDraft: AiConfig | null = null;
 let cachedHasUnsavedConfig = false;
@@ -155,11 +153,11 @@ export function SettingsPage() {
         completeLocalDeepseekEnable();
       } else if (progress.status === "failed") {
         setStatus("error");
-        setMessage("本地DeepSeek模型下载或本地运行时配置失败，请按提示检查后重试。");
+        setMessage(AI_SETTINGS_MESSAGES.downloadOrRuntimeFailed);
         window.localStorage.removeItem(localDeepseekEnablePendingKey);
       } else if (progress.status === "cancelled") {
         setStatus("idle");
-        setMessage("本地DeepSeek模型下载已取消，临时下载文件已清除。");
+        setMessage(AI_SETTINGS_MESSAGES.downloadCancelled);
         window.localStorage.removeItem(localDeepseekEnablePendingKey);
       }
     }).then((cleanup) => {
@@ -187,27 +185,27 @@ export function SettingsPage() {
     const saved = await saveAiConfig(config);
     applySavedConfig(saved);
     setStatus("saved");
-    setMessage("AI配置已保存。");
+    setMessage(AI_SETTINGS_MESSAGES.configSaved);
   }
 
   async function test() {
     setStatus("testing");
-    setMessage("正在测试AI连接，请稍候。");
+    setMessage(AI_SETTINGS_MESSAGES.testingConnection);
     try {
       const result = await testAiConnection(config);
       if (result === "downloading") {
         window.localStorage.setItem(localDeepseekEnablePendingKey, "1");
         setStatus("installingLocalModel");
-        setMessage("本地DeepSeek模型已开始后台下载，离开AI配置页也会继续。");
+        setMessage(AI_SETTINGS_MESSAGES.downloadStarted);
         return;
       }
       const next = { ...config, testStatus: result };
       updateConfigDraft(next);
       setStatus("tested");
-      setMessage(result === "disabled" ? "AI当前未启用。" : "API连接测试通过，模型已返回响应。");
+      setMessage(result === "disabled" ? AI_SETTINGS_MESSAGES.aiDisabled : AI_SETTINGS_MESSAGES.connectionPassed);
     } catch (error) {
       setStatus("error");
-      setMessage(userErrorMessage(error, "测试连接失败。"));
+      setMessage(userErrorMessage(error, AI_SETTINGS_MESSAGES.testFailed));
     }
   }
 
@@ -217,7 +215,7 @@ export function SettingsPage() {
     if (needsDownload) {
       window.localStorage.setItem(localDeepseekEnablePendingKey, "1");
     } else {
-      setMessage("正在配置并启动本地DeepSeek运行环境。");
+      setMessage(AI_SETTINGS_MESSAGES.configuringRuntime);
     }
     setDownloadProgress(
       needsDownload
@@ -234,7 +232,7 @@ export function SettingsPage() {
     try {
       const installed = await installLocalDeepseekModel();
       if (!installed) {
-        throw new Error("本地DeepSeek模型状态读取失败。");
+        throw new Error(AI_SETTINGS_MESSAGES.localModelStatusFailed);
       }
       setLocalDeepseek(installed);
       if (needsDownload && !installed.installed) {
@@ -252,7 +250,7 @@ export function SettingsPage() {
       const saved = await saveAiConfig(next);
       applySavedConfig(saved);
       setStatus("saved");
-      setMessage("本地DeepSeek已启用，后续AI分析不再要求云端API Key。");
+      setMessage(AI_SETTINGS_MESSAGES.localDeepseekEnabled);
       window.localStorage.removeItem(localDeepseekEnablePendingKey);
     } catch (error) {
       setStatus("error");
@@ -265,7 +263,7 @@ export function SettingsPage() {
           : current
       );
       window.localStorage.removeItem(localDeepseekEnablePendingKey);
-      setMessage(userErrorMessage(error, "本地DeepSeek模型下载失败。"));
+      setMessage(userErrorMessage(error, AI_SETTINGS_MESSAGES.downloadFailed));
     }
   }
 
@@ -284,10 +282,10 @@ export function SettingsPage() {
       );
       window.localStorage.removeItem(localDeepseekEnablePendingKey);
       setStatus("idle");
-      setMessage("本地DeepSeek模型下载已取消，临时下载文件已清除。");
+      setMessage(AI_SETTINGS_MESSAGES.downloadCancelled);
     } catch (error) {
       setStatus("error");
-      setMessage(userErrorMessage(error, "取消本地DeepSeek模型下载失败。"));
+      setMessage(userErrorMessage(error, AI_SETTINGS_MESSAGES.cancelDownloadFailed));
     }
   }
 
@@ -311,10 +309,10 @@ export function SettingsPage() {
       setIsClearModelDone(false);
       setIsClearModelArmed(true);
       setStatus("idle");
-      setMessage(CLEAR_MODEL_CONFIRM_MESSAGE);
+      setMessage(AI_SETTINGS_MESSAGES.clearModelConfirm);
       clearModelConfirmTimer.current = window.setTimeout(() => {
         setIsClearModelArmed(false);
-        setMessage((current) => (current === CLEAR_MODEL_CONFIRM_MESSAGE ? "" : current));
+        setMessage((current) => (current === AI_SETTINGS_MESSAGES.clearModelConfirm ? "" : current));
         clearModelConfirmTimer.current = null;
       }, CLEAR_MODEL_CONFIRM_TIMEOUT_MS);
       return;
@@ -339,10 +337,10 @@ export function SettingsPage() {
         setIsClearModelDone(false);
         clearModelDoneTimer.current = null;
       }, CLEAR_MODEL_DONE_TIMEOUT_MS);
-      setMessage("本地DeepSeek模型文件和运行时部署已清除。");
+      setMessage(AI_SETTINGS_MESSAGES.modelCleared);
     } catch (error) {
       setStatus("error");
-      setMessage(userErrorMessage(error, "清除本地DeepSeek模型失败。"));
+      setMessage(userErrorMessage(error, AI_SETTINGS_MESSAGES.clearModelFailed));
     }
   }
 
@@ -357,7 +355,7 @@ export function SettingsPage() {
       setIsPathCopied(false);
       copyPathTimer.current = null;
     }, 1800);
-    setMessage("本地DeepSeek模型存储路径已复制。");
+    setMessage(AI_SETTINGS_MESSAGES.modelPathCopied);
   }
 
   async function completeLocalDeepseekEnable() {
@@ -368,7 +366,7 @@ export function SettingsPage() {
     // 下载进度事件可能在用户离开页面后完成；只有带有待启用标记时才自动切换配置，避免覆盖用户后续手动选择的云端模型。
     if (window.localStorage.getItem(localDeepseekEnablePendingKey) !== "1") {
       setStatus("saved");
-      setMessage("本地DeepSeek模型已下载完成。");
+      setMessage(AI_SETTINGS_MESSAGES.modelDownloaded);
       return;
     }
     const currentConfig = normalizeConfig(await getAiConfig().catch(() => configRef.current));
@@ -385,7 +383,7 @@ export function SettingsPage() {
     const saved = await saveAiConfig(next);
     applySavedConfig(saved);
     setStatus("saved");
-    setMessage("本地DeepSeek已下载并启用，后续AI分析不再要求云端API Key。");
+    setMessage(AI_SETTINGS_MESSAGES.downloadedAndEnabled);
     window.localStorage.removeItem(localDeepseekEnablePendingKey);
   }
 
@@ -404,7 +402,7 @@ export function SettingsPage() {
 
   function renderSettingsMessage() {
     if (!message) return null;
-    const variant: FloatingNoticeVariant = status === "error" ? "error" : successSettingsMessages.has(message) ? "success" : "info";
+    const variant: FloatingNoticeVariant = status === "error" ? "error" : SETTINGS_SUCCESS_MESSAGES.has(message) ? "success" : "info";
     return (
       <FloatingNoticeStack>
         <FloatingNotice
@@ -579,7 +577,7 @@ export function SettingsPage() {
           >
             <div>
               <strong>AI分析提示词</strong>
-              <span>AI分析待我回复、待办事项和热门话题</span>
+              <span>AI分析待我回复、待办事项、热门话题和关键词词云</span>
             </div>
             <span className="prompt-panel-icons">
               <ChevronDown size={17} className={isPromptPanelExpanded ? "prompt-panel-chevron expanded" : "prompt-panel-chevron"} />
@@ -616,8 +614,8 @@ export function SettingsPage() {
               <div className="prompt-editor">
                 <div className="prompt-title">
                   <div>
-                    <strong>热门话题识别</strong>
-                    <span>同步完成后会按此规则识别热门话题</span>
+                    <strong>热门话题&关键词识别</strong>
+                    <span>同步完成后会按此规则识别热门话题和关键词词云</span>
                   </div>
                   <button
                     className="secondary-button"

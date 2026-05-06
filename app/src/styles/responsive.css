@@ -1,0 +1,496 @@
+@media (max-width: 1120px) {
+  .app-shell {
+    --im-sidebar-width: 220px;
+    grid-template-columns: var(--im-sidebar-width) minmax(0, 1fr);
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1040px) {
+  .topbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .topbar-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    --im-sidebar-width: 74px;
+    grid-template-columns: var(--im-sidebar-width) minmax(0, 1fr);
+  }
+
+  .sidebar {
+    padding: 16px 10px;
+    align-items: center;
+  }
+
+  .brand {
+    padding: 0 0 10px;
+  }
+
+  .brand > div:not(.brand-mark),
+  .section-title,
+  .profile-label,
+  .nav-item .profile-label + svg {
+    display: none;
+  }
+
+  .nav-item {
+    flex: 0 0 auto;
+    gap: 0;
+    height: 48px;
+    justify-content: center;
+    width: 48px;
+    padding: 9px;
+    font-size: 0;
+  }
+
+  .brand-mark {
+    font-size: 15px;
+  }
+
+  .dashboard-page {
+    padding: 16px;
+  }
+
+  .page-surface {
+    padding: 16px;
+  }
+
+  .settings-page,
+  .app-settings-page {
+    --settings-page-edge-x: 16px;
+    --settings-page-edge-bottom: 16px;
+  }
+
+  .floating-notice-layer.page {
+    top: 82px;
+    left: calc(var(--im-sidebar-width, 74px) + 16px);
+    right: 16px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .frequency-popover {
+    left: 0;
+    right: auto;
+  }
+
+  .topbar h1 {
+    font-size: 24px;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pie-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .rank-row {
+    grid-template-columns: 28px minmax(80px, 120px) 1fr 42px;
+  }
+
+  .profile-row,
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-row {
+    padding: 14px;
+  }
+
+  .profile-row:not(.batch-mode) {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: center;
+    gap: 12px 10px;
+  }
+
+  .profile-row:not(.batch-mode) .profile-platform {
+    grid-column: 1;
+  }
+
+  .profile-row:not(.batch-mode) .profile-status {
+    grid-column: 2;
+    align-self: start;
+    justify-self: end;
+  }
+
+  .bind-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .local-model-box {
+    grid-template-columns: 1fr;
+  }
+
+  .local-model-actions {
+    align-items: flex-start;
+    justify-self: start;
+  }
+
+  .about-modal {
+    --about-content-indent: 0px;
+  }
+
+  .wechat-candidate-list,
+  .wechat-db-candidate-list,
+  .path-preview div {
+    grid-template-columns: 1fr;
+  }
+
+  .field-row.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .official-cli-modal {
+    --setup-content-indent: 0px;
+  }
+
+  .local-wechat-modal {
+    --setup-content-indent: 0px;
+  }
+
+  .official-cli-modal .field-row.compact {
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 8px;
+  }
+
+  .profile-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    justify-content: stretch;
+    gap: 6px;
+    width: 100%;
+    border-top: 1px solid var(--im-border-soft);
+    padding-top: 10px;
+  }
+
+  .profile-actions .secondary-button,
+  .profile-actions .icon-button {
+    min-width: 0;
+    width: 100%;
+    height: 34px;
+  }
+
+  .profile-action-label {
+    display: none;
+  }
+
+  .form-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    --im-sidebar-width: 64px;
+  }
+
+  .app-shell.tauri-window .sidebar {
+    padding-top: 44px;
+  }
+
+  .sidebar {
+    gap: 12px;
+    padding: 12px 8px;
+  }
+
+  .brand {
+    padding-bottom: 8px;
+  }
+
+  .brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+  }
+
+  .nav-section,
+  .profile-list,
+  .sidebar-actions {
+    gap: 8px;
+  }
+
+  .nav-item {
+    height: 44px;
+    width: 44px;
+    min-height: 44px;
+    padding: 8px;
+  }
+
+  .profile-list {
+    scrollbar-gutter: auto;
+    padding-right: 0;
+  }
+
+  .theme-switcher {
+    grid-template-columns: 1fr;
+    width: 44px;
+    gap: 3px;
+    margin-top: 2px;
+    padding: 3px;
+    border-radius: 12px;
+  }
+
+  .theme-segment,
+  .theme-segment.active {
+    gap: 0;
+    min-height: 28px;
+    padding: 0;
+  }
+
+  .theme-segment.active span {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  .dashboard-page {
+    --dashboard-edge-x: 12px;
+    --dashboard-edge-y: 12px;
+    --dashboard-card-gap: 9px;
+    --dashboard-card-padding: 12px;
+    --dashboard-panel-padding: 12px;
+  }
+
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(132px, 0.74fr);
+    width: 100%;
+  }
+
+  .topbar-actions > .frequency-control,
+  .topbar-actions > .secondary-button,
+  .topbar-actions button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .metric-card strong {
+    font-size: 34px;
+  }
+
+  .action-item {
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 780px) and (min-width: 761px) {
+  .app-shell {
+    --im-sidebar-width: 228px;
+  }
+
+  .app-shell.tauri-window .sidebar {
+    padding-top: 48px;
+  }
+
+  .sidebar {
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
+  .brand {
+    gap: 10px;
+    padding: 4px 6px 10px;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .nav-item {
+    min-height: 36px;
+    padding: 7px 9px;
+  }
+
+  .theme-switcher {
+    margin-top: 4px;
+  }
+
+  .theme-segment {
+    min-height: 26px;
+  }
+
+  .topbar {
+    min-height: 48px;
+  }
+
+  .topbar h1 {
+    font-size: 22px;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    min-height: 32px;
+  }
+}
+
+:root[data-theme-transition="running"] body,
+:root[data-theme-transition="running"] .app-shell,
+:root[data-theme-transition="running"] .app-shell::before,
+:root[data-theme-transition="running"] .app-shell .theme-switcher::before,
+:root[data-theme-transition="running"] .app-shell :where(
+  .sidebar,
+  .main-pane,
+  .settings-sticky-footer,
+  .brand strong,
+  .brand span,
+  .section-title,
+  .profile-label,
+  .profile-label small,
+  .nav-item,
+  .theme-switcher,
+  .theme-segment,
+  .theme-segment span,
+  .topbar,
+  .topbar h1,
+  .topbar span,
+  .panel-header strong,
+  .panel-header span,
+  .primary-button,
+  .secondary-button,
+  .danger-button,
+  .icon-button,
+  .floating-notice,
+  .floating-notice-close,
+  .metric-card,
+  .metric-card strong,
+  .metric-card span,
+  .panel,
+  .bind-card,
+  .profile-row,
+  .action-item,
+  .frequency-popover,
+  .profile-modal,
+  .detail-drawer,
+  .drawer-source-meta span,
+  .wechat-candidate,
+  .wechat-db-candidate,
+  .wecom-deploy-status,
+  .command-box,
+  .setup-checklist,
+  .cli-version-box,
+  .drawer-meta,
+  .empty-state,
+  .word-cloud,
+  .chart-tooltip,
+  input,
+  select,
+  textarea
+) {
+  transition:
+    background 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    left 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    max-width 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    padding 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    text-shadow 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 320ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  transition-delay: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  .app-shell,
+  .app-shell .theme-switcher::before,
+  .app-shell :where(
+    .sidebar,
+    .main-pane,
+    .settings-sticky-footer,
+    .nav-item,
+    .theme-switcher,
+    .theme-segment,
+    .theme-segment span,
+    .theme-segment svg,
+    .primary-button,
+    .secondary-button,
+    .danger-button,
+    .icon-button,
+    .floating-notice,
+    .floating-notice-close,
+    .metric-card,
+    .panel,
+    .bind-card,
+    .profile-row,
+    .action-item,
+    .frequency-popover,
+    .profile-modal,
+    .detail-drawer,
+    .keyword,
+    .legend-list span,
+    .rank-row,
+    .rank-bar-fill,
+    .topic-row,
+    input,
+    select,
+    textarea
+  ) {
+    transition-duration: 1ms !important;
+  }
+
+  .detail-drawer.is-open,
+  .detail-drawer.is-closing {
+    animation-duration: 1ms !important;
+  }
+
+  .dashboard-page :where(
+    .topbar,
+    .metric-card,
+    .panel,
+    .action-item,
+    .topic-row,
+    .rank-row,
+    .keyword,
+    .legend-list span,
+    .metric-value,
+    .dashboard-count,
+    .topic-count,
+    .rank-count,
+    .legend-count,
+    .rank-bar-fill
+  ) {
+    animation: none !important;
+  }
+}

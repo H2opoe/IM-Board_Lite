@@ -1,10 +1,12 @@
 mod ai;
+mod analysis;
 mod bridge_runner;
 mod commands;
 mod connectors;
 mod daily_cache;
 mod domain;
 mod macos_permissions;
+mod messages;
 mod profile_manager;
 mod runtime;
 mod security;
