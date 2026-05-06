@@ -16,8 +16,8 @@
     "debug:env": "/bin/zsh -lc '. \"$HOME/.cargo/env\" && node scripts/check-debug-env.mjs'"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.8.0",
-    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/api": "2.10.1",
+    "@tauri-apps/plugin-dialog": "2.7.0",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

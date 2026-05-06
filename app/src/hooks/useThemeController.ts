@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { setThemeDockIcon } from "../api/appSettingsApi";
+import type { UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { setNativeTheme, setThemeDockIcon } from "../api/appSettingsApi";
+import { isTauri } from "../api/tauri";
 
 export type ThemeChoice = "auto" | "light" | "dark";
 export type ThemeMode = "light" | "dark";
@@ -24,24 +27,53 @@ function loadThemeChoice(): ThemeChoice {
 }
 
 export function useThemeController() {
-  const [themeChoice, setThemeChoice] = useState<ThemeChoice>(loadThemeChoice);
-  const [effectiveThemeMode, setEffectiveThemeMode] = useState<ThemeMode>(() => resolveThemeMode(loadThemeChoice()));
+  const initialThemeChoice = useRef<ThemeChoice>(loadThemeChoice());
+  const [themeChoice, setThemeChoice] = useState<ThemeChoice>(initialThemeChoice.current);
+  const [effectiveThemeMode, setEffectiveThemeMode] = useState<ThemeMode>(() => resolveThemeMode(initialThemeChoice.current));
   const themeTransitionTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const applyTheme = () => {
-      const effectiveTheme = resolveThemeMode(themeChoice);
+    let cancelled = false;
+    let unlistenThemeChanged: UnlistenFn | undefined;
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const applyTheme = (nativeTheme?: ThemeMode | null) => {
+      const effectiveTheme = nativeTheme ?? resolveThemeMode(themeChoice);
       setEffectiveThemeMode(effectiveTheme);
       document.documentElement.dataset.theme = effectiveTheme;
       document.documentElement.dataset.themeChoice = themeChoice;
       void setThemeDockIcon(effectiveTheme);
     };
+    const applySystemTheme = () => applyTheme();
+
     window.localStorage.setItem(THEME_STORAGE_KEY, themeChoice);
     applyTheme();
-    if (themeChoice !== "auto") return undefined;
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    mediaQuery.addEventListener("change", applyTheme);
-    return () => mediaQuery.removeEventListener("change", applyTheme);
+
+    // 自动模式必须把原生窗口主题交还给系统，否则系统外观变化后 WebView 不一定会继续收到主题更新。
+    void setNativeTheme(themeChoice === "auto" ? null : themeChoice);
+
+    if (themeChoice === "auto") {
+      if (isTauri) {
+        void getCurrentWindow()
+          .onThemeChanged(({ payload }) => {
+            if (!cancelled) applyTheme(payload);
+          })
+          .then((unlisten) => {
+            if (cancelled) {
+              unlisten();
+              return;
+            }
+            unlistenThemeChanged = unlisten;
+          });
+      }
+      mediaQuery.addEventListener("change", applySystemTheme);
+    }
+
+    return () => {
+      cancelled = true;
+      unlistenThemeChanged?.();
+      if (themeChoice === "auto") mediaQuery.removeEventListener("change", applySystemTheme);
+    };
   }, [themeChoice]);
 
   useEffect(() => {

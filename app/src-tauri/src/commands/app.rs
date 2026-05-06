@@ -12,6 +12,7 @@ use crate::macos_permissions;
 use crate::security::sanitize_log;
 use crate::storage::AppState;
 
+#[cfg(target_os = "windows")]
 const MAIN_WINDOW_LABEL: &str = "main";
 #[cfg(target_os = "windows")]
 const MAIN_TRAY_ID: &str = "main-tray";
@@ -61,29 +62,9 @@ pub fn export_diagnostic_package(
 #[tauri::command]
 pub fn set_theme_dock_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
     match theme.as_str() {
-        "light" | "dark" => {
-            apply_native_window_theme(&app, &theme)?;
-            set_theme_dock_icon_impl(app, &theme)
-        }
+        "light" | "dark" => set_theme_dock_icon_impl(app, &theme),
         _ => Err("主题参数无效。".to_string()),
     }
-}
-
-fn apply_native_window_theme(app: &tauri::AppHandle, theme: &str) -> Result<(), String> {
-    let native_theme = match theme {
-        "dark" => tauri::Theme::Dark,
-        "light" => tauri::Theme::Light,
-        _ => return Err("主题参数无效。".to_string()),
-    };
-
-    // Windows 标题栏由系统原生窗口绘制，需要同步 Tauri 窗口主题，避免深色界面外露浅色系统标题栏。
-    app.set_theme(Some(native_theme));
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        window
-            .set_theme(Some(native_theme))
-            .map_err(|error| format!("切换窗口主题失败：{error}"))?;
-    }
-    Ok(())
 }
 
 #[tauri::command]

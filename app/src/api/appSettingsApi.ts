@@ -1,8 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
+import { setTheme } from "@tauri-apps/api/app";
 import type { AppSettings, DiagnosticExport } from "../features/app-settings/model/types";
 import { isTauri, requireTauri } from "./tauri";
 
-export async function setThemeDockIcon(theme: "light" | "dark"): Promise<void> {
+type ThemeMode = "light" | "dark";
+
+export async function setNativeTheme(theme: ThemeMode | null): Promise<void> {
+  if (isTauri) return setTheme(theme);
+}
+
+export async function setThemeDockIcon(theme: ThemeMode): Promise<void> {
   if (isTauri) return invoke("set_theme_dock_icon", { theme });
 }
 
