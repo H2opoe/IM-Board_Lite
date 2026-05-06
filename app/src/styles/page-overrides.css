@@ -1,0 +1,76 @@
+.profile-page {
+  --profile-page-x: clamp(22px, 2.4vw, 32px);
+  --profile-page-y: clamp(22px, 2.8vh, 34px);
+  align-content: start;
+  gap: 16px;
+  min-height: 100vh;
+  padding: var(--profile-page-y) var(--profile-page-x) 30px;
+}
+
+.app-shell.tauri-window .profile-page {
+  padding-top: max(56px, calc(var(--profile-page-y) + 28px));
+}
+
+.profile-page .topbar {
+  min-height: auto;
+}
+
+.profile-page .profile-layout {
+  gap: 16px;
+}
+
+.profile-page .profile-bind-panel,
+.profile-page .profile-list-panel {
+  padding: clamp(16px, 1.55vw, 20px);
+}
+
+.profile-page .profile-list-panel {
+  padding: clamp(14px, 1.3vw, 18px);
+}
+
+.profile-page .panel-header {
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.profile-page .profile-list-panel .panel-header {
+  min-height: 38px;
+  margin-bottom: 0;
+}
+
+.profile-page .bind-grid {
+  gap: 14px;
+}
+
+.profile-page .profile-table {
+  gap: 8px;
+  padding-right: 0;
+}
+
+.profile-bind-panel,
+.profile-list-panel {
+  min-height: 0;
+}
+
+.profile-bind-panel {
+  overflow: visible;
+}
+
+.profile-list-panel {
+  overflow: hidden;
+}
+
+.profile-list-panel .empty-state {
+  min-height: 128px;
+}
+
+.dashboard-page .topic-panel,
+.dashboard-page .word-cloud-panel {
+  height: var(--dashboard-topic-height);
+}
+
+.dashboard-page .analytics-panel {
+  height: var(--dashboard-analytics-height);
+}
+
