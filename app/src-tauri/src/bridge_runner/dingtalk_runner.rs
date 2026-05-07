@@ -3,16 +3,9 @@ use std::process::Stdio;
 use std::sync::Mutex;
 use std::time::Instant;
 
-#[cfg(windows)]
-use tokio::process::Command;
-
 use crate::security::sanitize_log;
-#[cfg(windows)]
-use crate::storage::models::ImProfile;
 
 use super::errors::{bridge_error_for, classify_dingtalk_cli_error, not_authenticated_message};
-#[cfg(windows)]
-use super::hide_windows_console;
 use super::normalizers::{
     dingtalk_time_arg, normalize_dingtalk_chats, normalize_dingtalk_messages,
 };
@@ -21,13 +14,6 @@ use super::{
     apply_official_cli_env, official_cli_command, register_pid, unregister_pid, BridgeEnvelope,
     BridgeError, BridgeRequest,
 };
-
-#[cfg(windows)]
-const WINDOWS_DINGTALK_REGISTRY_KEY: &str = r"HKCU\Software\DwsCli\keychain\dws-cli";
-#[cfg(windows)]
-const WINDOWS_DINGTALK_AUTH_TOKEN_VALUE: &str = "YXV0aC10b2tlbg";
-#[cfg(windows)]
-const WINDOWS_DINGTALK_PROFILE_TOKEN_FILE: &str = "windows-auth-token.regvalue";
 
 pub(super) async fn run_official_dingtalk_cli(
     request: BridgeRequest,
@@ -65,33 +51,6 @@ pub(super) async fn run_official_dingtalk_cli(
 
     let mut command = official_cli_command(&cli_path);
     apply_official_cli_env(&mut command);
-    if cfg!(windows) {
-        let dingtalk_home_dir = profile
-            .config_json
-            .get("homeDir")
-            .and_then(|value| value.as_str())
-            .filter(|value| !value.trim().is_empty())
-            .map(expand_home)
-            .or_else(|| {
-                profile
-                    .config_json
-                    .get("configDir")
-                    .and_then(|value| value.as_str())
-                    .filter(|value| !value.trim().is_empty())
-                    .map(|value| expand_home(value).join("home"))
-            });
-        if let Some(home_dir) = dingtalk_home_dir {
-            std::fs::create_dir_all(&home_dir)?;
-            command.env("HOME", &home_dir).env("USERPROFILE", &home_dir);
-            let appdata_dir = home_dir.join("AppData").join("Roaming");
-            let local_appdata_dir = home_dir.join("AppData").join("Local");
-            std::fs::create_dir_all(&appdata_dir)?;
-            std::fs::create_dir_all(&local_appdata_dir)?;
-            command
-                .env("APPDATA", appdata_dir)
-                .env("LOCALAPPDATA", local_appdata_dir);
-        }
-    }
     if let Some(auth_identity) = profile
         .config_json
         .get("authIdentity")
@@ -269,9 +228,6 @@ pub(super) async fn run_official_dingtalk_cli(
     {
         command.env("DWS_CONFIG_DIR", expand_home(config_dir));
     }
-    #[cfg(windows)]
-    prepare_windows_dingtalk_token(profile).await?;
-
     let child = match command.spawn() {
         Ok(child) => child,
         Err(err) => {
@@ -404,79 +360,4 @@ pub(super) async fn run_official_dingtalk_cli(
             "duration_ms": started_at.elapsed().as_millis()
         }),
     })
-}
-
-#[cfg(windows)]
-fn windows_dingtalk_token_path(profile: &ImProfile) -> PathBuf {
-    profile
-        .config_json
-        .get("dwsKeychainDir")
-        .and_then(|value| value.as_str())
-        .filter(|value| !value.trim().is_empty())
-        .map(expand_home)
-        .or_else(|| {
-            profile
-                .config_json
-                .get("configDir")
-                .and_then(|value| value.as_str())
-                .filter(|value| !value.trim().is_empty())
-                .map(|value| expand_home(value).join("keychain"))
-        })
-        .unwrap_or_else(|| PathBuf::from(".").join("dws-keychain"))
-        .join(WINDOWS_DINGTALK_PROFILE_TOKEN_FILE)
-}
-
-#[cfg(windows)]
-async fn prepare_windows_dingtalk_token(profile: &ImProfile) -> anyhow::Result<()> {
-    // Windows 版 DWS 当前把 auth-token 固定写入 HKCU 注册表，无法被 DWS_CONFIG_DIR 隔离。
-    // 每次运行前由 IM-Board 导入当前 profile 保存的 token；未授权的新 profile 则先清空全局 token，
-    // 避免“第二个账号未完成授权”时误读到上一个账号。
-    let token_path = windows_dingtalk_token_path(profile);
-    if token_path.exists() {
-        let token = std::fs::read_to_string(&token_path)?
-            .trim_start_matches('\u{feff}')
-            .trim()
-            .to_owned();
-        if !token.is_empty() {
-            run_windows_registry_command(
-                "add",
-                &[
-                    WINDOWS_DINGTALK_REGISTRY_KEY,
-                    "/v",
-                    WINDOWS_DINGTALK_AUTH_TOKEN_VALUE,
-                    "/t",
-                    "REG_SZ",
-                    "/d",
-                    &token,
-                    "/f",
-                ],
-            )
-            .await?;
-            return Ok(());
-        }
-    }
-    run_windows_registry_command(
-        "delete",
-        &[
-            WINDOWS_DINGTALK_REGISTRY_KEY,
-            "/v",
-            WINDOWS_DINGTALK_AUTH_TOKEN_VALUE,
-            "/f",
-        ],
-    )
-    .await
-    .or_else(|_| Ok(()))
-}
-
-#[cfg(windows)]
-async fn run_windows_registry_command(action: &str, args: &[&str]) -> anyhow::Result<()> {
-    let mut command = Command::new("reg");
-    command.arg(action).args(args);
-    hide_windows_console(&mut command);
-    let output = command.output().await?;
-    if output.status.success() {
-        return Ok(());
-    }
-    let stderr = sanitize_log(&String::from_utf8_lossy(&output.stderr));
-    anyhow::bail!("Windows 注册表钉钉授权隔离失败：{stderr}");
 }

@@ -35,13 +35,7 @@ fn empty_session_warning(_profile: &ImProfile) -> Option<String> {
 }
 
 fn fetch_concurrency() -> usize {
-    // Windows 版 DWS 把授权 token 固定写入当前用户注册表，运行前需要按 profile 导入 token。
-    // 同一 profile 内也串行读取，避免多个 DWS 子进程抢同一个注册表 token。
-    if cfg!(windows) {
-        1
-    } else {
-        official_cli_fetch_concurrency()
-    }
+    official_cli_fetch_concurrency()
 }
 
 fn should_silence_message_error(code: &str) -> bool {

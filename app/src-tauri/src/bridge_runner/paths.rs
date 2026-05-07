@@ -140,48 +140,6 @@ fn official_cli_candidates(root: &Path, platform: &str, package: &str, bin: &str
     let package_root = root.join(platform).join("node_modules");
     let package_dir = package.split('/').collect::<PathBuf>();
     let mut candidates = Vec::new();
-    if cfg!(windows) {
-        match platform {
-            "wecom" => candidates.push(
-                package_root
-                    .join("@wecom")
-                    .join("cli-win32-x64")
-                    .join("bin")
-                    .join("wecom-cli.exe"),
-            ),
-            "feishu" => {
-                candidates.push(
-                    package_root
-                        .join(&package_dir)
-                        .join("bin")
-                        .join("lark-cli-windows-x64.exe"),
-                );
-                candidates.push(
-                    package_root
-                        .join(&package_dir)
-                        .join("bin")
-                        .join("lark-cli.exe"),
-                );
-            }
-            "dingtalk" => {
-                candidates.push(
-                    package_root
-                        .join(&package_dir)
-                        .join("vendor")
-                        .join("dws-windows-x64.exe"),
-                );
-                candidates.push(
-                    package_root
-                        .join(&package_dir)
-                        .join("vendor")
-                        .join("dws.exe"),
-                );
-            }
-            _ => {}
-        }
-        candidates.push(package_root.join(".bin").join(format!("{bin}.exe")));
-        return candidates;
-    }
     let npm_arch = current_npm_arch();
     match platform {
         "wecom" => candidates.push(
@@ -231,11 +189,7 @@ fn resolve_existing_command(command: &str) -> Option<PathBuf> {
         return expanded.exists().then_some(expanded);
     }
     let path = std::env::var_os("PATH")?;
-    let extensions: &[&str] = if cfg!(windows) && Path::new(command).extension().is_none() {
-        &["", ".exe", ".cmd", ".bat"]
-    } else {
-        &[""]
-    };
+    let extensions: &[&str] = &[""];
     std::env::split_paths(&path).find_map(|entry| {
         extensions
             .iter()
@@ -251,9 +205,6 @@ pub(super) fn is_dependency_free_cli(path: &Path) -> bool {
         .unwrap_or_default()
         .to_ascii_lowercase();
     if matches!(extension.as_str(), "js" | "cmd" | "bat") {
-        return false;
-    }
-    if cfg!(windows) && extension != "exe" {
         return false;
     }
     if let Ok(bytes) = std::fs::read(path) {

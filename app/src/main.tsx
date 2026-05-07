@@ -15,11 +15,10 @@ import "./styles/theme-light.css";
 import "./styles/page-overrides.css";
 import "./styles/responsive.css";
 
-type AppPlatform = "macos" | "windows" | "other";
+type AppPlatform = "macos" | "other";
 
 function detectAppPlatform(): AppPlatform {
   const platformHint = `${window.navigator.platform} ${window.navigator.userAgent}`.toLowerCase();
-  if (platformHint.includes("win")) return "windows";
   if (platformHint.includes("mac")) return "macos";
   return "other";
 }

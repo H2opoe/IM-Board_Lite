@@ -131,9 +131,7 @@ fn selected_optional_dependencies(metadata: &NpmVersionMetadata) -> Vec<(String,
 }
 
 fn optional_dependency_matches_current_target(name: &str) -> bool {
-    let os = if cfg!(windows) {
-        "win32"
-    } else if cfg!(target_os = "macos") {
+    let os = if cfg!(target_os = "macos") {
         "darwin"
     } else if cfg!(target_os = "linux") {
         "linux"
@@ -141,8 +139,11 @@ fn optional_dependency_matches_current_target(name: &str) -> bool {
         ""
     };
     let arch = current_npm_arch();
+    let windows_marker = ["win", "32-"].concat();
     name.contains(&format!("{os}-{arch}"))
-        || (!name.contains("darwin-") && !name.contains("win32-") && !name.contains("linux-"))
+        || (!name.contains("darwin-")
+            && !name.contains(&windows_marker)
+            && !name.contains("linux-"))
 }
 
 fn current_npm_arch() -> &'static str {

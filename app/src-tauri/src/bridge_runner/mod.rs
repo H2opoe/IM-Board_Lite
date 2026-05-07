@@ -29,8 +29,6 @@ use paths::resolve_bridge_executable;
 use process::{bridge_process_spec, bridge_spawn_error};
 use wecom_runner::run_official_wecom_cli;
 
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x08000000;
 pub(super) const APP_DATA_DIR_NAME: &str = "IMBoard";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

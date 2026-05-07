@@ -54,18 +54,9 @@ fn stop_tracked_llama_server(state: &AppState) -> Result<(), String> {
         return Ok(());
     };
 
-    #[cfg(unix)]
-    {
-        let _ = std::process::Command::new("kill")
-            .arg(pid.to_string())
-            .status();
-    }
-    #[cfg(windows)]
-    {
-        let _ = std::process::Command::new("taskkill")
-            .args(["/PID", &pid.to_string(), "/T", "/F"])
-            .status();
-    }
+    let _ = std::process::Command::new("kill")
+        .arg(pid.to_string())
+        .status();
     Ok(())
 }
 

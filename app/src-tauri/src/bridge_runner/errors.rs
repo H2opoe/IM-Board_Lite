@@ -23,11 +23,7 @@ pub(super) fn not_authenticated_message(platform_label: &str) -> String {
 }
 
 pub(super) fn platform_command_shell_name() -> &'static str {
-    if cfg!(windows) {
-        "Windows PowerShell"
-    } else {
-        "macOS终端"
-    }
+    "macOS终端"
 }
 
 pub(super) fn feishu_app_config_incomplete_message() -> String {

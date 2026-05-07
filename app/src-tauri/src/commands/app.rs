@@ -10,11 +10,6 @@ use crate::daily_cache;
 use crate::security::sanitize_log;
 use crate::storage::AppState;
 
-#[cfg(target_os = "windows")]
-const MAIN_WINDOW_LABEL: &str = "main";
-#[cfg(target_os = "windows")]
-const MAIN_TRAY_ID: &str = "main-tray";
-
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
@@ -533,25 +528,7 @@ fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), St
         .map_err(|error| format!("等待 Dock图标切换结果失败：{error}"))?
 }
 
-#[cfg(target_os = "windows")]
-fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), String> {
-    let icon = tauri::image::Image::from_path(desktop_icon_path(&app, theme_icon_file_name(theme)))
-        .map_err(|error| format!("读取应用图标失败：{error}"))?;
-
-    // Windows 的 exe 与快捷方式图标来自安装包静态资源；运行中同步窗口任务栏图标与后台托盘图标。
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        window
-            .set_icon(icon.clone())
-            .map_err(|error| format!("切换窗口图标失败：{error}"))?;
-    }
-    if let Some(tray) = app.tray_by_id(MAIN_TRAY_ID) {
-        tray.set_icon(Some(icon))
-            .map_err(|error| format!("切换后台图标失败：{error}"))?;
-    }
-    Ok(())
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(target_os = "macos"))]
 fn set_theme_dock_icon_impl(_app: tauri::AppHandle, _theme: &str) -> Result<(), String> {
     Ok(())
 }
@@ -564,7 +541,7 @@ fn theme_icon_file_name(theme: &str) -> &'static str {
     }
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(target_os = "macos")]
 fn desktop_icon_path(app: &tauri::AppHandle, file_name: &str) -> std::path::PathBuf {
     if let Ok(resource_dir) = app.path().resource_dir() {
         let bundled_icon = resource_dir.join("icons").join(file_name);

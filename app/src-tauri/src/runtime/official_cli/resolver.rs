@@ -35,65 +35,6 @@ fn official_cli_roots(resource_dir: &Path, app_dir: &Path) -> Vec<PathBuf> {
 fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> {
     let package_root = root.join(spec.platform).join("node_modules");
     let mut candidates = Vec::new();
-    if cfg!(windows) {
-        if spec.platform == "wecom" {
-            candidates.push(
-                package_root
-                    .join("@wecom")
-                    .join("cli-win32-x64")
-                    .join("bin")
-                    .join("wecom-cli.exe"),
-            );
-        }
-        if spec.platform == "feishu" {
-            candidates.push(
-                package_root
-                    .join(package_dir(spec.package))
-                    .join("bin")
-                    .join("lark-cli-windows-x64.exe"),
-            );
-            candidates.push(
-                package_root
-                    .join(package_dir(spec.package))
-                    .join("bin")
-                    .join("lark-cli.exe"),
-            );
-        }
-        if spec.platform == "dingtalk" {
-            candidates.push(
-                package_root
-                    .join(package_dir(spec.package))
-                    .join("vendor")
-                    .join("dws-windows-x64.exe"),
-            );
-            candidates.push(
-                package_root
-                    .join(package_dir(spec.package))
-                    .join("vendor")
-                    .join("dws.exe"),
-            );
-        }
-        candidates.push(package_root.join(".bin").join(format!("{}.cmd", spec.bin)));
-        candidates.push(package_root.join(".bin").join(format!("{}.exe", spec.bin)));
-        if spec.platform == "feishu" {
-            candidates.push(
-                package_root
-                    .join(package_dir(spec.package))
-                    .join("scripts")
-                    .join("run.js"),
-            );
-        }
-        if spec.platform == "dingtalk" {
-            candidates.push(
-                package_root
-                    .join(package_dir(spec.package))
-                    .join("bin")
-                    .join("dws.js"),
-            );
-        }
-        candidates.push(package_root.join(".bin").join(spec.bin));
-        return candidates;
-    }
     let npm_arch = current_npm_arch();
     if spec.platform == "wecom" {
         candidates.push(
@@ -153,10 +94,7 @@ fn is_dependency_free_cli(path: &Path) -> bool {
         .and_then(|value| value.to_str())
         .unwrap_or_default()
         .to_ascii_lowercase();
-    if matches!(extension.as_str(), "js" | "cmd" | "bat") {
-        return false;
-    }
-    if cfg!(windows) && extension != "exe" {
+    if extension == "js" {
         return false;
     }
     if let Ok(bytes) = std::fs::read(path) {

@@ -95,7 +95,6 @@ fn bundled_python3_candidates(resource_dir: &Path) -> Vec<PathBuf> {
     let (arch, executable) = match (std::env::consts::OS, std::env::consts::ARCH) {
         ("macos", "aarch64") => ("darwin-arm64", ["python", "bin", "python3.10"]),
         ("macos", "x86_64") => ("darwin-x64", ["python", "bin", "python3.10"]),
-        ("windows", "x86_64") => ("win-x64", ["python", "python.exe", ""]),
         _ => ("", ["", "", ""]),
     };
     if arch.is_empty() {
