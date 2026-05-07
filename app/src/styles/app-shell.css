@@ -4,6 +4,15 @@
   grid-template-columns: var(--im-sidebar-width) minmax(0, 1fr);
 }
 
+.window-drag-region {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  left: 78px;
+  right: 360px;
+  height: 44px;
+}
+
 .brand {
   -webkit-user-select: none;
   user-select: none;
@@ -235,6 +244,20 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.demo-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid rgba(208, 108, 69, 0.2);
+  border-radius: 999px;
+  padding: 0 11px;
+  background: rgba(208, 108, 69, 0.1);
+  color: #b95a34;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .frequency-control {

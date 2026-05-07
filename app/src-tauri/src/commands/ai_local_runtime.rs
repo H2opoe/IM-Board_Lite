@@ -144,7 +144,7 @@ fn copy_dir_all(source: &Path, destination: PathBuf) -> Result<(), String> {
 }
 
 fn llama_server_binary_name() -> &'static str {
-    if cfg!(windows) {
+    if std::env::consts::OS == "windows" {
         "llama-server.exe"
     } else {
         "llama-server"
@@ -161,6 +161,12 @@ fn llama_cpp_archive_name() -> Result<String, String> {
         ("macos", "x86_64") => Ok(format!(
             "llama-{LOCAL_LLAMA_CPP_VERSION}-bin-macos-x64.tar.gz"
         )),
+        ("windows", "x86_64") => Ok(format!(
+            "llama-{LOCAL_LLAMA_CPP_VERSION}-bin-win-cpu-x64.zip"
+        )),
+        ("windows", "aarch64") => Ok(format!(
+            "llama-{LOCAL_LLAMA_CPP_VERSION}-bin-win-cpu-arm64.zip"
+        )),
         _ => Err(format!(
             "当前系统暂不支持自动下载本地推理运行时：{os}/{arch}"
         )),
@@ -168,6 +174,9 @@ fn llama_cpp_archive_name() -> Result<String, String> {
 }
 
 async fn extract_llama_cpp_runtime(archive_path: &Path, runtime_dir: &Path) -> Result<(), String> {
+    if std::env::consts::OS == "windows" {
+        return extract_zip_archive(archive_path, runtime_dir);
+    }
     let archive = archive_path.to_string_lossy();
     let destination = runtime_dir.to_string_lossy();
     let output = Command::new("tar")
@@ -185,6 +194,38 @@ async fn extract_llama_cpp_runtime(archive_path: &Path, runtime_dir: &Path) -> R
             .take(500)
             .collect::<String>()
     ))
+}
+
+fn extract_zip_archive(archive_path: &Path, destination: &Path) -> Result<(), String> {
+    let file = std::fs::File::open(archive_path)
+        .map_err(|err| format!("打开本地推理运行时压缩包失败：{err}"))?;
+    let mut archive =
+        zip::ZipArchive::new(file).map_err(|err| format!("读取本地推理运行时压缩包失败：{err}"))?;
+    std::fs::create_dir_all(destination)
+        .map_err(|err| format!("创建本地推理运行时目录失败：{err}"))?;
+    for index in 0..archive.len() {
+        let mut file = archive
+            .by_index(index)
+            .map_err(|err| format!("读取本地推理运行时压缩包条目失败：{err}"))?;
+        let Some(relative_path) = file.enclosed_name().map(|path| path.to_owned()) else {
+            continue;
+        };
+        let output_path = destination.join(relative_path);
+        if file.is_dir() {
+            std::fs::create_dir_all(&output_path)
+                .map_err(|err| format!("创建本地推理运行时目录失败：{err}"))?;
+            continue;
+        }
+        if let Some(parent) = output_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|err| format!("创建本地推理运行时目录失败：{err}"))?;
+        }
+        let mut output = std::fs::File::create(&output_path)
+            .map_err(|err| format!("写入本地推理运行时文件失败：{err}"))?;
+        std::io::copy(&mut file, &mut output)
+            .map_err(|err| format!("写入本地推理运行时文件失败：{err}"))?;
+    }
+    Ok(())
 }
 
 async fn download_llama_cpp_runtime(archive_name: &str, archive_path: &Path) -> Result<(), String> {
@@ -254,15 +295,7 @@ fn start_llama_server_process(
     let working_dir = server_path
         .parent()
         .ok_or_else(|| "本地推理运行时路径异常。".to_owned())?;
-    let mut command = std::process::Command::new(server_path);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-        command.creation_flags(CREATE_NO_WINDOW);
-    }
-    let mut child = command
+    let mut child = std::process::Command::new(server_path)
         .current_dir(working_dir)
         .args([
             "--host",
@@ -318,3 +351,4 @@ async fn wait_for_llama_server_ready(timeout: Duration) -> bool {
     }
     false
 }
+

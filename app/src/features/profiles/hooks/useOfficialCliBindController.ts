@@ -57,6 +57,7 @@ export function useOfficialCliBindController({
   watchDeploymentProgressFor
 }: UseOfficialCliBindControllerParams) {
   const [officialCliFlow, setOfficialCliFlow] = useState<OfficialCliBindState>(initialOfficialCliBindState);
+  const [isSavingOfficialCliProfile, setIsSavingOfficialCliProfile] = useState(false);
 
   function updateOfficialCliFlow(platform: OfficialCliBindPlatform, patch: Partial<OfficialCliBindState>) {
     setOfficialCliFlow((current) => (current.platform === platform ? { ...current, ...patch } : current));
@@ -118,6 +119,7 @@ export function useOfficialCliBindController({
     const shouldCleanupCli = Boolean(officialCliFlow.deployment);
     cancelDeploymentRequest();
     setOfficialCliFlow(initialOfficialCliBindState);
+    setIsSavingOfficialCliProfile(false);
     setUpdatingCliPlatform(null);
     resetCliDeploymentProgress();
     resetCopiedCommandStatus();
@@ -126,6 +128,7 @@ export function useOfficialCliBindController({
   }
 
   async function saveOfficialCliProfile() {
+    if (isSavingOfficialCliProfile) return;
     const { platform, profile: setupProfile, deployment } = officialCliFlow;
     if (!platform || !setupProfile) return;
     const config = officialCliBindFlowConfig(platform);
@@ -133,6 +136,7 @@ export function useOfficialCliBindController({
       setFormMessage(OFFICIAL_CLI_MESSAGES.waitReady(platform));
       return;
     }
+    setIsSavingOfficialCliProfile(true);
     const profile = buildOfficialCliProfileForFlow(
       platform,
       setupProfile,
@@ -164,18 +168,21 @@ export function useOfficialCliBindController({
       await onProfilesChange();
     } catch (error) {
       setFormMessage(userErrorMessage(error, config.saveFailedMessage));
+    } finally {
+      setIsSavingOfficialCliProfile(false);
     }
   }
 
   function saveOfficialCliSetupFromEnter(event: ReactKeyboardEvent<HTMLElement>) {
     if (!shouldHandleModalEnter(event)) return;
     event.preventDefault();
-    if (!officialCliFlow.deployment) return;
+    if (!officialCliFlow.deployment || isSavingOfficialCliProfile) return;
     void saveOfficialCliProfile();
   }
 
   return {
     closeOfficialCliSetup,
+    isSavingOfficialCliProfile,
     officialCliFlow,
     openOfficialCliSetup,
     saveOfficialCliProfile,

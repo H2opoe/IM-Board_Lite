@@ -81,18 +81,14 @@ pub(crate) async fn sync_target_profiles_messages(
     resource_dir: std::path::PathBuf,
     cache_dir: std::path::PathBuf,
 ) -> Result<Vec<ProfileSyncOutcome>, String> {
-    let mut concurrent_profiles = Vec::new();
-
     for profile in target_profiles {
-        let connector = connector_for_profile(profile)?;
-        let _ = connector;
-        concurrent_profiles.push(profile.clone());
+        connector_for_profile(profile)?;
     }
 
     sync_concurrent_profiles_messages(
         app,
         state,
-        concurrent_profiles,
+        target_profiles.to_vec(),
         window,
         day_start,
         day_start_text,

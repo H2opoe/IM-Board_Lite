@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Settings2 } from "lucide-react";
-import { deployPlatformBridge, updatePlatformCli } from "../../api/bridgeApi";
+import {
+  deployPlatformBridge,
+  updatePlatformCli
+} from "../../api/bridgeApi";
 import type { PlatformDeployment } from "../../api/bridgeApi";
 import { reorderProfiles } from "../../features/profiles/api/profilesApi";
 import type { ImProfile, Platform } from "../../features/profiles/model/types";
@@ -65,6 +68,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   } = useModalEnterGuard();
   const {
     closeOfficialCliSetup,
+    isSavingOfficialCliProfile,
     officialCliFlow,
     openOfficialCliSetup,
     saveOfficialCliProfile,
@@ -422,6 +426,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
             onRemarkChange: (remark) => setOfficialCliFlow((current) => ({ ...current, remark })),
             onClose: closeOfficialCliSetup,
             onSave: saveOfficialCliProfile,
+            isSaving: isSavingOfficialCliProfile,
             onKeyDown: saveOfficialCliSetupFromEnter
           }
         }}

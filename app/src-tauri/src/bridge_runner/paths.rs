@@ -19,6 +19,7 @@ pub(super) fn resolve_bridge_executable(resource_dir: &Path, request: &BridgeReq
     }
     let platform = request.platform.as_str();
     let file_name = match platform {
+        "wechat" => "bridge_main",
         "wecom" => "wecom-bridge",
         "feishu" => "feishu-bridge",
         "dingtalk" => "dingtalk-bridge",
@@ -139,21 +140,57 @@ fn official_cli_candidates(root: &Path, platform: &str, package: &str, bin: &str
     let package_root = root.join(platform).join("node_modules");
     let package_dir = package.split('/').collect::<PathBuf>();
     let mut candidates = Vec::new();
+    if cfg!(windows) {
+        match platform {
+            "wecom" => candidates.push(
+                package_root
+                    .join("@wecom")
+                    .join("cli-win32-x64")
+                    .join("bin")
+                    .join("wecom-cli.exe"),
+            ),
+            "feishu" => {
+                candidates.push(
+                    package_root
+                        .join(&package_dir)
+                        .join("bin")
+                        .join("lark-cli-windows-x64.exe"),
+                );
+                candidates.push(
+                    package_root
+                        .join(&package_dir)
+                        .join("bin")
+                        .join("lark-cli.exe"),
+                );
+            }
+            "dingtalk" => {
+                candidates.push(
+                    package_root
+                        .join(&package_dir)
+                        .join("vendor")
+                        .join("dws-windows-x64.exe"),
+                );
+                candidates.push(
+                    package_root
+                        .join(&package_dir)
+                        .join("vendor")
+                        .join("dws.exe"),
+                );
+            }
+            _ => {}
+        }
+        candidates.push(package_root.join(".bin").join(format!("{bin}.exe")));
+        return candidates;
+    }
     let npm_arch = current_npm_arch();
     match platform {
         "wecom" => candidates.push(
             package_root
-                .join(format!("@wecom/cli-{}-{npm_arch}", current_npm_os()))
+                .join(format!("@wecom/cli-darwin-{npm_arch}"))
                 .join("bin")
-                .join(native_binary_name("wecom-cli")),
+                .join("wecom-cli"),
         ),
         "feishu" => {
-            candidates.push(
-                package_root
-                    .join(&package_dir)
-                    .join("bin")
-                    .join(native_binary_name("lark-cli")),
-            );
             candidates.push(
                 package_root
                     .join(&package_dir)
@@ -163,12 +200,6 @@ fn official_cli_candidates(root: &Path, platform: &str, package: &str, bin: &str
             candidates.push(package_root.join(&package_dir).join("bin").join("lark-cli"));
         }
         "dingtalk" => {
-            candidates.push(
-                package_root
-                    .join(&package_dir)
-                    .join("vendor")
-                    .join(native_binary_name("dws")),
-            );
             candidates.push(
                 package_root
                     .join(&package_dir)
@@ -194,34 +225,17 @@ fn current_npm_arch() -> &'static str {
     }
 }
 
-fn current_npm_os() -> &'static str {
-    // NPM 原生子包使用 Node 平台名，例如 Windows 是 win32 而不是 Rust 的 windows。
-    if cfg!(windows) {
-        "win32"
-    } else if cfg!(target_os = "macos") {
-        "darwin"
-    } else if cfg!(target_os = "linux") {
-        "linux"
-    } else {
-        std::env::consts::OS
-    }
-}
-
-fn native_binary_name(name: &str) -> String {
-    if cfg!(windows) {
-        format!("{name}.exe")
-    } else {
-        name.to_owned()
-    }
-}
-
 fn resolve_existing_command(command: &str) -> Option<PathBuf> {
     let expanded = expand_home(command);
     if expanded.is_absolute() || command.contains('\\') || command.contains('/') {
         return expanded.exists().then_some(expanded);
     }
     let path = std::env::var_os("PATH")?;
-    let extensions: &[&str] = &[""];
+    let extensions: &[&str] = if cfg!(windows) && Path::new(command).extension().is_none() {
+        &["", ".exe", ".cmd", ".bat"]
+    } else {
+        &[""]
+    };
     std::env::split_paths(&path).find_map(|entry| {
         extensions
             .iter()
@@ -237,6 +251,9 @@ pub(super) fn is_dependency_free_cli(path: &Path) -> bool {
         .unwrap_or_default()
         .to_ascii_lowercase();
     if matches!(extension.as_str(), "js" | "cmd" | "bat") {
+        return false;
+    }
+    if cfg!(windows) && extension != "exe" {
         return false;
     }
     if let Ok(bytes) = std::fs::read(path) {

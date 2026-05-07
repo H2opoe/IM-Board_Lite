@@ -341,7 +341,7 @@
   background: rgba(44, 143, 120, 0.08);
 }
 
-.theme-light .profile-row.profile-drag-floating {
+.profile-drag-layer-light .profile-row.profile-drag-floating {
   border-color: rgba(44, 143, 120, 0.42);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(252, 251, 247, 0.95)),

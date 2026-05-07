@@ -282,7 +282,7 @@ function ProfileDragFloating({
   };
 
   return createPortal(
-    <div className={`profile-drag-floating-layer theme-${themeMode}`}>
+    <div className={`profile-drag-floating-layer profile-drag-layer-${themeMode}`}>
       <div className={`profile-row batch-mode profile-drag-floating ${isSelected ? "selected" : ""}`} style={floatingStyle} aria-hidden="true">
         <span className="profile-select profile-select-preview">
           <span className={`profile-checkbox-preview ${isSelected ? "checked" : ""}`} />

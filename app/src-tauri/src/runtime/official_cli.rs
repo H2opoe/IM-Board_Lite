@@ -104,7 +104,6 @@ pub async fn install_package(
     resource_dir: &Path,
     progress: Option<&PlatformCliProgressContext<'_>>,
 ) -> Result<(), String> {
-    #[cfg(not(windows))]
     let _ = resource_dir;
     if let Some(progress) = progress {
         emit_platform_cli_progress(
@@ -294,27 +293,6 @@ fn current_npm_arch() -> &'static str {
         "x64"
     } else {
         std::env::consts::ARCH
-    }
-}
-
-fn current_npm_os() -> &'static str {
-    // NPM 原生子包使用 Node 平台名，例如 Windows 是 win32 而不是 Rust 的 windows。
-    if cfg!(windows) {
-        "win32"
-    } else if cfg!(target_os = "macos") {
-        "darwin"
-    } else if cfg!(target_os = "linux") {
-        "linux"
-    } else {
-        std::env::consts::OS
-    }
-}
-
-fn native_binary_name(name: &str) -> String {
-    if cfg!(windows) {
-        format!("{name}.exe")
-    } else {
-        name.to_owned()
     }
 }
 

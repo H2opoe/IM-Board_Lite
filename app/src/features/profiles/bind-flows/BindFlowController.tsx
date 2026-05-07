@@ -21,6 +21,7 @@ interface OfficialCliControllerProps {
   onRemarkChange: (value: string) => void;
   onClose: () => void;
   onSave: () => void;
+  isSaving: boolean;
   onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => void;
 }
 
@@ -47,6 +48,7 @@ export function ProfileBindFlowController({
         onOpenAbout={shared.onOpenAbout}
         onClose={officialCli.onClose}
         onSave={officialCli.onSave}
+        isSaving={officialCli.isSaving}
         onKeyDown={officialCli.onKeyDown}
         onCompositionStart={shared.onCompositionStart}
         onCompositionEnd={shared.onCompositionEnd}

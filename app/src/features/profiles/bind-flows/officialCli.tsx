@@ -101,6 +101,7 @@ interface OfficialCliBindFlowModalProps {
   onOpenAbout: () => void;
   onClose: () => void;
   onSave: () => void;
+  isSaving: boolean;
   onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => void;
   onCompositionStart: () => void;
   onCompositionEnd: () => void;
@@ -137,6 +138,7 @@ export function OfficialCliBindFlowModal({
   onOpenAbout,
   onClose,
   onSave,
+  isSaving,
   onKeyDown,
   onCompositionStart,
   onCompositionEnd
@@ -165,6 +167,7 @@ export function OfficialCliBindFlowModal({
       onOpenAbout={onOpenAbout}
       onClose={onClose}
       onSave={onSave}
+      isSaving={isSaving}
       saveDisabled={!state.deployment}
       formMessage={formMessage}
       onKeyDown={onKeyDown}

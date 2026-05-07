@@ -100,17 +100,12 @@ pub fn terminate_tracked_sync_bridges(state: &State<'_, AppState>) -> Result<boo
 
 #[cfg(windows)]
 fn terminate_process(pid: u32) {
-    use std::os::windows::process::CommandExt;
-
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
-    let mut command = Command::new("taskkill");
-    command
-        .creation_flags(CREATE_NO_WINDOW)
+    let _ = Command::new("taskkill")
         .arg("/PID")
         .arg(pid.to_string())
         .arg("/T")
-        .arg("/F");
-    let _ = command.status();
+        .arg("/F")
+        .status();
 }
 
 #[cfg(not(windows))]

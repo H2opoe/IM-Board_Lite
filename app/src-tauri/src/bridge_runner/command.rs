@@ -28,9 +28,7 @@ pub(super) fn official_cli_command(path: &Path) -> Command {
         hide_windows_console(&mut command);
         return command;
     }
-    let mut command = Command::new(path);
-    hide_windows_console(&mut command);
-    command
+    windows_command_for_path(path)
 }
 
 #[cfg(not(windows))]
@@ -43,17 +41,16 @@ pub(super) fn official_cli_command(path: &Path) -> Command {
     Command::new(path)
 }
 
+#[cfg(windows)]
+pub(super) fn hide_windows_console(command: &mut Command) {
+    // Windows GUI版同步消息时会频繁启动官方CLI；隐藏子进程控制台，避免每次拉取会话历史都弹出终端窗口。
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
 pub(super) fn apply_official_cli_env(command: &mut Command) {
     if let Some(path) = official_cli_path() {
         command.env("PATH", path);
     }
-}
-
-#[cfg(windows)]
-pub(super) fn hide_windows_console(command: &mut Command) {
-    // Windows 打包版在后台调用官方 CLI 或系统命令时不应弹出额外控制台窗口。
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
-    command.creation_flags(CREATE_NO_WINDOW);
 }
 
 fn official_cli_path() -> Option<std::ffi::OsString> {
@@ -74,7 +71,12 @@ fn node_path_candidates() -> Vec<PathBuf> {
         PathBuf::from("/bin"),
     ];
     if cfg!(windows) {
-        for key in ["ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA", "APPDATA"] {
+        for key in [
+            "ProgramFiles",
+            "ProgramFiles(x86)",
+            "LOCALAPPDATA",
+            "APPDATA",
+        ] {
             if let Some(root) = std::env::var_os(key) {
                 let root = PathBuf::from(root);
                 candidates.push(root.join("nodejs"));
@@ -131,3 +133,4 @@ fn dedupe_existing_paths(entries: &mut Vec<PathBuf>) {
         true
     });
 }
+

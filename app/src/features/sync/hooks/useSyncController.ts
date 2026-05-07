@@ -28,6 +28,7 @@ export interface SyncProgressNotice {
 
 interface UseSyncControllerOptions {
   activeProfileId: string;
+  demoMode: boolean;
   setDashboard: Dispatch<SetStateAction<DashboardData | null>>;
 }
 
@@ -59,7 +60,7 @@ function nextStateForProgress(progress: SyncProgress): SyncUiState | null {
   return progress.phase === "analysis" ? "analyzing" : null;
 }
 
-export function useSyncController({ activeProfileId, setDashboard }: UseSyncControllerOptions) {
+export function useSyncController({ activeProfileId, demoMode, setDashboard }: UseSyncControllerOptions) {
   const [syncState, setSyncState] = useState<SyncUiState>("idle");
   const [syncMessage, setSyncMessage] = useState("");
   const [syncMessagePages, setSyncMessagePages] = useState<string[]>([]);
@@ -295,17 +296,19 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
   }, [isSyncCancelArmed, syncState]);
 
   useEffect(() => {
+    if (demoMode) return;
     if (initialSyncStarted.current) return;
     initialSyncStarted.current = true;
     void executeSyncJob("incremental", "aggregate");
-  }, [executeSyncJob]);
+  }, [demoMode, executeSyncJob]);
 
   useEffect(() => {
+    if (demoMode) return undefined;
     const interval = window.setInterval(() => {
       void executeSyncJob("incremental", "aggregate");
     }, syncFrequencyMinutes * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [executeSyncJob, syncFrequencyMinutes]);
+  }, [demoMode, executeSyncJob, syncFrequencyMinutes]);
 
   return {
     syncState,

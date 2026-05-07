@@ -13,14 +13,17 @@ mod storage;
 mod sync;
 
 use storage::AppState;
+#[cfg(not(target_os = "macos"))]
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WindowEvent,
 };
+use tauri::{Manager, WindowEvent};
 
 const MAIN_WINDOW_LABEL: &str = "main";
+#[cfg(not(target_os = "macos"))]
 const TRAY_MENU_SHOW: &str = "show-main-window";
+#[cfg(not(target_os = "macos"))]
 const TRAY_MENU_QUIT: &str = "quit-app";
 
 fn show_main_window(app: &tauri::AppHandle) {
@@ -35,37 +38,41 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new().expect("初始化应用状态失败"))
-        .setup(|app| {
-            let show_item =
-                MenuItem::with_id(app, TRAY_MENU_SHOW, "显示主窗口", true, None::<&str>)?;
-            let quit_item =
-                MenuItem::with_id(app, TRAY_MENU_QUIT, "退出 IM-Board", true, None::<&str>)?;
-            let tray_menu = Menu::with_items(app, &[&show_item, &quit_item])?;
-            let mut tray = TrayIconBuilder::with_id("main-tray")
-                .menu(&tray_menu)
-                .show_menu_on_left_click(true)
-                .tooltip("IM-Board 正在后台运行")
-                .on_menu_event(|app, event| match event.id().as_ref() {
-                    TRAY_MENU_SHOW => show_main_window(app),
-                    TRAY_MENU_QUIT => app.exit(0),
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        show_main_window(tray.app_handle());
-                    }
-                });
+        .setup(|_app| {
+            #[cfg(not(target_os = "macos"))]
+            {
+                let show_item =
+                    MenuItem::with_id(_app, TRAY_MENU_SHOW, "显示主窗口", true, None::<&str>)?;
+                let quit_item =
+                    MenuItem::with_id(_app, TRAY_MENU_QUIT, "退出 IM-Board", true, None::<&str>)?;
+                let tray_menu = Menu::with_items(_app, &[&show_item, &quit_item])?;
+                let mut tray = TrayIconBuilder::with_id("main-tray")
+                    .menu(&tray_menu)
+                    .show_menu_on_left_click(true)
+                    .tooltip("IM-Board 正在后台运行")
+                    .on_menu_event(|app, event| match event.id().as_ref() {
+                        TRAY_MENU_SHOW => show_main_window(app),
+                        TRAY_MENU_QUIT => app.exit(0),
+                        _ => {}
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event
+                        {
+                            show_main_window(tray.app_handle());
+                        }
+                    });
 
-            if let Some(icon) = app.default_window_icon() {
-                tray = tray.icon(icon.clone());
+                if let Some(icon) = _app.default_window_icon() {
+                    tray = tray.icon(icon.clone());
+                }
+
+                tray.build(_app)?;
             }
 
-            tray.build(app)?;
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -88,6 +95,7 @@ pub fn run() {
             commands::bridge::run_bridge_command,
             commands::bridge::update_platform_cli,
             commands::app::get_app_settings,
+            commands::app::open_macos_privacy_settings,
             commands::app::export_diagnostic_package,
             commands::app::save_app_settings,
             commands::app::set_theme_dock_icon,
@@ -105,5 +113,14 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("构建 Tauri 应用失败");
 
-    app.run(|_app, _event| {});
+    app.run(|app, event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Reopen {
+            has_visible_windows: false,
+            ..
+        } = event
+        {
+            show_main_window(app);
+        }
+    });
 }

@@ -1,11 +1,19 @@
 use std::path::Path;
 
+use super::{
+    WINDOWS_DINGTALK_AUTH_TOKEN_VALUE, WINDOWS_DINGTALK_PROFILE_TOKEN_FILE,
+    WINDOWS_DINGTALK_REGISTRY_KEY,
+};
+
 pub fn default_bind_command(platform: &str, cli_path: &Path, config_dir: &Path) -> String {
+    if cfg!(windows) {
+        return default_bind_command_windows(platform, cli_path, config_dir);
+    }
     match platform {
-        "wecom" => build_shell_command(
-            &[("WECOM_CLI_CONFIG_DIR", config_dir)],
-            &[],
-            &[CommandStep::new(cli_path, &["init"])],
+        "wecom" => format!(
+            "WECOM_CLI_CONFIG_DIR='{}' '{}' init",
+            shell_single_quote(config_dir),
+            shell_single_quote(cli_path)
         ),
         "feishu" => {
             let lark_config_dir = config_dir.join(".lark-cli");
@@ -24,23 +32,18 @@ pub fn default_bind_command(platform: &str, cli_path: &Path, config_dir: &Path) 
                 .and_then(|path| path.file_name())
                 .and_then(|value| value.to_str())
                 .unwrap_or("im-board-feishu");
-            build_shell_command(
-                &[("LARKSUITE_CLI_CONFIG_DIR", &lark_config_dir)],
-                &[],
-                &[
-                    CommandStep::new(
-                        cli_path,
-                        &["config", "init", "--new", "--brand", "feishu", "--name", profile_name],
-                    ),
-                    CommandStep::new(
-                        cli_path,
-                        &["--profile", profile_name, "auth", "login", "--scope", &required_scopes],
-                    ),
-                    CommandStep::new(
-                        cli_path,
-                        &["--profile", profile_name, "auth", "status", "--verify"],
-                    ),
-                ],
+            format!(
+                "LARKSUITE_CLI_CONFIG_DIR='{}' '{}' config init --new --brand feishu --name '{}' && LARKSUITE_CLI_CONFIG_DIR='{}' '{}' --profile '{}' auth login --scope '{}' && LARKSUITE_CLI_CONFIG_DIR='{}' '{}' --profile '{}' auth status --verify",
+                shell_single_quote(&lark_config_dir),
+                shell_single_quote(cli_path),
+                shell_single_quote_text(profile_name),
+                shell_single_quote(&lark_config_dir),
+                shell_single_quote(cli_path),
+                shell_single_quote_text(profile_name),
+                shell_single_quote_text(&required_scopes),
+                shell_single_quote(&lark_config_dir),
+                shell_single_quote(cli_path),
+                shell_single_quote_text(profile_name)
             )
         }
         "dingtalk" => {
@@ -51,37 +54,123 @@ pub fn default_bind_command(platform: &str, cli_path: &Path, config_dir: &Path) 
                 .and_then(|path| path.file_name())
                 .and_then(|value| value.to_str())
                 .unwrap_or("im-board-dingtalk");
-            build_shell_command(
-                &[
-                    ("DWS_CONFIG_DIR", config_dir),
-                    ("DWS_CACHE_DIR", &cache_dir),
-                    ("DWS_KEYCHAIN_DIR", &keychain_dir),
-                ],
-                &[
-                    ("DWS_AUTH_IDENTITY", auth_identity),
-                    ("DWS_TENANT", auth_identity),
-                    ("DINGTALK_DWS_AGENTCODE", auth_identity),
-                ],
-                &[
-                    CommandStep::new(cli_path, &["auth", "login", "--force"]),
-                    CommandStep::new(cli_path, &["auth", "status", "--format", "json"]),
-                    CommandStep::new(
-                        cli_path,
-                        &[
-                            "pat",
-                            "chmod",
-                            "chat.message:list",
-                            "--agentCode",
-                            auth_identity,
-                            "--grant-type",
-                            "permanent",
-                        ],
-                    ),
-                    CommandStep::new(cli_path, &["contact", "user", "get-self", "--format", "json"]),
-                ],
+            format!(
+                "DWS_CONFIG_DIR='{}' DWS_CACHE_DIR='{}' DWS_KEYCHAIN_DIR='{}' DWS_AUTH_IDENTITY='{}' DWS_TENANT='{}' DINGTALK_DWS_AGENTCODE='{}' '{}' auth login --force &&\nDWS_CONFIG_DIR='{}' DWS_CACHE_DIR='{}' DWS_KEYCHAIN_DIR='{}' DWS_AUTH_IDENTITY='{}' DWS_TENANT='{}' DINGTALK_DWS_AGENTCODE='{}' '{}' auth status --format json &&\nDWS_CONFIG_DIR='{}' DWS_CACHE_DIR='{}' DWS_KEYCHAIN_DIR='{}' DWS_AUTH_IDENTITY='{}' DWS_TENANT='{}' DINGTALK_DWS_AGENTCODE='{}' '{}' pat chmod chat.message:list --agentCode '{}' --grant-type permanent &&\nDWS_CONFIG_DIR='{}' DWS_CACHE_DIR='{}' DWS_KEYCHAIN_DIR='{}' DWS_AUTH_IDENTITY='{}' DWS_TENANT='{}' DINGTALK_DWS_AGENTCODE='{}' '{}' contact user get-self --format json",
+                shell_single_quote(config_dir),
+                shell_single_quote(&cache_dir),
+                shell_single_quote(&keychain_dir),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote(cli_path),
+                shell_single_quote(config_dir),
+                shell_single_quote(&cache_dir),
+                shell_single_quote(&keychain_dir),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote(cli_path),
+                shell_single_quote(config_dir),
+                shell_single_quote(&cache_dir),
+                shell_single_quote(&keychain_dir),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote(cli_path),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote(config_dir),
+                shell_single_quote(&cache_dir),
+                shell_single_quote(&keychain_dir),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote_text(auth_identity),
+                shell_single_quote(cli_path)
             )
         }
         _ => shell_single_quote(cli_path),
+    }
+}
+
+fn default_bind_command_windows(platform: &str, cli_path: &Path, config_dir: &Path) -> String {
+    match platform {
+        "wecom" => format!(
+            "$env:WECOM_CLI_CONFIG_DIR = {}; {} init",
+            powershell_single_quote(config_dir),
+            powershell_cli_invocation(cli_path)
+        ),
+        "feishu" => {
+            let home_dir = config_dir.join("home");
+            let lark_config_dir = config_dir.join(".lark-cli");
+            let appdata_dir = home_dir.join("AppData").join("Roaming");
+            let local_appdata_dir = home_dir.join("AppData").join("Local");
+            let required_scopes = [
+                "search:message",
+                "im:chat:read",
+                "im:message:readonly",
+                "im:message.p2p_msg:get_as_user",
+                "im:message.group_msg:get_as_user",
+                "contact:user.base:readonly",
+                "contact:user.basic_profile:readonly",
+            ]
+            .join(" ");
+            let profile_name = config_dir
+                .parent()
+                .and_then(|path| path.file_name())
+                .and_then(|value| value.to_str())
+                .unwrap_or("im-board-feishu");
+            let cli = powershell_cli_invocation(cli_path);
+            format!(
+                "$env:HOME = {}; $env:USERPROFILE = {}; $env:APPDATA = {}; $env:LOCALAPPDATA = {}; $env:LARKSUITE_CLI_CONFIG_DIR = {}; {} config init --new --brand feishu --name {}; if ($LASTEXITCODE -eq 0) {{ {} --profile {} auth login --scope {} }}; if ($LASTEXITCODE -eq 0) {{ {} --profile {} auth status --verify }}",
+                powershell_single_quote(&home_dir),
+                powershell_single_quote(&home_dir),
+                powershell_single_quote(&appdata_dir),
+                powershell_single_quote(&local_appdata_dir),
+                powershell_single_quote(&lark_config_dir),
+                cli,
+                powershell_single_quote_text(profile_name),
+                cli,
+                powershell_single_quote_text(profile_name),
+                powershell_single_quote_text(&required_scopes),
+                cli,
+                powershell_single_quote_text(profile_name)
+            )
+        }
+        "dingtalk" => {
+            let cache_dir = config_dir.join("cache");
+            let keychain_dir = config_dir.join("keychain");
+            let home_dir = config_dir.join("home");
+            let appdata_dir = home_dir.join("AppData").join("Roaming");
+            let local_appdata_dir = home_dir.join("AppData").join("Local");
+            let token_path = keychain_dir.join(WINDOWS_DINGTALK_PROFILE_TOKEN_FILE);
+            let auth_identity = config_dir
+                .parent()
+                .and_then(|path| path.file_name())
+                .and_then(|value| value.to_str())
+                .unwrap_or("im-board-dingtalk");
+            let cli = powershell_cli_invocation(cli_path);
+            format!(
+                "$env:HOME = {}; $env:USERPROFILE = {}; $env:APPDATA = {}; $env:LOCALAPPDATA = {}; $env:DWS_CONFIG_DIR = {}; $env:DWS_CACHE_DIR = {}; $env:DWS_KEYCHAIN_DIR = {}; $env:DWS_AUTH_IDENTITY = {}; $env:DWS_TENANT = {}; $env:DINGTALK_DWS_AGENTCODE = {}\n$dwsRegistryKey = {}; $dwsTokenValue = {}; $dwsProfileTokenPath = {}; $dwsPreviousToken = $null\nif (Test-Path $dwsRegistryKey) {{ $dwsPrevious = Get-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -ErrorAction SilentlyContinue; if ($null -ne $dwsPrevious) {{ $dwsPreviousToken = $dwsPrevious.$dwsTokenValue }} }}\nfunction Set-DwsProfileToken {{ New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dwsProfileTokenPath) | Out-Null; if (Test-Path $dwsProfileTokenPath) {{ New-Item -Force -Path $dwsRegistryKey | Out-Null; Set-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -Value ([System.IO.File]::ReadAllText($dwsProfileTokenPath).Trim()) }} elseif (Test-Path $dwsRegistryKey) {{ Remove-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -ErrorAction SilentlyContinue }} }}\nfunction Save-DwsProfileToken {{ $dwsCurrent = Get-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -ErrorAction SilentlyContinue; if ($null -eq $dwsCurrent) {{ throw '钉钉授权没有完成：未写入当前账号的授权令牌。' }}; [System.IO.File]::WriteAllText($dwsProfileTokenPath, [string]$dwsCurrent.$dwsTokenValue, [System.Text.Encoding]::ASCII) }}\nfunction Restore-DwsPreviousToken {{ if ($null -eq $dwsPreviousToken) {{ if (Test-Path $dwsRegistryKey) {{ Remove-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -ErrorAction SilentlyContinue }} }} else {{ New-Item -Force -Path $dwsRegistryKey | Out-Null; Set-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -Value $dwsPreviousToken }} }}\ntry {{ Set-DwsProfileToken; {} auth login --force; if ($LASTEXITCODE -eq 0) {{ {} auth status --format json }}; if ($LASTEXITCODE -eq 0) {{ {} pat chmod chat.message:list --agentCode {} --grant-type permanent }}; if ($LASTEXITCODE -eq 0) {{ {} contact user get-self --format json }}; if ($LASTEXITCODE -eq 0) {{ Save-DwsProfileToken }} }} finally {{ Restore-DwsPreviousToken }}",
+                powershell_single_quote(&home_dir),
+                powershell_single_quote(&home_dir),
+                powershell_single_quote(&appdata_dir),
+                powershell_single_quote(&local_appdata_dir),
+                powershell_single_quote(config_dir),
+                powershell_single_quote(&cache_dir),
+                powershell_single_quote(&keychain_dir),
+                powershell_single_quote_text(auth_identity),
+                powershell_single_quote_text(auth_identity),
+                powershell_single_quote_text(auth_identity),
+                powershell_single_quote_text(WINDOWS_DINGTALK_REGISTRY_KEY),
+                powershell_single_quote_text(WINDOWS_DINGTALK_AUTH_TOKEN_VALUE),
+                powershell_single_quote(&token_path),
+                cli,
+                cli,
+                cli,
+                powershell_single_quote_text(auth_identity),
+                cli
+            )
+        }
+        _ => powershell_single_quote(cli_path),
     }
 }
 
@@ -103,99 +192,23 @@ fn shell_single_quote_text(value: &str) -> String {
     value.replace('\'', "'\\''")
 }
 
-struct CommandStep<'a> {
-    cli_path: &'a Path,
-    args: &'a [&'a str],
+fn powershell_single_quote(path: &Path) -> String {
+    powershell_single_quote_text(&path.to_string_lossy())
 }
 
-impl<'a> CommandStep<'a> {
-    fn new(cli_path: &'a Path, args: &'a [&'a str]) -> Self {
-        Self { cli_path, args }
-    }
-}
-
-fn build_shell_command(
-    path_envs: &[(&str, &Path)],
-    text_envs: &[(&str, &str)],
-    steps: &[CommandStep<'_>],
-) -> String {
-    if cfg!(windows) {
-        build_powershell_command(path_envs, text_envs, steps)
-    } else {
-        build_posix_command(path_envs, text_envs, steps)
-    }
-}
-
-fn build_posix_command(
-    path_envs: &[(&str, &Path)],
-    text_envs: &[(&str, &str)],
-    steps: &[CommandStep<'_>],
-) -> String {
-    let path_env_prefix = path_envs
-        .iter()
-        .map(|(name, value)| format!("{name}='{}'", shell_single_quote(value)))
-        .collect::<Vec<_>>();
-    let text_env_prefix = text_envs
-        .iter()
-        .map(|(name, value)| format!("{name}='{}'", shell_single_quote_text(value)));
-    let env_prefix = path_env_prefix
-        .into_iter()
-        .chain(text_env_prefix)
-        .collect::<Vec<_>>()
-        .join(" ");
-    steps
-        .iter()
-        .map(|step| {
-            let invocation = std::iter::once(format!("'{}'", shell_single_quote(step.cli_path)))
-                .chain(
-                    step.args
-                        .iter()
-                        .map(|arg| format!("'{}'", shell_single_quote_text(arg))),
-                )
-                .collect::<Vec<_>>()
-                .join(" ");
-            if env_prefix.is_empty() {
-                invocation
-            } else {
-                format!("{env_prefix} {invocation}")
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" &&\n")
-}
-
-fn build_powershell_command(
-    path_envs: &[(&str, &Path)],
-    text_envs: &[(&str, &str)],
-    steps: &[CommandStep<'_>],
-) -> String {
-    // Windows 仍可能运行 PowerShell 5.1，不能依赖 PowerShell 7 才支持的 `&&` 串联。
-    let mut parts = path_envs
-        .iter()
-        .map(|(name, value)| format!("$env:{name}={}", powershell_quote_path(value)))
-        .collect::<Vec<_>>();
-    parts.extend(
-        text_envs
-            .iter()
-            .map(|(name, value)| format!("$env:{name}={}", powershell_quote_text(value))),
-    );
-    for (index, step) in steps.iter().enumerate() {
-        if index > 0 {
-            parts.push("if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }".to_owned());
-        }
-        let invocation = std::iter::once(format!("& {}", powershell_quote_path(step.cli_path)))
-            .chain(step.args.iter().map(|arg| powershell_quote_text(arg)))
-            .collect::<Vec<_>>()
-            .join(" ");
-        parts.push(invocation);
-    }
-    parts.join("; ")
-}
-
-fn powershell_quote_path(path: &Path) -> String {
-    powershell_quote_text(&path.to_string_lossy())
-}
-
-fn powershell_quote_text(value: &str) -> String {
+fn powershell_single_quote_text(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
+}
+
+fn powershell_cli_invocation(path: &Path) -> String {
+    let extension = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if extension == "js" {
+        format!("node {}", powershell_single_quote(path))
+    } else {
+        format!("& {}", powershell_single_quote(path))
+    }
 }

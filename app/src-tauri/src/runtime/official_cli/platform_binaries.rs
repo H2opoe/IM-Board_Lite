@@ -1,13 +1,18 @@
 fn ensure_wecom_binary(install_root: &Path) -> Result<(), String> {
-    let binary_path = install_root
-        .join("node_modules")
-        .join(format!(
-            "@wecom/cli-{}-{}",
-            current_npm_os(),
-            current_npm_arch()
-        ))
-        .join("bin")
-        .join(native_binary_name("wecom-cli"));
+    let binary_path = if cfg!(windows) {
+        install_root
+            .join("node_modules")
+            .join("@wecom")
+            .join("cli-win32-x64")
+            .join("bin")
+            .join("wecom-cli.exe")
+    } else {
+        install_root
+            .join("node_modules")
+            .join(format!("@wecom/cli-darwin-{}", current_npm_arch()))
+            .join("bin")
+            .join("wecom-cli")
+    };
     if !binary_path.exists() {
         return Err(format!(
             "企业微信官方CLI已下载，但缺少无需用户依赖的原生执行文件：{}",
@@ -22,25 +27,17 @@ async fn ensure_feishu_binary(install_root: &Path, version: &str) -> Result<(), 
         .join("node_modules")
         .join("@larksuite")
         .join("cli");
-    let (platform, archive_arch, archive_ext) = if cfg!(windows) {
-        if cfg!(target_arch = "aarch64") {
-            ("windows", "arm64", "zip")
-        } else {
-            ("windows", "amd64", "zip")
-        }
-    } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-        ("darwin", "arm64", "tar.gz")
-    } else if cfg!(target_os = "macos") {
-        ("darwin", "amd64", "tar.gz")
+    let (platform, archive_arch, target_arch, binary_name, archive_ext) = if cfg!(windows) {
+        ("windows", "amd64", "x64", "lark-cli.exe", "zip")
+    } else if cfg!(target_arch = "aarch64") {
+        ("darwin", "arm64", "arm64", "lark-cli", "tar.gz")
     } else {
-        return Err(format!(
-            "当前平台暂不支持包内飞书官方CLI原生入口：{}/{}",
-            std::env::consts::OS,
-            std::env::consts::ARCH
-        ));
+        ("darwin", "amd64", "x64", "lark-cli", "tar.gz")
     };
-    let binary_name = native_binary_name("lark-cli");
-    let binary_path = package_root.join("bin").join(&binary_name);
+    let binary_path = package_root.join("bin").join(format!(
+        "lark-cli-{platform}-{target_arch}{}",
+        if cfg!(windows) { ".exe" } else { "" }
+    ));
     if binary_path.exists() {
         return Ok(());
     }
@@ -58,7 +55,7 @@ async fn ensure_feishu_binary(install_root: &Path, version: &str) -> Result<(), 
     } else {
         extract_tgz_bytes(&bytes, &temp_dir, false)?;
     }
-    let extracted = find_file_named(&temp_dir, &binary_name)
+    let extracted = find_file_named(&temp_dir, binary_name)
         .ok_or_else(|| format!("{binary_name} not found in {archive_name}"))?;
     fs::create_dir_all(binary_path.parent().unwrap()).map_err(|err| err.to_string())?;
     fs::copy(&extracted, &binary_path).map_err(|err| {
@@ -76,25 +73,17 @@ fn ensure_dingtalk_binary(install_root: &Path) -> Result<(), String> {
     let package_root = install_root
         .join("node_modules")
         .join("dingtalk-workspace-cli");
-    let (platform, archive_arch, archive_ext) = if cfg!(windows) {
-        if cfg!(target_arch = "aarch64") {
-            ("windows", "arm64", "zip")
-        } else {
-            ("windows", "amd64", "zip")
-        }
-    } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-        ("darwin", "arm64", "tar.gz")
-    } else if cfg!(target_os = "macos") {
-        ("darwin", "amd64", "tar.gz")
+    let (platform, archive_arch, target_arch, binary_name, archive_ext) = if cfg!(windows) {
+        ("windows", "amd64", "x64", "dws.exe", "zip")
+    } else if cfg!(target_arch = "aarch64") {
+        ("darwin", "arm64", "arm64", "dws", "tar.gz")
     } else {
-        return Err(format!(
-            "当前平台暂不支持包内钉钉官方CLI原生入口：{}/{}",
-            std::env::consts::OS,
-            std::env::consts::ARCH
-        ));
+        ("darwin", "amd64", "x64", "dws", "tar.gz")
     };
-    let binary_name = native_binary_name("dws");
-    let binary_path = package_root.join("vendor").join(&binary_name);
+    let binary_path = package_root.join("vendor").join(format!(
+        "dws-{platform}-{target_arch}{}",
+        if cfg!(windows) { ".exe" } else { "" }
+    ));
     if binary_path.exists() {
         return Ok(());
     }
@@ -111,7 +100,7 @@ fn ensure_dingtalk_binary(install_root: &Path) -> Result<(), String> {
     } else {
         extract_tgz_bytes(&bytes, &temp_dir, false)?;
     }
-    let extracted = find_file_named(&temp_dir, &binary_name)
+    let extracted = find_file_named(&temp_dir, binary_name)
         .ok_or_else(|| format!("{binary_name} not found in {}", archive_path.display()))?;
     fs::create_dir_all(binary_path.parent().unwrap()).map_err(|err| err.to_string())?;
     fs::copy(&extracted, &binary_path).map_err(|err| {

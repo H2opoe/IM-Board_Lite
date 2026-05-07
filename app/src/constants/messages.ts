@@ -50,7 +50,6 @@ export const APP_SETTINGS_MESSAGES = {
 };
 
 export const PROFILE_MESSAGES = {
-  wechatPaidOnly: "微信功能仅限付费用户使用，请联系开发者开通。",
   selectForManage: "请先选择需要管理的账号。",
   selectForDelete: "请先选择需要删除的账号。",
   selectForReadTest: "请先选择需要测试读取的账号。",
@@ -59,6 +58,7 @@ export const PROFILE_MESSAGES = {
   deleteImpact: "删除后会移除此账号配置和同步状态。",
   deleteFailed: "删除账号配置失败。",
   readTestFailed: "账号配置读取测试失败。",
+  wechatPaidOnly: "微信功能仅限付费用户使用，请联系开发者开通。",
   batchDeleteButton: "批量删除",
   bulkDeletePrompt: (count: number) => `确认删除${count}个账号配置？这会移除所选账号配置和同步状态。`,
   bulkDeleteConfirmButton: (count: number) => `确认删除${count}个`,

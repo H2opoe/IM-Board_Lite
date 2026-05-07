@@ -29,6 +29,8 @@ use paths::resolve_bridge_executable;
 use process::{bridge_process_spec, bridge_spawn_error};
 use wecom_runner::run_official_wecom_cli;
 
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 pub(super) const APP_DATA_DIR_NAME: &str = "IMBoard";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,8 +114,6 @@ pub async fn run_bridge_tracked(
     let executable = resolve_bridge_executable(&resource_dir, &request);
     let process = bridge_process_spec(&request.platform, executable, &resource_dir);
     let mut command = Command::new(&process.executable);
-    #[cfg(windows)]
-    hide_windows_console(&mut command);
     command.args(&process.prefix_args);
 
     command.arg(&request.command).arg("--format").arg("json");
@@ -138,6 +138,9 @@ pub async fn run_bridge_tracked(
     }
 
     for (key, value) in request.args {
+        if request.platform == "wechat" && matches!(key.as_str(), "chat_name" | "chat_type") {
+            continue;
+        }
         command
             .arg(format!("--{}", key.replace('_', "-")))
             .arg(value);

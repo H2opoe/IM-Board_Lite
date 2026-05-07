@@ -14,7 +14,6 @@ function command(label, cmd, args = ["--version"]) {
 command("Node", "node", ["--version"]);
 command("npm", "npm", ["--version"]);
 command("Rust cargo", "cargo", ["--version"]);
-
 const width = Math.max(...checks.map((check) => check.label.length));
 for (const check of checks) {
   console.log(`${check.ok ? "✓" : "✗"} ${check.label.padEnd(width)} ${check.detail}`);

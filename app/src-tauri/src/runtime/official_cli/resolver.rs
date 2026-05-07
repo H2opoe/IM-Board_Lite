@@ -1,9 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use super::{
-    current_npm_arch, current_npm_os, native_binary_name, platform_label, PlatformCliSpec,
-    OFFICIAL_CLIS,
-};
+use super::{current_npm_arch, platform_label, PlatformCliSpec, OFFICIAL_CLIS};
 
 pub fn cli_spec(platform: &str) -> Option<&'static PlatformCliSpec> {
     OFFICIAL_CLIS.iter().find(|spec| spec.platform == platform)
@@ -38,22 +35,75 @@ fn official_cli_roots(resource_dir: &Path, app_dir: &Path) -> Vec<PathBuf> {
 fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> {
     let package_root = root.join(spec.platform).join("node_modules");
     let mut candidates = Vec::new();
+    if cfg!(windows) {
+        if spec.platform == "wecom" {
+            candidates.push(
+                package_root
+                    .join("@wecom")
+                    .join("cli-win32-x64")
+                    .join("bin")
+                    .join("wecom-cli.exe"),
+            );
+        }
+        if spec.platform == "feishu" {
+            candidates.push(
+                package_root
+                    .join(package_dir(spec.package))
+                    .join("bin")
+                    .join("lark-cli-windows-x64.exe"),
+            );
+            candidates.push(
+                package_root
+                    .join(package_dir(spec.package))
+                    .join("bin")
+                    .join("lark-cli.exe"),
+            );
+        }
+        if spec.platform == "dingtalk" {
+            candidates.push(
+                package_root
+                    .join(package_dir(spec.package))
+                    .join("vendor")
+                    .join("dws-windows-x64.exe"),
+            );
+            candidates.push(
+                package_root
+                    .join(package_dir(spec.package))
+                    .join("vendor")
+                    .join("dws.exe"),
+            );
+        }
+        candidates.push(package_root.join(".bin").join(format!("{}.cmd", spec.bin)));
+        candidates.push(package_root.join(".bin").join(format!("{}.exe", spec.bin)));
+        if spec.platform == "feishu" {
+            candidates.push(
+                package_root
+                    .join(package_dir(spec.package))
+                    .join("scripts")
+                    .join("run.js"),
+            );
+        }
+        if spec.platform == "dingtalk" {
+            candidates.push(
+                package_root
+                    .join(package_dir(spec.package))
+                    .join("bin")
+                    .join("dws.js"),
+            );
+        }
+        candidates.push(package_root.join(".bin").join(spec.bin));
+        return candidates;
+    }
     let npm_arch = current_npm_arch();
     if spec.platform == "wecom" {
         candidates.push(
             package_root
-                .join(format!("@wecom/cli-{}-{npm_arch}", current_npm_os()))
+                .join(format!("@wecom/cli-darwin-{npm_arch}"))
                 .join("bin")
-                .join(native_binary_name("wecom-cli")),
+                .join("wecom-cli"),
         );
     }
     if spec.platform == "feishu" {
-        candidates.push(
-            package_root
-                .join(package_dir(spec.package))
-                .join("bin")
-                .join(native_binary_name("lark-cli")),
-        );
         candidates.push(
             package_root
                 .join(package_dir(spec.package))
@@ -74,12 +124,6 @@ fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> 
         );
     }
     if spec.platform == "dingtalk" {
-        candidates.push(
-            package_root
-                .join(package_dir(spec.package))
-                .join("vendor")
-                .join(native_binary_name("dws")),
-        );
         candidates.push(
             package_root
                 .join(package_dir(spec.package))
@@ -112,6 +156,9 @@ fn is_dependency_free_cli(path: &Path) -> bool {
     if matches!(extension.as_str(), "js" | "cmd" | "bat") {
         return false;
     }
+    if cfg!(windows) && extension != "exe" {
+        return false;
+    }
     if let Ok(bytes) = std::fs::read(path) {
         let head = String::from_utf8_lossy(&bytes[..bytes.len().min(96)]).to_ascii_lowercase();
         if head.contains("/usr/bin/env node") || head.contains("node ") {
@@ -121,8 +168,7 @@ fn is_dependency_free_cli(path: &Path) -> bool {
     true
 }
 
-fn is_usable_cli_candidate(path: &Path, spec: &PlatformCliSpec) -> bool {
-    let _ = spec;
+fn is_usable_cli_candidate(path: &Path, _spec: &PlatformCliSpec) -> bool {
     is_dependency_free_cli(path)
 }
 

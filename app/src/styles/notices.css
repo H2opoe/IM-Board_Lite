@@ -30,13 +30,12 @@
 }
 
 .floating-notice-layer.modal {
-  position: absolute;
-  top: 72px;
-  left: 18px;
-  right: 18px;
+  position: sticky;
+  top: 46px;
   z-index: 12;
-  height: auto;
+  height: 0;
   padding: 0;
+  overflow: visible;
 }
 
 .floating-notice-layer.modal .floating-notice {
@@ -278,4 +277,3 @@
 .modal-form-message-pager {
   color: currentColor;
 }
-
