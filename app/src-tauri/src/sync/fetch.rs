@@ -81,10 +81,6 @@ pub(crate) async fn sync_target_profiles_messages(
     resource_dir: std::path::PathBuf,
     cache_dir: std::path::PathBuf,
 ) -> Result<Vec<ProfileSyncOutcome>, String> {
-    for profile in target_profiles {
-        connector_for_profile(profile)?;
-    }
-
     sync_concurrent_profiles_messages(
         app,
         state,
