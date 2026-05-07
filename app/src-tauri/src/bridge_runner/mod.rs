@@ -112,6 +112,8 @@ pub async fn run_bridge_tracked(
     let executable = resolve_bridge_executable(&resource_dir, &request);
     let process = bridge_process_spec(&request.platform, executable, &resource_dir);
     let mut command = Command::new(&process.executable);
+    #[cfg(windows)]
+    hide_windows_console(&mut command);
     command.args(&process.prefix_args);
 
     command.arg(&request.command).arg("--format").arg("json");

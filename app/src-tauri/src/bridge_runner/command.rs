@@ -20,6 +20,20 @@ fn is_node_cli_entry(path: &Path) -> bool {
         .is_some_and(|extension| extension.eq_ignore_ascii_case("js"))
 }
 
+#[cfg(windows)]
+pub(super) fn official_cli_command(path: &Path) -> Command {
+    if is_node_cli_entry(path) {
+        let mut command = Command::new("node");
+        command.arg(path);
+        hide_windows_console(&mut command);
+        return command;
+    }
+    let mut command = Command::new(path);
+    hide_windows_console(&mut command);
+    command
+}
+
+#[cfg(not(windows))]
 pub(super) fn official_cli_command(path: &Path) -> Command {
     if is_node_cli_entry(path) {
         let mut command = Command::new("node");
@@ -59,6 +73,16 @@ fn node_path_candidates() -> Vec<PathBuf> {
         PathBuf::from("/usr/bin"),
         PathBuf::from("/bin"),
     ];
+    if cfg!(windows) {
+        for key in ["ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA", "APPDATA"] {
+            if let Some(root) = std::env::var_os(key) {
+                let root = PathBuf::from(root);
+                candidates.push(root.join("nodejs"));
+                candidates.push(root.join("Programs").join("nodejs"));
+                candidates.push(root.join("npm"));
+            }
+        }
+    }
     if let Some(home) = dirs::home_dir() {
         collect_child_bin_dirs(
             &home.join(".nvm").join("versions").join("node"),

@@ -254,7 +254,15 @@ fn start_llama_server_process(
     let working_dir = server_path
         .parent()
         .ok_or_else(|| "本地推理运行时路径异常。".to_owned())?;
-    let mut child = std::process::Command::new(server_path)
+    let mut command = std::process::Command::new(server_path);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    let mut child = command
         .current_dir(working_dir)
         .args([
             "--host",
