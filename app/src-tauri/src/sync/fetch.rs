@@ -166,16 +166,23 @@ async fn sync_profile_messages_with_notice(
         Ok(outcome) => Ok(outcome),
         Err(error) if is_sync_cancelled_message(&error) => Err(error),
         Err(error) => {
-            let message = format!(
-                "【{} · {}】同步失败：{}",
-                platform_label(&profile.platform),
-                profile_remark(&profile),
-                error
-            );
+            let message = profile_sync_failure_message(&profile, &error);
             emit_sync_progress(app, &profile, "profile_sync_failed", message.clone(), 0, 0);
-            Err(message)
+            Ok(ProfileSyncOutcome {
+                inserted_messages: 0,
+                warnings: vec![message],
+            })
         }
     }
+}
+
+fn profile_sync_failure_message(profile: &ImProfile, error: &str) -> String {
+    format!(
+        "【{} · {}】同步失败：{}",
+        platform_label(&profile.platform),
+        profile_remark(profile),
+        error
+    )
 }
 
 async fn sync_profile_messages(
@@ -456,5 +463,31 @@ pub(crate) fn refresh_local_keyword_stats(
             profile_remark(profile),
             err
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn profile_sync_failure_message_keeps_platform_and_remark() {
+        let profile = ImProfile {
+            id: "wechat-1".to_owned(),
+            platform: "wechat".to_owned(),
+            label: "微信账号".to_owned(),
+            enabled: true,
+            config_json: json!({ "remark": "工作号" }),
+            status: "active".to_owned(),
+            sort_order: 0,
+            created_at: "2026-05-07T00:00:00+08:00".to_owned(),
+            updated_at: "2026-05-07T00:00:00+08:00".to_owned(),
+        };
+
+        assert_eq!(
+            profile_sync_failure_message(&profile, "Bridge进程执行失败"),
+            "【微信 · 工作号】同步失败：Bridge进程执行失败"
+        );
     }
 }
