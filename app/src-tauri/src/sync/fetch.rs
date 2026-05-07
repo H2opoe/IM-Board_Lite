@@ -424,7 +424,7 @@ fn emit_profile_sync_done(app: &tauri::AppHandle, profile: &ImProfile, inserted_
         profile,
         "profile_sync_done",
         format!(
-            "已同步【{} · {}】，读取 {} 条新消息。",
+            "已同步【{} · {}】，读取{}条新消息。",
             platform_label(&profile.platform),
             profile_remark(profile),
             inserted_messages

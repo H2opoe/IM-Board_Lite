@@ -9,6 +9,7 @@ import {
   SYNC_RUNTIME_MESSAGES,
   type SyncMaintenanceAction,
   shouldShowSyncWarning,
+  isSyncMessageError,
   syncCompletionMessage,
   syncErrorMessage,
   syncMaintenancePendingMessage,
@@ -58,6 +59,14 @@ function syncProgressNoticeVariant(phase: string): SyncProgressNoticeVariant {
 
 function nextStateForProgress(progress: SyncProgress): SyncUiState | null {
   return progress.phase === "analysis" ? "analyzing" : null;
+}
+
+function syncWarningNotices(warnings: string[]): SyncProgressNotice[] {
+  return warnings.map((warning, index) => ({
+    id: `sync-warning-${index}`,
+    message: warning,
+    variant: isSyncMessageError(warning) ? "error" : "info"
+  }));
 }
 
 export function useSyncController({ activeProfileId, demoMode, setDashboard }: UseSyncControllerOptions) {
@@ -183,9 +192,9 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
           setSyncState(result.aiStatus === "failed" ? "failed" : "done");
           const visibleWarnings = result.warnings.filter(shouldShowSyncWarning);
           if (visibleWarnings.length > 0) {
-            setSyncProgressNotices([]);
-            setSyncMessagePages(visibleWarnings);
-            setSyncMessage(visibleWarnings[0]);
+            setSyncProgressNotices(syncWarningNotices(visibleWarnings));
+            setSyncMessagePages([]);
+            setSyncMessage("");
           } else {
             setSyncMessagePages([]);
             setSyncProgressNotices([]);

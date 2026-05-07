@@ -233,7 +233,6 @@ export function DashboardPage({
               text={visibleSyncMessage}
               className="sync-message-content"
               controlsClassName="sync-message-pager"
-              showCopy={syncNoticeVariant === "error"}
               compactCopy
             />
           </FloatingNotice>

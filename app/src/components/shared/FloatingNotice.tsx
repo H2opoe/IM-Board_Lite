@@ -7,11 +7,11 @@ import {
   type WheelEvent,
   isValidElement,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState
 } from "react";
 import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
+import { PagedTextBlock } from "./PagedTextBlock";
 
 export type FloatingNoticeScope = "page" | "modal";
 export type FloatingNoticeVariant = "info" | "success" | "error";
@@ -222,7 +222,6 @@ export function FloatingNotice({
   onClose
 }: Props) {
   const onCloseRef = useRef(onClose);
-  const messageRef = useRef<HTMLSpanElement | null>(null);
   const [isSingleLineMessage, setIsSingleLineMessage] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const hasContent = Boolean(message || children);
@@ -252,26 +251,6 @@ export function FloatingNotice({
     return () => window.clearTimeout(timer);
   }, [autoCloseDelayMs, effectiveAutoCloseMs, hasContent, isClosing, message, variant]);
 
-  useLayoutEffect(() => {
-    const element = messageRef.current;
-    if (!message || children || !element) {
-      setIsSingleLineMessage(false);
-      return undefined;
-    }
-
-    const measure = () => {
-      const style = window.getComputedStyle(element);
-      const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.45 || 20;
-      const renderedLines = Math.max(1, Math.round(element.scrollHeight / lineHeight));
-      setIsSingleLineMessage(renderedLines <= 1);
-    };
-
-    measure();
-    const resizeObserver = new ResizeObserver(measure);
-    resizeObserver.observe(element);
-    return () => resizeObserver.disconnect();
-  }, [children, message]);
-
   if (!hasContent) return null;
 
   const Icon = variant === "success" ? CheckCircle2 : variant === "error" ? AlertCircle : Info;
@@ -286,9 +265,14 @@ export function FloatingNotice({
       <Icon className="floating-notice-icon" size={17} />
       <div className="floating-notice-body">
         {children ?? (
-          <span ref={messageRef} className="floating-notice-message">
-            {message}
-          </span>
+          <PagedTextBlock
+            text={message ?? ""}
+            textClassName="floating-notice-message"
+            controlsClassName="floating-notice-message-pager"
+            element="span"
+            compactCopy
+            onSingleLineChange={setIsSingleLineMessage}
+          />
         )}
       </div>
       <button className="floating-notice-close" onClick={requestClose} aria-label="关闭提示">

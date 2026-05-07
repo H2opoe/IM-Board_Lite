@@ -232,7 +232,7 @@ pub(crate) async fn analyze_pending_messages(
                                     );
                                     analysis = refined_result.analysis;
                                     warnings.push(format!(
-                                        "{}已补充 {} 条历史上下文并重新分析。",
+                                        "{}已补充{}条历史上下文并重新分析。",
                                         analysis_scope_label, history_count
                                     ));
                                 }
@@ -289,7 +289,7 @@ pub(crate) async fn analyze_pending_messages(
                             {
                                 Ok(0) => {}
                                 Ok(count) => warnings.push(format!(
-                                    "{}已为 {} 个事项补读历史证据。",
+                                    "{}已为{}个事项补读历史证据。",
                                     analysis_scope_label, count
                                 )),
                                 Err(err) => warnings.push(format!(
@@ -309,7 +309,7 @@ pub(crate) async fn analyze_pending_messages(
                         }
                         ai_status = "failed".to_owned();
                         warnings.push(format!(
-                            "{}待回复和待办事项识别结果保存失败（第 {}/{} 批）：{}",
+                            "{}待回复和待办事项识别结果保存失败（第{}/{}批）：{}",
                             analysis_scope_label,
                             batch_index + 1,
                             total_batches,
@@ -329,7 +329,7 @@ pub(crate) async fn analyze_pending_messages(
                 }
                 ai_status = "failed".to_owned();
                 warnings.push(format!(
-                    "{}待回复和待办事项识别失败（第 {}/{} 批）：{}",
+                    "{}待回复和待办事项识别失败（第{}/{}批）：{}",
                     analysis_scope_label,
                     batch_index + 1,
                     total_batches,
@@ -419,7 +419,7 @@ pub(crate) async fn analyze_pending_messages(
                     target_profiles,
                     "summary",
                     format!(
-                        "正在识别{}热门话题和关键词第 {}/{} 批…",
+                        "正在识别{}热门话题和关键词第{}/{}批…",
                         analysis_scope_label,
                         summary_batch_index + 1,
                         total_summary_batches
@@ -489,7 +489,7 @@ pub(crate) async fn analyze_pending_messages(
                             err.diagnostic,
                         );
                         warnings.push(format!(
-                            "{}热门话题和关键词识别失败（第 {}/{} 批）：{}",
+                            "{}热门话题和关键词识别失败（第{}/{}批）：{}",
                             analysis_scope_label,
                             summary_batch_index + 1,
                             total_summary_batches,
@@ -516,7 +516,7 @@ pub(crate) async fn analyze_pending_messages(
                             Ok(_) => {}
                             Err(err) => {
                                 let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
-                                warnings.push(format!("关键词 AI 识别结果保存失败：{}", err));
+                                warnings.push(format!("关键词AI识别结果保存失败：{}", err));
                             }
                         }
                     }
@@ -530,7 +530,7 @@ pub(crate) async fn analyze_pending_messages(
                 };
                 if let Err(err) = persist_result {
                     warnings.push(format!(
-                        "{}热门话题和关键词保存失败（第 {}/{} 批）：{}",
+                        "{}热门话题和关键词保存失败（第{}/{}批）：{}",
                         analysis_scope_label,
                         summary_batch_index + 1,
                         total_summary_batches,
@@ -542,7 +542,7 @@ pub(crate) async fn analyze_pending_messages(
                         target_profiles,
                         "summary_done",
                         format!(
-                            "已更新{}热门话题和关键词第 {}/{} 批，正在刷新看板…",
+                            "已更新{}热门话题和关键词第{}/{}批，正在刷新看板…",
                             analysis_scope_label,
                             summary_batch_index + 1,
                             total_summary_batches

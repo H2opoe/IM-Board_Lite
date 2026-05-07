@@ -91,7 +91,7 @@ async fn fetch_dingtalk_window_messages(
         profile,
         "fetch_messages_done",
         format!(
-            "已读取【{} · {}】{} 条今天的消息，涉及 {} 个会话。",
+            "已读取【{} · {}】{}条今天的消息，涉及{}个会话。",
             platform_label(&profile.platform),
             profile_remark(profile),
             fetched,
@@ -157,7 +157,7 @@ async fn fetch_dingtalk_discovered_group_messages(
             if let Some(error) = searched.error {
                 if !(connector_for_profile(profile)?.should_silence_message_error)(&error.code) {
                     warnings.push(format!(
-                        "{} 群聊检索「{}」：{}",
+                        "{}群聊检索「{}」：{}",
                         profile.label, query, error.message
                     ));
                 }
@@ -185,7 +185,7 @@ async fn fetch_dingtalk_discovered_group_messages(
             app,
             profile,
             "search_groups",
-            format!("已按「{}」找到 {} 个钉钉可读会话。", query, chats.len()),
+            format!("已按「{}」找到{}个钉钉可读会话。", query, chats.len()),
             index as i64 + 1,
             queries.len() as i64,
         );

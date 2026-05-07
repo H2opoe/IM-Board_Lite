@@ -140,7 +140,7 @@ fn export_diagnostic_package_impl(
         &mut zip,
         options,
         "README.txt",
-        "IM-Board诊断包\n\n此诊断包用于定位同步、AI分析、账号绑定和运行时问题。\n包内默认不包含聊天内容、API Key等任何敏感信息。\n如果问题涉及特定聊天，请另行提供对应截图或手动脱敏后的上下文。\n",
+        "IM-Board诊断包\n\n此诊断包用于定位同步、AI分析、账号绑定和运行时问题。\n包内默认不包含聊天内容、API Key等敏感信息。\n如果问题涉及特定聊天，请另行提供对应截图或手动脱敏后的上下文。\n",
     )?;
     add_zip_text(
         &mut zip,

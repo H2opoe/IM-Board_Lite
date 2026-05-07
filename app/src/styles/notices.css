@@ -142,7 +142,8 @@
 }
 
 .paged-text-viewport pre,
-.paged-text-viewport code {
+.paged-text-viewport code,
+.paged-text-viewport span {
   display: block;
   margin: 0;
   white-space: pre-wrap;
@@ -262,6 +263,10 @@
 }
 
 .sync-message-pager {
+  color: currentColor;
+}
+
+.floating-notice-message-pager {
   color: currentColor;
 }
 

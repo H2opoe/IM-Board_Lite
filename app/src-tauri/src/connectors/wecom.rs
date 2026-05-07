@@ -38,7 +38,7 @@ fn empty_session_warning(_profile: &ImProfile) -> Option<String> {
 
 fn sessions_ready_message(profile: &ImProfile, total: i64) -> String {
     format!(
-        "已准备检查【{} · {}】{} 个通讯录成员/群聊。",
+        "已准备检查【{} · {}】{}个通讯录成员/群聊。",
         platform_label(&profile.platform),
         profile_remark(profile),
         total

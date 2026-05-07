@@ -12,7 +12,7 @@ pub(super) fn replace_install_root_atomically(
 ) -> Result<(), String> {
     let parent = install_root
         .parent()
-        .ok_or_else(|| format!("官方CLI 热更新目录无效：{}", install_root.display()))?;
+        .ok_or_else(|| format!("官方CLI热更新目录无效：{}", install_root.display()))?;
     let backup_root = parent.join(format!(
         ".{}-{}.bak",
         install_root
@@ -24,14 +24,14 @@ pub(super) fn replace_install_root_atomically(
     fs::remove_dir_all(&backup_root).ok();
     if install_root.exists() {
         fs::rename(install_root, &backup_root)
-            .map_err(|err| format!("无法备份旧官方CLI 目录 {}：{err}", install_root.display()))?;
+            .map_err(|err| format!("无法备份旧官方CLI目录{}：{err}", install_root.display()))?;
     }
     if let Err(err) = fs::rename(staging_root, install_root) {
         if backup_root.exists() {
             let _ = fs::rename(&backup_root, install_root);
         }
         return Err(format!(
-            "无法启用新的官方CLI 目录 {}：{err}",
+            "无法启用新的官方CLI目录{}：{err}",
             install_root.display()
         ));
     }
@@ -49,7 +49,7 @@ pub fn remove_platform_cli_staging_dirs(app_dir: &Path, platform: &str) -> Resul
     }
     let temp_prefix = format!(".{platform}-");
     for entry in fs::read_dir(&parent)
-        .map_err(|err| format!("读取官方CLI 热更新目录 {} 失败：{err}", parent.display()))?
+        .map_err(|err| format!("读取官方CLI热更新目录{}失败：{err}", parent.display()))?
     {
         let entry = entry.map_err(|err| err.to_string())?;
         let file_name = entry.file_name();
@@ -58,10 +58,7 @@ pub fn remove_platform_cli_staging_dirs(app_dir: &Path, platform: &str) -> Resul
             && (file_name.ends_with(".tmp") || file_name.ends_with(".bak"))
         {
             fs::remove_dir_all(entry.path()).map_err(|err| {
-                format!(
-                    "删除官方CLI 临时目录 {} 失败：{err}",
-                    entry.path().display()
-                )
+                format!("删除官方CLI临时目录{}失败：{err}", entry.path().display())
             })?;
         }
     }
@@ -78,9 +75,8 @@ pub(super) async fn install_npm_package_tree(
     let mut pending = vec![(package.to_owned(), version.to_owned())];
     while let Some((package_name, version_range)) = pending.pop() {
         let metadata = npm_metadata(&package_name, None).await?;
-        let resolved_version = resolve_npm_version(&metadata, &version_range).ok_or_else(|| {
-            format!("未找到满足 {package_name}@{version_range} 的官方CLI 包版本。")
-        })?;
+        let resolved_version = resolve_npm_version(&metadata, &version_range)
+            .ok_or_else(|| format!("未找到满足{package_name}@{version_range}的官方CLI包版本。"))?;
         let key = format!("{package_name}@{resolved_version}");
         if !installed.insert(key) {
             continue;

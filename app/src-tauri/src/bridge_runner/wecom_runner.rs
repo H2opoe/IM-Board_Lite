@@ -40,7 +40,7 @@ pub(super) async fn run_official_wecom_cli(
     ) else {
         return Ok(bridge_error(
             "WECOM_CLI_MISSING",
-            "企业微信官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
+            "官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成，或重新安装IM-Board。",
             true,
             started_at,
         ));
@@ -96,7 +96,7 @@ pub(super) async fn run_official_wecom_cli(
             if chat_id.trim().is_empty() {
                 return Ok(bridge_error(
                     "MISSING_CHAT",
-                    "fetch-messages 缺少 chat 参数。",
+                    "fetch-messages缺少chat参数。",
                     true,
                     started_at,
                 ));
@@ -211,7 +211,7 @@ pub(super) async fn run_official_wecom_cli(
         let errmsg = raw
             .get("errmsg")
             .and_then(|value| value.as_str())
-            .unwrap_or("企业微信 API 返回错误。");
+            .unwrap_or("企业微信API返回错误。");
         let error = classify_wecom_cli_error(errmsg).unwrap_or_else(|| BridgeError {
             code: "WECOM_API_ERROR".to_owned(),
             message: errmsg.to_owned(),

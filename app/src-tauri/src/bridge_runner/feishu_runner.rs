@@ -45,7 +45,7 @@ pub(super) async fn run_official_feishu_cli(
             "feishu",
             "https://github.com/larksuite/cli",
             "FEISHU_CLI_MISSING",
-            "飞书官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
+            "官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成，或重新安装IM-Board。",
             true,
             started_at,
         ));
@@ -92,7 +92,7 @@ pub(super) async fn run_official_feishu_cli(
                     "feishu",
                     "https://github.com/larksuite/cli",
                     "MISSING_CHAT",
-                    "fetch-messages 缺少 chat 参数。",
+                    "fetch-messages缺少chat参数。",
                     true,
                     started_at,
                 ));

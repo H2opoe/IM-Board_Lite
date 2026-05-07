@@ -63,7 +63,7 @@ pub fn no_prepare_profile_sync_access(_profile: &ImProfile) {}
 
 pub fn default_sessions_ready_message(profile: &ImProfile, total: i64) -> String {
     format!(
-        "已发现【{} · {}】{} 个今天会话。",
+        "已发现【{} · {}】{}个今天会话。",
         platform_label(&profile.platform),
         profile_remark(profile),
         total

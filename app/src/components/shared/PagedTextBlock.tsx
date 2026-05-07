@@ -7,11 +7,12 @@ interface Props {
   textClassName?: string;
   controlsClassName?: string;
   maxLines?: number;
-  element?: "pre" | "code";
+  element?: "pre" | "code" | "span";
   copyLabel?: string;
   copiedLabel?: string;
   showCopy?: boolean;
   compactCopy?: boolean;
+  onSingleLineChange?: (isSingleLine: boolean) => void;
 }
 
 const DEFAULT_MAX_LINES = 5;
@@ -26,7 +27,8 @@ export function PagedTextBlock({
   copyLabel = "复制全文",
   copiedLabel = "已复制",
   showCopy = true,
-  compactCopy = false
+  compactCopy = false,
+  onSingleLineChange
 }: Props) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLElement | null>(null);
@@ -51,6 +53,7 @@ export function PagedTextBlock({
       setPageHeight(nextPageHeight);
       setPageCount(nextPageCount);
       setIsSingleLine(renderedLines <= 1);
+      onSingleLineChange?.(renderedLines <= 1);
       setPageIndex((current) => Math.min(current, nextPageCount - 1));
     };
 
@@ -59,7 +62,7 @@ export function PagedTextBlock({
     resizeObserver.observe(viewport);
     resizeObserver.observe(content);
     return () => resizeObserver.disconnect();
-  }, [maxLines, text]);
+  }, [maxLines, onSingleLineChange, text]);
 
   useLayoutEffect(() => {
     if (!viewportRef.current || pageHeight <= 0) return;

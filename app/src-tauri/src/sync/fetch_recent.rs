@@ -85,7 +85,7 @@ async fn fetch_recent_session_messages(
             profile,
             "fetch_messages_parallel",
             format!(
-                "正在读取【{} · {}】{} 个会话消息（并发 {}）…",
+                "正在读取【{} · {}】{}个会话消息（并发{}）…",
                 platform_label(&profile.platform),
                 profile_remark(profile),
                 jobs.len(),
@@ -169,7 +169,7 @@ async fn fetch_recent_session_messages(
                 app,
                 profile,
                 "fetch_messages_done",
-                format!("已读取【{}】{} 条今天的消息。", job.chat_name, fetched),
+                format!("已读取【{}】{}条今天的消息。", job.chat_name, fetched),
                 job.index as i64 + 1,
                 total,
             );

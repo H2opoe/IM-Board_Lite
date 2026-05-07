@@ -133,7 +133,8 @@ fn bridge_error_event(request: &BridgeRequest, envelope: &BridgeEnvelope) -> Dia
         .as_ref()
         .map(|error| error.code.as_str())
         .unwrap_or("BRIDGE_UNKNOWN");
-    let category = bridge_error_category(code);
+    let detail = bridge_error_detail(envelope);
+    let category = bridge_error_category(code, &detail);
     let platform = request.platform.clone();
     DiagnosticErrorEvent {
         source: if platform == "wechat" {
@@ -161,7 +162,36 @@ fn bridge_error_event(request: &BridgeRequest, envelope: &BridgeEnvelope) -> Dia
     }
 }
 
-fn bridge_error_category(code: &str) -> &'static str {
+fn bridge_error_detail(envelope: &BridgeEnvelope) -> String {
+    let message = envelope
+        .error
+        .as_ref()
+        .map(|error| error.message.as_str())
+        .unwrap_or_default();
+    [message, &envelope.warnings.join("\n")]
+        .into_iter()
+        .filter(|value| !value.trim().is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn bridge_error_category(code: &str, detail: &str) -> &'static str {
+    let normalized = detail.to_ascii_lowercase();
+    if normalized.contains("tls handshake timeout")
+        || normalized.contains("mcp请求超时")
+        || normalized.contains("timeout")
+        || normalized.contains("超时")
+        || normalized.contains("timed out")
+    {
+        return "network_timeout";
+    }
+    if normalized.contains("importerror")
+        || normalized.contains("modulenotfounderror")
+        || normalized.contains("cannot import name")
+        || normalized.contains("no module named")
+    {
+        return "runtime_incomplete";
+    }
     if code.contains("NOT_AUTHENTICATED") || code.contains("KEYS_EMPTY") {
         return "auth";
     }
@@ -178,6 +208,9 @@ fn bridge_error_category(code: &str) -> &'static str {
         return "api_http";
     }
     if code.contains("CRASHED") || code.contains("CLI_FAILED") {
+        return "cli_failed";
+    }
+    if code.contains("DECRYPT_FAILED") {
         return "cli_failed";
     }
     "unknown"
@@ -215,6 +248,12 @@ fn bridge_user_message(platform: &str, code: &str, category: &str) -> String {
         }
         _ if category == "launch_failed" => {
             format!("{label}CLI启动失败，真实启动错误已写入诊断包。")
+        }
+        _ if category == "network_timeout" => {
+            format!("{label}CLI请求超时，请检查网络、代理/VPN或稍后重试。")
+        }
+        _ if category == "runtime_incomplete" => {
+            format!("{label}CLI运行时不完整或版本不匹配，请重新准备CLI后再同步。")
         }
         _ if category == "api_http" => format!("{label}接口返回错误，真实接口响应已写入诊断包。"),
         _ if category == "cli_failed" => format!("{label}CLI执行失败，真实返回内容已写入诊断包。"),
@@ -446,6 +485,36 @@ mod tests {
         assert_eq!(
             message,
             "钉钉缺少chat.message:list或组织未开启CLI数据访问权限，请重新授权或联系管理员开通。"
+        );
+    }
+
+    #[test]
+    fn classifies_cli_tls_timeout_from_raw_detail() {
+        assert_eq!(
+            bridge_error_category(
+                "DINGTALK_CLI_FAILED",
+                "request failed: net/http: TLS handshake timeout"
+            ),
+            "network_timeout"
+        );
+        assert_eq!(
+            bridge_user_message("dingtalk", "DINGTALK_CLI_FAILED", "network_timeout"),
+            "钉钉CLI请求超时，请检查网络、代理/VPN或稍后重试。"
+        );
+    }
+
+    #[test]
+    fn classifies_wechat_import_error_as_runtime_incomplete() {
+        assert_eq!(
+            bridge_error_category(
+                "WECHAT_DECRYPT_FAILED",
+                "ImportError: cannot import name 'stats' from 'wechat_cli.commands.stats'"
+            ),
+            "runtime_incomplete"
+        );
+        assert_eq!(
+            bridge_user_message("wechat", "WECHAT_DECRYPT_FAILED", "runtime_incomplete"),
+            "微信CLI运行时不完整或版本不匹配，请重新准备CLI后再同步。"
         );
     }
 

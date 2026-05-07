@@ -269,7 +269,7 @@ async fn download_llama_cpp_runtime(archive_name: &str, archive_path: &Path) -> 
         }
     }
     Err(format!(
-        "下载本地推理运行时失败，已尝试 GitHub 镜像和官方源：{}",
+        "下载本地推理运行时失败，已尝试GitHub镜像和官方源：{}",
         errors.join("；")
     ))
 }
@@ -351,4 +351,3 @@ async fn wait_for_llama_server_ready(timeout: Duration) -> bool {
     }
     false
 }
-

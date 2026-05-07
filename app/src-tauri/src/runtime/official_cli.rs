@@ -112,7 +112,7 @@ pub async fn install_package(
         emit_platform_cli_progress(
             progress,
             "installing",
-            format!("正在后台更新 {}@{}…", package, version),
+            format!("正在后台更新{}@{}…", package, version),
             3,
             5,
             None,
@@ -160,7 +160,7 @@ pub async fn install_package(
         emit_platform_cli_progress(
             progress,
             "installed",
-            format!("{}@{} 后台更新完成。", package, version),
+            format!("{}@{}后台更新完成。", package, version),
             4,
             5,
             None,

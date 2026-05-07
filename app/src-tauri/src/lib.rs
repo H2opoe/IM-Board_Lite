@@ -45,12 +45,12 @@ pub fn run() {
                 let show_item =
                     MenuItem::with_id(_app, TRAY_MENU_SHOW, "显示主窗口", true, None::<&str>)?;
                 let quit_item =
-                    MenuItem::with_id(_app, TRAY_MENU_QUIT, "退出 IM-Board", true, None::<&str>)?;
+                    MenuItem::with_id(_app, TRAY_MENU_QUIT, "退出IM-Board", true, None::<&str>)?;
                 let tray_menu = Menu::with_items(_app, &[&show_item, &quit_item])?;
                 let mut tray = TrayIconBuilder::with_id("main-tray")
                     .menu(&tray_menu)
                     .show_menu_on_left_click(true)
-                    .tooltip("IM-Board 正在后台运行")
+                    .tooltip("IM-Board正在后台运行")
                     .on_menu_event(|app, event| match event.id().as_ref() {
                         TRAY_MENU_SHOW => show_main_window(app),
                         TRAY_MENU_QUIT => app.exit(0),
