@@ -43,11 +43,19 @@ pub async fn test_ai_connection(
 ) -> Result<String, String> {
     if is_managed_local_deepseek_config(&config) {
         if !local_deepseek_status(&state).installed {
-            start_local_deepseek_download(&app, &state)?;
+            start_local_deepseek_download(&app, &state).map_err(|err| {
+                record_local_ai_error(&state, "start_local_deepseek_download", &err);
+                err
+            })?;
             return Ok("downloading".to_owned());
         }
         if config.enabled {
-            ensure_local_deepseek_runtime(&app, &state).await?;
+            ensure_local_deepseek_runtime(&app, &state)
+                .await
+                .map_err(|err| {
+                    record_local_ai_error(&state, "ensure_local_deepseek_runtime", &err);
+                    err
+                })?;
         }
     }
     if !config.enabled {
@@ -81,7 +89,11 @@ pub async fn test_ai_connection(
             }))
             .send()
             .await
-            .map_err(|err| ai::describe_request_error("API请求未发出", err))?
+            .map_err(|err| {
+                let message = ai::describe_request_error("API请求未发出", err);
+                record_ai_config_test_error(&state, &message, None);
+                message
+            })?
     } else {
         let request = client.post(format!("{base_url}/chat/completions"));
         let request = if config.api_key.trim().is_empty() {
@@ -99,7 +111,11 @@ pub async fn test_ai_connection(
             }))
             .send()
             .await
-            .map_err(|err| ai::describe_request_error("API请求未发出", err))?
+            .map_err(|err| {
+                let message = ai::describe_request_error("API请求未发出", err);
+                record_ai_config_test_error(&state, &message, None);
+                message
+            })?
     };
 
     let status = response.status();
@@ -110,7 +126,16 @@ pub async fn test_ai_connection(
         } else {
             body.chars().take(500).collect()
         };
-        return Err(format!("API返回错误：{status}：{detail}"));
+        let message = format!("API返回错误：{status}：{detail}");
+        let diagnostic = serde_json::json!({
+            "httpStatus": status.as_u16(),
+            "responseBodySnippet": detail,
+        });
+        record_ai_config_test_error(&state, &message, Some(diagnostic.clone()));
+        return Err(crate::diagnostics::classify_ai_user_message(
+            &message,
+            Some(&diagnostic),
+        ));
     }
 
     Ok("ready".to_owned())
@@ -160,7 +185,12 @@ pub async fn install_local_deepseek_model(
 ) -> Result<LocalModelStatus, String> {
     let installed = local_deepseek_status(&state);
     if installed.installed {
-        ensure_local_deepseek_runtime(&app, &state).await?;
+        ensure_local_deepseek_runtime(&app, &state)
+            .await
+            .map_err(|err| {
+                record_local_ai_error(&state, "ensure_local_deepseek_runtime", &err);
+                err
+            })?;
         emit_local_deepseek_progress(
             &app,
             "done",
@@ -169,8 +199,33 @@ pub async fn install_local_deepseek_model(
         );
         return Ok(local_deepseek_status(&state));
     }
-    start_local_deepseek_download(&app, &state)?;
+    start_local_deepseek_download(&app, &state).map_err(|err| {
+        record_local_ai_error(&state, "start_local_deepseek_download", &err);
+        err
+    })?;
     Ok(local_deepseek_status(&state))
+}
+
+fn record_ai_config_test_error(
+    state: &AppState,
+    message: &str,
+    diagnostic: Option<serde_json::Value>,
+) {
+    crate::diagnostics::record_error_event(
+        state,
+        crate::diagnostics::ai_error_event(None, "test_ai_connection", message, diagnostic),
+    );
+}
+
+fn record_local_ai_error(state: &AppState, operation: &str, message: &str) {
+    crate::diagnostics::record_error_event(
+        state,
+        crate::diagnostics::local_ai_error_event(
+            operation,
+            message,
+            serde_json::json!({ "provider": "本地DeepSeek" }),
+        ),
+    );
 }
 
 #[tauri::command]

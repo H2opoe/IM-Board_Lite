@@ -194,6 +194,7 @@ fn build_diagnostic_json(
         "syncState": collect_sync_state(conn)?,
         "dailySummary": collect_daily_summary(conn)?,
         "recentAiRuns": collect_recent_ai_runs(conn)?,
+        "recentErrorEvents": collect_recent_error_events(conn)?,
     }))
 }
 
@@ -334,6 +335,44 @@ fn collect_recent_ai_runs(conn: &Connection) -> anyhow::Result<Vec<serde_json::V
             "diagnostic": diagnostic,
             "createdAt": row.get::<_, String>(7)?,
             "finishedAt": row.get::<_, Option<String>>(8)?,
+        }))
+    })?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
+fn collect_recent_error_events(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>> {
+    let mut stmt = conn.prepare(
+        "select id, source, category, severity, profile_id, platform, operation, user_message,
+                raw_detail_json, context_json, created_at
+         from diagnostic_error_events
+         order by created_at desc
+         limit 100",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        let raw_detail = row
+            .get::<_, String>(8)
+            .ok()
+            .and_then(|value| serde_json::from_str::<serde_json::Value>(&value).ok())
+            .map(redact_json_value)
+            .unwrap_or_else(|| serde_json::json!({}));
+        let context = row
+            .get::<_, String>(9)
+            .ok()
+            .and_then(|value| serde_json::from_str::<serde_json::Value>(&value).ok())
+            .map(redact_json_value)
+            .unwrap_or_else(|| serde_json::json!({}));
+        Ok(serde_json::json!({
+            "id": row.get::<_, String>(0)?,
+            "source": row.get::<_, String>(1)?,
+            "category": row.get::<_, String>(2)?,
+            "severity": row.get::<_, String>(3)?,
+            "profileId": row.get::<_, Option<String>>(4)?,
+            "platform": row.get::<_, Option<String>>(5)?,
+            "operation": row.get::<_, String>(6)?,
+            "userMessage": row.get::<_, String>(7)?,
+            "rawDetail": raw_detail,
+            "context": context,
+            "createdAt": row.get::<_, String>(10)?,
         }))
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)

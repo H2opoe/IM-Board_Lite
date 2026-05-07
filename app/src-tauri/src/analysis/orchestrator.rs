@@ -29,6 +29,8 @@ struct AiCallFailure {
 
 struct AiRunTracker {
     id: String,
+    profile_id: String,
+    request_kind: String,
     started_at: Instant,
     diagnostic: serde_json::Value,
 }
@@ -235,6 +237,10 @@ pub(crate) async fn analyze_pending_messages(
                                     ));
                                 }
                                 Err(err) => {
+                                    let user_message = crate::diagnostics::classify_ai_user_message(
+                                        &err.message,
+                                        err.diagnostic.as_ref(),
+                                    );
                                     finish_ai_analysis_run(
                                         state,
                                         refine_run_id,
@@ -244,7 +250,7 @@ pub(crate) async fn analyze_pending_messages(
                                     );
                                     warnings.push(format!(
                                         "{}历史上下文重新分析失败，已保留首次AI结果：{}",
-                                        analysis_scope_label, err.message
+                                        analysis_scope_label, user_message
                                     ));
                                 }
                             }
@@ -313,6 +319,10 @@ pub(crate) async fn analyze_pending_messages(
                 }
             }
             Err(err) => {
+                let user_message = crate::diagnostics::classify_ai_user_message(
+                    &err.message,
+                    err.diagnostic.as_ref(),
+                );
                 finish_ai_analysis_run(state, run_id, "failed", Some(&err.message), err.diagnostic);
                 if let Ok(conn) = state.db.lock() {
                     let _ = ai::keep_analysis_pending_for_messages(&conn, day, &primary_messages);
@@ -323,7 +333,7 @@ pub(crate) async fn analyze_pending_messages(
                     analysis_scope_label,
                     batch_index + 1,
                     total_batches,
-                    err.message
+                    user_message
                 ));
             }
         }
@@ -462,6 +472,10 @@ pub(crate) async fn analyze_pending_messages(
                         result.summary
                     }
                     Err(err) => {
+                        let user_message = crate::diagnostics::classify_ai_user_message(
+                            &err.message,
+                            err.diagnostic.as_ref(),
+                        );
                         if let Some(plan) = keyword_refine_for_batch {
                             if let Ok(conn) = state.db.lock() {
                                 let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
@@ -479,7 +493,7 @@ pub(crate) async fn analyze_pending_messages(
                             analysis_scope_label,
                             summary_batch_index + 1,
                             total_summary_batches,
-                            err.message
+                            user_message
                         ));
                         return Ok((ai_status, analyzed_messages));
                     }

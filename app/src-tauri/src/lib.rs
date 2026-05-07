@@ -4,6 +4,7 @@ mod bridge_runner;
 mod commands;
 mod connectors;
 mod daily_cache;
+mod diagnostics;
 mod domain;
 mod messages;
 mod profile_manager;

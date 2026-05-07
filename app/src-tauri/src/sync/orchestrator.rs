@@ -221,6 +221,7 @@ pub(crate) async fn run_sync_bridge(
     cache_dir: std::path::PathBuf,
 ) -> anyhow::Result<bridge_runner::BridgeEnvelope> {
     ensure_sync_not_cancelled(state).map_err(anyhow::Error::msg)?;
+    let diagnostic_request = request.clone();
     let result = bridge_runner::run_bridge_tracked(
         request,
         resource_dir.clone(),
@@ -229,6 +230,18 @@ pub(crate) async fn run_sync_bridge(
     )
     .await;
     ensure_sync_not_cancelled(state).map_err(anyhow::Error::msg)?;
+    match &result {
+        Ok(envelope) => {
+            crate::diagnostics::record_bridge_envelope(state, &diagnostic_request, envelope);
+        }
+        Err(error) => {
+            crate::diagnostics::record_bridge_failure(
+                state,
+                &diagnostic_request,
+                &error.to_string(),
+            );
+        }
+    }
     result
 }
 

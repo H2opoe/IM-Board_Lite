@@ -16,9 +16,16 @@ pub async fn run_bridge_command(
     request: BridgeRequest,
 ) -> Result<BridgeEnvelope, String> {
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
-    bridge_runner::run_bridge(request, resource_dir, state.cache_dir.clone())
+    let diagnostic_request = request.clone();
+    let envelope = bridge_runner::run_bridge(request, resource_dir, state.cache_dir.clone())
         .await
-        .map_err(|err| err.to_string())
+        .map_err(|err| {
+            let message = err.to_string();
+            crate::diagnostics::record_bridge_failure(&state, &diagnostic_request, &message);
+            message
+        })?;
+    crate::diagnostics::record_bridge_envelope(&state, &diagnostic_request, &envelope);
+    Ok(envelope)
 }
 
 #[tauri::command]
@@ -55,14 +62,34 @@ pub async fn deploy_platform_bridge(
         spec,
         Some(&progress),
     )
-    .await?;
+    .await
+    .map_err(|err| {
+        crate::diagnostics::record_cli_lifecycle_error(
+            &state,
+            &platform,
+            Some(profile_id.clone()),
+            "deploy_platform_bridge",
+            &err,
+        );
+        err
+    })?;
     let current_version = official_cli::official_cli_version(&cli_path, spec).unwrap_or_default();
     let config_dir = state
         .app_dir
         .join("Profiles")
         .join(&profile_id)
         .join(&platform);
-    std::fs::create_dir_all(&config_dir).map_err(|err| err.to_string())?;
+    std::fs::create_dir_all(&config_dir).map_err(|err| {
+        let message = err.to_string();
+        crate::diagnostics::record_cli_lifecycle_error(
+            &state,
+            &platform,
+            Some(profile_id.clone()),
+            "deploy_platform_bridge",
+            &message,
+        );
+        message
+    })?;
 
     Ok(PlatformDeployment {
         platform: platform.clone(),
@@ -86,13 +113,30 @@ pub async fn check_platform_cli_update(
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let cli_path = official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec)
         .ok_or_else(|| {
-            format!(
+            let message = format!(
                 "尚未准备好{}。",
                 official_cli::platform_cli_label(&platform)
-            )
+            );
+            crate::diagnostics::record_cli_lifecycle_error(
+                &state,
+                &platform,
+                None,
+                "check_platform_cli_update",
+                &message,
+            );
+            message
         })?;
-    let current_version = official_cli::official_cli_version(&cli_path, spec)
-        .ok_or_else(|| "无法读取 CLI版本。".to_owned())?;
+    let current_version = official_cli::official_cli_version(&cli_path, spec).ok_or_else(|| {
+        let message = "无法读取CLI版本。".to_owned();
+        crate::diagnostics::record_cli_lifecycle_error(
+            &state,
+            &platform,
+            None,
+            "check_platform_cli_update",
+            &message,
+        );
+        message
+    })?;
     let latest_version = official_cli::npm_latest_version(spec.package, None)
         .await
         .unwrap_or_else(|_| current_version.clone());
@@ -115,8 +159,31 @@ pub async fn update_platform_cli(
     let platform = platform.trim().to_ascii_lowercase();
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
-    let latest_version = official_cli::npm_latest_version(spec.package, None).await?;
-    let install_root = official_cli::writable_cli_install_root(&state.app_dir, spec)?;
+    let latest_version = official_cli::npm_latest_version(spec.package, None)
+        .await
+        .map_err(|err| {
+            let message = err.to_string();
+            crate::diagnostics::record_cli_lifecycle_error(
+                &state,
+                &platform,
+                None,
+                "update_platform_cli",
+                &message,
+            );
+            message
+        })?;
+    let install_root =
+        official_cli::writable_cli_install_root(&state.app_dir, spec).map_err(|err| {
+            let message = err.to_string();
+            crate::diagnostics::record_cli_lifecycle_error(
+                &state,
+                &platform,
+                None,
+                "update_platform_cli",
+                &message,
+            );
+            message
+        })?;
     official_cli::install_package(
         &install_root,
         spec.package,
@@ -124,19 +191,48 @@ pub async fn update_platform_cli(
         &resource_dir,
         None,
     )
-    .await?;
+    .await
+    .map_err(|err| {
+        let message = err.to_string();
+        crate::diagnostics::record_cli_lifecycle_error(
+            &state,
+            &platform,
+            None,
+            "update_platform_cli",
+            &message,
+        );
+        message
+    })?;
 
     let refreshed_cli_path =
         official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec).ok_or_else(
             || {
-                format!(
+                let message = format!(
                     "更新后未找到{}。",
                     official_cli::platform_cli_label(&platform)
-                )
+                );
+                crate::diagnostics::record_cli_lifecycle_error(
+                    &state,
+                    &platform,
+                    None,
+                    "update_platform_cli",
+                    &message,
+                );
+                message
             },
         )?;
     let current_version = official_cli::official_cli_version(&refreshed_cli_path, spec)
-        .ok_or_else(|| "更新后无法读取 CLI版本。".to_owned())?;
+        .ok_or_else(|| {
+            let message = "更新后无法读取CLI版本。".to_owned();
+            crate::diagnostics::record_cli_lifecycle_error(
+                &state,
+                &platform,
+                None,
+                "update_platform_cli",
+                &message,
+            );
+            message
+        })?;
     Ok(PlatformCliVersionStatus {
         platform,
         update_available: official_cli::version_is_newer(&latest_version, &current_version),
