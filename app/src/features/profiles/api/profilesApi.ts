@@ -13,8 +13,8 @@ export async function listProfiles(): Promise<ImProfile[]> {
 }
 
 export async function upsertProfile(profile: ImProfile): Promise<ImProfile> {
-  if (profile.platform === "wechat") {
-    throw new Error("微信功能仅限付费用户使用，请联系开发者开通。");
+  if (profile.platform === "wechat" && profile.enabled) {
+    throw new Error("Lite版暂不支持微信账号同步");
   }
   if (isTauri) return invoke("upsert_profile", { profile });
   return requireTauri("保存账号配置");

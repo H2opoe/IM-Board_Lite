@@ -59,6 +59,7 @@ export const PROFILE_MESSAGES = {
   deleteFailed: "删除账号配置失败。",
   readTestFailed: "账号配置读取测试失败。",
   wechatPaidOnly: "微信功能仅限付费用户使用，请联系开发者开通。",
+  liteWechatSyncUnsupported: "Lite版暂不支持微信账号同步",
   batchDeleteButton: "批量删除",
   bulkDeletePrompt: (count: number) => `确认删除${count}个账号配置？这会移除所选账号配置和同步状态。`,
   bulkDeleteConfirmButton: (count: number) => `确认删除${count}个`,

@@ -97,7 +97,7 @@ pub(crate) async fn sync_target_profiles_messages(
 
 fn connector_for_profile(profile: &ImProfile) -> Result<ConnectorAdapter, String> {
     connectors::find(&profile.platform)
-        .ok_or_else(|| format!("暂不支持{}账号同步。", profile.label))
+        .ok_or_else(|| format!("Lite版暂不支持{}账号同步。", profile.label))
 }
 
 async fn sync_concurrent_profiles_messages(

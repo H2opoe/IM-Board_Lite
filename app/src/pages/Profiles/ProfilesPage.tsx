@@ -133,7 +133,8 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     orderedProfiles,
     resetProfileDragState,
     setIsBatchManaging,
-    setProfileNotice
+    setProfileNotice,
+    appendProfileNotice
   });
   const {
     addProfile,
@@ -198,6 +199,14 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   function setProfileNotice(message: string, isError = false) {
     setProfileMessageIsError(isError);
     setProfileMessage(message);
+  }
+
+  function appendProfileNotice(message: string, variant: FloatingNoticeVariant) {
+    updateProfileReadNotice({
+      id: `profile-notice-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      message,
+      variant
+    });
   }
 
   async function saveProfileOrder(nextProfiles: ImProfile[]) {

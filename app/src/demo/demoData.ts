@@ -108,13 +108,14 @@ export function updateDemoAction(actionId: string, status: ActionItem["status"])
 
 function demoProfile(id: string, platform: Platform, label: string, remark: string, sortOrder: number): ImProfile {
   const createdAt = iso(8);
+  const enabled = platform !== "wechat";
   return {
     id,
     platform,
     label,
-    enabled: true,
+    enabled,
     configJson: { remark },
-    status: "normal",
+    status: enabled ? "normal" : "disabled",
     sortOrder,
     createdAt,
     updatedAt: createdAt

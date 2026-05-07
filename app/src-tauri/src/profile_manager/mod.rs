@@ -3,7 +3,8 @@ use rusqlite::{params, Connection};
 
 use crate::storage::models::ImProfile;
 
-pub fn list_profiles(conn: &Connection) -> anyhow::Result<Vec<ImProfile>> {
+pub fn list_profiles(conn: &mut Connection) -> anyhow::Result<Vec<ImProfile>> {
+    disable_lite_unsupported_wechat_profiles(conn)?;
     let mut stmt = conn.prepare(
         "select id, platform, label, enabled, config_json, status, sort_order, created_at, updated_at
          from profiles order by sort_order, platform, label",
@@ -26,6 +27,7 @@ pub fn list_profiles(conn: &Connection) -> anyhow::Result<Vec<ImProfile>> {
 }
 
 pub fn upsert_profile(conn: &Connection, profile: ImProfile) -> anyhow::Result<ImProfile> {
+    let profile = lite_profile_for_storage(profile);
     let now = Local::now().to_rfc3339();
     let created_at = if profile.created_at.is_empty() {
         now.clone()
@@ -55,7 +57,29 @@ pub fn upsert_profile(conn: &Connection, profile: ImProfile) -> anyhow::Result<I
             now
         ],
     )?;
-    Ok(profile)
+    Ok(ImProfile {
+        updated_at: now,
+        ..profile
+    })
+}
+
+fn disable_lite_unsupported_wechat_profiles(conn: &mut Connection) -> anyhow::Result<()> {
+    // Lite版保留历史微信账号配置用于展示和删除，但不允许参与同步。
+    conn.execute(
+        "update profiles
+         set enabled = 0, status = 'disabled', updated_at = ?1
+         where platform = 'wechat' and (enabled != 0 or status != 'disabled')",
+        params![Local::now().to_rfc3339()],
+    )?;
+    Ok(())
+}
+
+fn lite_profile_for_storage(mut profile: ImProfile) -> ImProfile {
+    if profile.platform == "wechat" {
+        profile.enabled = false;
+        profile.status = "disabled".to_owned();
+    }
+    profile
 }
 
 pub fn delete_profile(conn: &mut Connection, profile_id: &str) -> anyhow::Result<Option<ImProfile>> {
@@ -108,6 +132,62 @@ fn profile_by_id(conn: &Connection, profile_id: &str) -> anyhow::Result<Option<I
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn test_profile(id: &str, platform: &str, enabled: bool, status: &str) -> ImProfile {
+        ImProfile {
+            id: id.to_owned(),
+            platform: platform.to_owned(),
+            label: platform.to_owned(),
+            enabled,
+            config_json: serde_json::json!({}),
+            status: status.to_owned(),
+            sort_order: 0,
+            created_at: String::new(),
+            updated_at: String::new(),
+        }
+    }
+
+    #[test]
+    fn list_profiles_disables_lite_wechat_profiles() {
+        let mut conn = Connection::open_in_memory().expect("open memory db");
+        conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+            .expect("create schema");
+        conn.execute(
+            "insert into profiles(id, platform, label, enabled, status, config_json, created_at, updated_at)
+             values('wechat-a', 'wechat', '微信', 1, 'normal', '{}', datetime('now'), datetime('now'))",
+            [],
+        )
+        .expect("insert profile");
+
+        let profiles = list_profiles(&mut conn).expect("list profiles");
+
+        let profile = profiles
+            .into_iter()
+            .find(|profile| profile.id == "wechat-a")
+            .expect("wechat profile");
+        assert!(!profile.enabled);
+        assert_eq!(profile.status, "disabled");
+    }
+
+    #[test]
+    fn upsert_profile_forces_lite_wechat_disabled() {
+        let conn = Connection::open_in_memory().expect("open memory db");
+        conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+            .expect("create schema");
+        let saved = upsert_profile(&conn, test_profile("wechat-a", "wechat", true, "normal")).expect("upsert profile");
+
+        assert!(!saved.enabled);
+        assert_eq!(saved.status, "disabled");
+
+        let stored_enabled: i64 = conn
+            .query_row("select enabled from profiles where id = 'wechat-a'", [], |row| row.get(0))
+            .expect("stored enabled");
+        let stored_status: String = conn
+            .query_row("select status from profiles where id = 'wechat-a'", [], |row| row.get(0))
+            .expect("stored status");
+        assert_eq!(stored_enabled, 0);
+        assert_eq!(stored_status, "disabled");
+    }
 
     #[test]
     fn delete_profile_removes_profile_owned_runtime_rows() {
