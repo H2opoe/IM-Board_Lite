@@ -35,6 +35,13 @@ pub(super) fn apply_official_cli_env(command: &mut Command) {
     }
 }
 
+#[cfg(windows)]
+pub(super) fn hide_windows_console(command: &mut Command) {
+    // Windows 打包版在后台调用官方 CLI 或系统命令时不应弹出额外控制台窗口。
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
 fn official_cli_path() -> Option<std::ffi::OsString> {
     let mut entries = Vec::new();
     if let Some(path) = std::env::var_os("PATH") {

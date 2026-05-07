@@ -1,6 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use super::{current_npm_arch, platform_label, PlatformCliSpec, OFFICIAL_CLIS};
+use super::{
+    current_npm_arch, current_npm_os, native_binary_name, platform_label, PlatformCliSpec,
+    OFFICIAL_CLIS,
+};
 
 pub fn cli_spec(platform: &str) -> Option<&'static PlatformCliSpec> {
     OFFICIAL_CLIS.iter().find(|spec| spec.platform == platform)
@@ -39,12 +42,18 @@ fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> 
     if spec.platform == "wecom" {
         candidates.push(
             package_root
-                .join(format!("@wecom/cli-darwin-{npm_arch}"))
+                .join(format!("@wecom/cli-{}-{npm_arch}", current_npm_os()))
                 .join("bin")
-                .join("wecom-cli"),
+                .join(native_binary_name("wecom-cli")),
         );
     }
     if spec.platform == "feishu" {
+        candidates.push(
+            package_root
+                .join(package_dir(spec.package))
+                .join("bin")
+                .join(native_binary_name("lark-cli")),
+        );
         candidates.push(
             package_root
                 .join(package_dir(spec.package))
@@ -65,6 +74,12 @@ fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> 
         );
     }
     if spec.platform == "dingtalk" {
+        candidates.push(
+            package_root
+                .join(package_dir(spec.package))
+                .join("vendor")
+                .join(native_binary_name("dws")),
+        );
         candidates.push(
             package_root
                 .join(package_dir(spec.package))

@@ -72,6 +72,7 @@ fn bundled_llama_runtime_arch() -> Result<&'static str, String> {
     match (std::env::consts::OS, std::env::consts::ARCH) {
         ("macos", "aarch64") => Ok("darwin-arm64"),
         ("macos", "x86_64") => Ok("darwin-x64"),
+        ("windows", "x86_64") => Ok("win-cpu-x64"),
         (os, arch) => Err(format!("当前架构暂不支持包内本地推理运行时：{os}/{arch}")),
     }
 }
@@ -143,7 +144,11 @@ fn copy_dir_all(source: &Path, destination: PathBuf) -> Result<(), String> {
 }
 
 fn llama_server_binary_name() -> &'static str {
-    "llama-server"
+    if cfg!(windows) {
+        "llama-server.exe"
+    } else {
+        "llama-server"
+    }
 }
 
 fn llama_cpp_archive_name() -> Result<String, String> {

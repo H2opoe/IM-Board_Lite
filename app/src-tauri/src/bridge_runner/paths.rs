@@ -143,11 +143,17 @@ fn official_cli_candidates(root: &Path, platform: &str, package: &str, bin: &str
     match platform {
         "wecom" => candidates.push(
             package_root
-                .join(format!("@wecom/cli-darwin-{npm_arch}"))
+                .join(format!("@wecom/cli-{}-{npm_arch}", current_npm_os()))
                 .join("bin")
-                .join("wecom-cli"),
+                .join(native_binary_name("wecom-cli")),
         ),
         "feishu" => {
+            candidates.push(
+                package_root
+                    .join(&package_dir)
+                    .join("bin")
+                    .join(native_binary_name("lark-cli")),
+            );
             candidates.push(
                 package_root
                     .join(&package_dir)
@@ -157,6 +163,12 @@ fn official_cli_candidates(root: &Path, platform: &str, package: &str, bin: &str
             candidates.push(package_root.join(&package_dir).join("bin").join("lark-cli"));
         }
         "dingtalk" => {
+            candidates.push(
+                package_root
+                    .join(&package_dir)
+                    .join("vendor")
+                    .join(native_binary_name("dws")),
+            );
             candidates.push(
                 package_root
                     .join(&package_dir)
@@ -179,6 +191,27 @@ fn current_npm_arch() -> &'static str {
         "x64"
     } else {
         std::env::consts::ARCH
+    }
+}
+
+fn current_npm_os() -> &'static str {
+    // NPM 原生子包使用 Node 平台名，例如 Windows 是 win32 而不是 Rust 的 windows。
+    if cfg!(windows) {
+        "win32"
+    } else if cfg!(target_os = "macos") {
+        "darwin"
+    } else if cfg!(target_os = "linux") {
+        "linux"
+    } else {
+        std::env::consts::OS
+    }
+}
+
+fn native_binary_name(name: &str) -> String {
+    if cfg!(windows) {
+        format!("{name}.exe")
+    } else {
+        name.to_owned()
     }
 }
 
