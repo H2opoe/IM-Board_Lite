@@ -40,8 +40,8 @@ pub async fn deploy_platform_bridge(
         &progress,
         "checking_local",
         format!(
-            "正在核查 {} 官方CLI准备状态…",
-            official_cli::platform_label(&platform)
+            "正在核查{}准备状态…",
+            official_cli::platform_cli_label(&platform)
         ),
         1,
         5,
@@ -69,6 +69,7 @@ pub async fn deploy_platform_bridge(
         cli_path: cli_path.to_string_lossy().to_string(),
         config_dir: config_dir.to_string_lossy().to_string(),
         command: official_cli::default_bind_command(&platform, &cli_path, &config_dir),
+        command_shell: official_cli::command_shell_name().to_owned(),
         source: spec.source.to_owned(),
         current_version,
     })
@@ -86,8 +87,8 @@ pub async fn check_platform_cli_update(
     let cli_path = official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec)
         .ok_or_else(|| {
             format!(
-                "尚未准备好 {} 官方CLI。",
-                official_cli::platform_label(&platform)
+                "尚未准备好{}。",
+                official_cli::platform_cli_label(&platform)
             )
         })?;
     let current_version = official_cli::official_cli_version(&cli_path, spec)
@@ -129,8 +130,8 @@ pub async fn update_platform_cli(
         official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec).ok_or_else(
             || {
                 format!(
-                    "更新后未找到 {} 官方CLI。",
-                    official_cli::platform_label(&platform)
+                    "更新后未找到{}。",
+                    official_cli::platform_cli_label(&platform)
                 )
             },
         )?;
@@ -170,8 +171,8 @@ pub fn cleanup_unused_platform_cli(
     if install_root.exists() {
         fs::remove_dir_all(&install_root).map_err(|err| {
             format!(
-                "删除{}官方CLI缓存 {} 失败：{err}",
-                official_cli::platform_label(spec.platform),
+                "删除{}缓存 {} 失败：{err}",
+                official_cli::platform_cli_label(spec.platform),
                 install_root.display()
             )
         })?;

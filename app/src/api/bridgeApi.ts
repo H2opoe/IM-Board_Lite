@@ -20,6 +20,7 @@ export interface PlatformDeployment {
   cliPath: string;
   configDir: string;
   command: string;
+  commandShell?: string;
   source: string;
   currentVersion: string;
 }

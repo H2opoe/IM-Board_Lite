@@ -91,6 +91,14 @@ pub fn default_bind_command(platform: &str, cli_path: &Path, config_dir: &Path) 
     }
 }
 
+pub fn command_shell_name() -> &'static str {
+    if cfg!(windows) {
+        "Windows PowerShell"
+    } else {
+        "macOS终端"
+    }
+}
+
 fn default_bind_command_windows(platform: &str, cli_path: &Path, config_dir: &Path) -> String {
     match platform {
         "wecom" => format!(
@@ -182,6 +190,13 @@ pub fn platform_label(platform: &str) -> &str {
         "dingtalk" => "钉钉",
         _ => platform,
     }
+}
+
+pub fn platform_cli_label(platform: &str) -> String {
+    if platform == "wechat" {
+        return "微信CLI".to_owned();
+    }
+    format!("{}官方CLI", platform_label(platform))
 }
 
 fn shell_single_quote(path: &Path) -> String {

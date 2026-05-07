@@ -81,12 +81,12 @@ export const OFFICIAL_CLI_MESSAGES = {
   readyStatusTitle: "已加载CLI",
   preparingStatusTitle: "CLI准备中",
   pendingReady: "等待CLI就绪",
-  prepareFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI准备失败。`,
-  versionCheckFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI版本核查失败。`,
-  waitReady: (platform: Platform) => `请先等待${platformDisplayName(platform)}官方CLI准备完成。`,
-  updateFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI更新失败。`,
-  cleanupFailed: (platform: Platform) => `清理${platformDisplayName(platform)}官方CLI失败。`,
-  placeholder: (platform: Platform) => `正在准备${platformDisplayName(platform)}官方CLI…`
+  prepareFailed: (platform: Platform) => `${platformCliDisplayName(platform)}准备失败。`,
+  versionCheckFailed: (platform: Platform) => `${platformCliDisplayName(platform)}版本核查失败。`,
+  waitReady: (platform: Platform) => `请先等待${platformCliDisplayName(platform)}准备完成。`,
+  updateFailed: (platform: Platform) => `${platformCliDisplayName(platform)}更新失败。`,
+  cleanupFailed: (platform: Platform) => `清理${platformCliDisplayName(platform)}失败。`,
+  placeholder: (platform: Platform) => `正在准备${platformCliDisplayName(platform)}…`
 };
 
 export const AI_SETTINGS_MESSAGES = {
@@ -114,4 +114,9 @@ export const AI_SETTINGS_MESSAGES = {
 
 function platformDisplayName(platform: Platform): string {
   return PLATFORM_LABELS[platform] ?? "平台";
+}
+
+function platformCliDisplayName(platform: Platform): string {
+  if (platform === "wechat") return "微信CLI";
+  return `${platformDisplayName(platform)}官方CLI`;
 }

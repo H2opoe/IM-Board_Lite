@@ -10,7 +10,23 @@ export function joinNativePath(baseDir: string, leaf: string): string {
 
 export function commandLineToolName(deployment?: PlatformDeployment | null): string {
   const command = deployment?.command.trimStart() ?? "";
+  const commandShell = deployment?.commandShell?.trim();
+  if (commandShell) return commandShell;
+  if (isWindowsDeployment(deployment) || isWindowsRuntime()) return "Windows PowerShell";
   return command.startsWith("$env:") || command.startsWith("New-Item") ? "Windows PowerShell" : "macOS终端";
+}
+
+function isWindowsDeployment(deployment?: PlatformDeployment | null): boolean {
+  if (!deployment) return false;
+  const pathLikeValues = [deployment.cliPath, deployment.configDir, deployment.command];
+  return pathLikeValues.some((value) => /^[A-Za-z]:[\\/]/.test(value) || value.includes("\\"));
+}
+
+function isWindowsRuntime(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const userAgent = navigator.userAgent.toLowerCase();
+  const platform = navigator.platform.toLowerCase();
+  return userAgent.includes("windows") || platform.includes("win");
 }
 
 export function formatCliVersion(version: string): string {

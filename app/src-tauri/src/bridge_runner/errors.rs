@@ -197,6 +197,7 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
         .filter(|value| !value.is_empty())
         .collect::<Vec<_>>()
         .join("\n");
+    let compact_detail = detail.split_whitespace().collect::<String>();
     let raw = serde_json::from_str::<serde_json::Value>(stdout).ok();
     let error = raw.as_ref().and_then(|value| value.get("error"));
     let reason = raw
@@ -261,7 +262,13 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
         || detail.contains("PAT_MEDIUM_RISK_NO_PERMISSION")
         || detail.contains("chat.message:list")
         || detail.contains("该组织尚未开启 CLI数据访问权限")
+        || compact_detail.contains("CLI数据访问权限")
         || detail.contains("TOKEN_VERIFIED_FAILED")
+        || (detail.contains("business_error")
+            && detail.contains("group-chat")
+            && (detail.contains("developerSettings")
+                || detail.contains("developersSettings")
+                || compact_detail.contains("CLI数据访问权限")))
         || (reason == "business_error"
             && category == "api"
             && server_key == "group-chat"

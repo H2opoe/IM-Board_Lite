@@ -14,7 +14,9 @@ use archives::{
     download_first_available, extract_tgz_bytes, extract_zip_bytes, find_file_named,
     make_executable,
 };
-pub use bind_commands::{default_bind_command, platform_label};
+pub use bind_commands::{
+    command_shell_name, default_bind_command, platform_cli_label, platform_label,
+};
 pub use npm_registry::npm_latest_version;
 pub use resolver::{
     cli_spec, official_cli_version, resolve_official_cli, writable_cli_install_root,
@@ -62,6 +64,7 @@ pub struct PlatformDeployment {
     pub cli_path: String,
     pub config_dir: String,
     pub command: String,
+    pub command_shell: String,
     pub source: String,
     pub current_version: String,
 }
@@ -187,8 +190,8 @@ pub async fn ensure_platform_cli_ready(
                         progress,
                         "local_ready",
                         format!(
-                            "远程版本核查失败，继续使用已准备好的 {} 官方CLI。",
-                            platform_label(spec.platform)
+                            "远程版本核查失败，继续使用已准备好的{}。",
+                            platform_cli_label(spec.platform)
                         ),
                         5,
                         5,
@@ -209,8 +212,8 @@ pub async fn ensure_platform_cli_ready(
                     progress,
                     "local_ready",
                     format!(
-                        "已找到最新版 {} 官方CLI v{}。",
-                        platform_label(spec.platform),
+                        "已找到最新版{} v{}。",
+                        platform_cli_label(spec.platform),
                         current
                     ),
                     5,
@@ -237,10 +240,7 @@ pub async fn ensure_platform_cli_ready(
         emit_platform_cli_progress(
             progress,
             "locating",
-            format!(
-                "正在定位 {} 官方CLI可执行入口…",
-                platform_label(spec.platform)
-            ),
+            format!("正在定位{}可执行入口…", platform_cli_label(spec.platform)),
             4,
             5,
             None,
@@ -250,15 +250,15 @@ pub async fn ensure_platform_cli_ready(
     }
     let path = resolve_official_cli(resource_dir, app_dir, spec).ok_or_else(|| {
         format!(
-            "{} 官方CLI已准备完成，但未找到无需用户依赖的可执行入口。",
-            platform_label(spec.platform)
+            "{}已准备完成，但未找到无需用户依赖的可执行入口。",
+            platform_cli_label(spec.platform)
         )
     })?;
     if let Some(progress) = progress {
         emit_platform_cli_progress(
             progress,
             "ready",
-            format!("已准备好 {} 官方CLI。", platform_label(spec.platform)),
+            format!("已准备好{}。", platform_cli_label(spec.platform)),
             5,
             5,
             None,

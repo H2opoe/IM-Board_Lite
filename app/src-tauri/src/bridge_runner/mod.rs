@@ -312,6 +312,31 @@ token=***
     }
 
     #[test]
+    fn classifies_sanitized_dingtalk_permission_error_with_spaced_hint() {
+        let stdout = r#"{
+          "error": {
+            "action_url": "https://open-dev.dingtalk.com/fe/old#/developerSettings",
+            "category": "api",
+            "code": 1,
+            "friendly_hint": "该组织尚未开启 CLI 数据访问权限，请联系组织主管理员开启。",
+            "hint": "The API returned a business-level error. Check required parameters and values.",
+            "message": "business error: success=false",
+token=***
+            "operation": "tools/call",
+            "reason": "business_error",
+            "server_key": "group-chat",
+token=***
+            "trace_id": "0bab027317781704908111717e096e"
+          }
+        }"#;
+
+        let error = classify_dingtalk_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "DINGTALK_MESSAGE_PERMISSION_MISSING");
+        assert!(error.recoverable);
+        assert!(error.message.contains("CLI数据访问权限"));
+    }
+
+    #[test]
     fn classifies_dingtalk_pat_permission_error() {
         let stdout = r#"{
           "code": "PAT_MEDIUM_RISK_NO_PERMISSION",
