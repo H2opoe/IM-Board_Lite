@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getDashboard } from "../../dashboard/api/dashboardApi";
-import { cancelSync, runSyncJob, watchSyncProgress } from "../api/syncApi";
+import type { DashboardSetter } from "../../dashboard/hooks/useDashboardStore";
 import type { DashboardData } from "../../dashboard/model/types";
+import { cancelSync, runSyncJob, watchSyncProgress } from "../api/syncApi";
 import type { SyncJobMode, SyncProgress, SyncResult } from "../model/types";
 import {
   SYNC_CANCEL_CONFIRM_MESSAGES,
@@ -30,7 +31,7 @@ export interface SyncProgressNotice {
 interface UseSyncControllerOptions {
   activeProfileId: string;
   demoMode: boolean;
-  setDashboard: Dispatch<SetStateAction<DashboardData | null>>;
+  setDashboard: DashboardSetter;
 }
 
 const DEFAULT_SYNC_FREQUENCY_MINUTES = 15;
@@ -82,6 +83,11 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
   const maintenanceRequestSeq = useRef(0);
   const dashboardRefreshSeq = useRef(0);
   const initialSyncStarted = useRef(false);
+  const activeProfileIdRef = useRef(activeProfileId);
+
+  useEffect(() => {
+    activeProfileIdRef.current = activeProfileId;
+  }, [activeProfileId]);
 
   useEffect(() => {
     window.localStorage.setItem(SYNC_FREQUENCY_STORAGE_KEY, String(syncFrequencyMinutes));
@@ -110,21 +116,31 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
 
   const refreshDashboardForArrivedBatch = useCallback(() => {
     const requestSeq = dashboardRefreshSeq.current + 1;
+    const visibleProfileId = activeProfileIdRef.current;
     dashboardRefreshSeq.current = requestSeq;
-    void getDashboard(activeProfileId)
+    void getDashboard(visibleProfileId)
       .then((nextDashboard) => {
         // AI 分批结果会连续落库并触发多次刷新，只接受最后一次返回，避免旧批次请求晚到后覆盖新批次。
         if (dashboardRefreshSeq.current !== requestSeq) return;
-        setDashboard(nextDashboard);
+        if (activeProfileIdRef.current !== visibleProfileId) return;
+        setDashboard(nextDashboard, visibleProfileId);
       })
       .catch((error) => {
         logRecoverableError("刷新看板失败，已等待下一次同步进度刷新", error);
       });
-  }, [activeProfileId, setDashboard]);
+  }, [setDashboard]);
 
   function markDashboardRefreshSettled() {
     dashboardRefreshSeq.current += 1;
   }
+
+  const setDashboardForVisibleProfile = useCallback(
+    (nextDashboard: DashboardData, profileId: string) => {
+      if (activeProfileIdRef.current !== profileId) return;
+      setDashboard(nextDashboard, profileId);
+    },
+    [setDashboard]
+  );
 
   const executeSyncJob = useCallback(
     (mode: SyncJobMode, targetProfileId = activeProfileId) => {
@@ -135,13 +151,16 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
         syncInFlight.current = true;
         setSyncState(config.initialState);
         if (mode === "retry_analysis") {
-          setDashboard((currentDashboard) =>
-            currentDashboard
-              ? {
-                  ...currentDashboard,
-                  aiStatus: "analyzing"
-                }
-              : currentDashboard
+          const visibleProfileId = activeProfileIdRef.current;
+          setDashboard(
+            (currentDashboard) =>
+              currentDashboard
+                ? {
+                    ...currentDashboard,
+                    aiStatus: "analyzing"
+                  }
+                : currentDashboard,
+            visibleProfileId
           );
         }
         setIsSyncCancelArmed(false);
@@ -169,13 +188,17 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
 
           const result = await runSyncJob(targetProfileId, config.mode);
           markDashboardRefreshSettled();
-          const nextDashboard = await getDashboard(activeProfileId);
+          const analyzingProfileId = targetProfileId === "aggregate" ? activeProfileIdRef.current : targetProfileId;
+          const nextDashboard = await getDashboard(analyzingProfileId);
           if (mode !== "retry_analysis" && result.analyzedMessages > 0) {
-            setDashboard({
-              ...nextDashboard,
-              syncStatus: "analyzing",
-              aiStatus: "analyzing"
-            });
+            setDashboardForVisibleProfile(
+              {
+                ...nextDashboard,
+                syncStatus: "analyzing",
+                aiStatus: "analyzing"
+              },
+              analyzingProfileId
+            );
             setSyncState("analyzing");
             setSyncMessagePages([]);
             setSyncMessage(SYNC_RUNTIME_MESSAGES.refreshingDashboard(result.insertedMessages, result.analyzedMessages));
@@ -183,12 +206,16 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
           }
 
           markDashboardRefreshSettled();
-          const finalDashboard = await getDashboard(activeProfileId);
-          setDashboard({
-            ...finalDashboard,
-            syncStatus: result.syncStatus,
-            aiStatus: result.aiStatus
-          });
+          const finalProfileId = targetProfileId === "aggregate" ? activeProfileIdRef.current : targetProfileId;
+          const finalDashboard = await getDashboard(finalProfileId);
+          setDashboardForVisibleProfile(
+            {
+              ...finalDashboard,
+              syncStatus: result.syncStatus,
+              aiStatus: result.aiStatus
+            },
+            finalProfileId
+          );
           setSyncState(result.aiStatus === "failed" ? "failed" : "done");
           const visibleWarnings = result.warnings.filter(shouldShowSyncWarning);
           if (visibleWarnings.length > 0) {
@@ -228,7 +255,7 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
       syncRunPromise.current = trackedRun;
       return syncRunPromise.current;
     },
-    [activeProfileId, refreshDashboardForArrivedBatch, setDashboard]
+    [activeProfileId, refreshDashboardForArrivedBatch, setDashboard, setDashboardForVisibleProfile]
   );
 
   const handleSyncButtonClick = useCallback(() => {

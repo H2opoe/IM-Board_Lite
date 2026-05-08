@@ -28,6 +28,7 @@ export function App() {
   const { profiles, refreshProfiles } = useProfilesStore();
   const { themeChoice, effectiveThemeMode, handleThemeChange } = useThemeController();
   const { dashboard, dashboardProfileId, setDashboard } = useDashboardStore(activeProfileId, activeView === "dashboard");
+  const isDashboardReady = Boolean(dashboard && dashboardProfileId === activeProfileId);
   const {
     syncState,
     syncMessage,
@@ -59,8 +60,8 @@ export function App() {
       onThemeChange={handleThemeChange}
     >
       <Suspense fallback={<PageLoadingFallback />}>
-        {activeView === "dashboard" && !dashboard && <PageLoadingFallback />}
-        {activeView === "dashboard" && dashboard && dashboardProfileId === activeProfileId && (
+        {activeView === "dashboard" && !isDashboardReady && <PageLoadingFallback />}
+        {activeView === "dashboard" && isDashboardReady && dashboard && (
           <DashboardPage
             key={activeProfileId}
             data={dashboard}

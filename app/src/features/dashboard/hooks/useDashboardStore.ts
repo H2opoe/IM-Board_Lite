@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState, type SetStateAction } from "react";
 import { getDashboard } from "../api/dashboardApi";
 import type { DashboardData } from "../model/types";
 
+export type DashboardSetter = (nextDashboard: SetStateAction<DashboardData | null>, profileId?: string) => void;
+
 export function useDashboardStore(activeProfileId: string, isDashboardActive: boolean) {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [dashboardProfileId, setDashboardProfileId] = useState("");
 
-  const setDashboardForProfile = useCallback(
+  const setDashboardForProfile = useCallback<DashboardSetter>(
     (nextDashboard: SetStateAction<DashboardData | null>, profileId = activeProfileId) => {
       setDashboard(nextDashboard);
       setDashboardProfileId(profileId);
@@ -28,6 +30,7 @@ export function useDashboardStore(activeProfileId: string, isDashboardActive: bo
 
     let isCancelled = false;
     setDashboard(null);
+    setDashboardProfileId(activeProfileId);
     getDashboard(activeProfileId).then((nextDashboard) => {
       if (isCancelled) return;
       setDashboardForProfile(nextDashboard, activeProfileId);
