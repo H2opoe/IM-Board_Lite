@@ -30,16 +30,55 @@ pub(crate) async fn request_profile_analysis(
         ANALYSIS_REQUEST_TIMEOUT_SECS,
         &prompt,
         &payload,
-        if is_local_provider(config) {
-            1536
-        } else {
-            2048
-        },
+        analysis_output_tokens(config, false),
     )
     .await?;
+    let (mut analysis, diagnostics) = match parse_analysis_output(&output) {
+        Ok(analysis) => (analysis, output.diagnostics),
+        Err(err) if should_retry_analysis_parse(&err, &output.diagnostics) => {
+            let retry_output = request_analysis(
+                config,
+                "待回复和待办事项识别",
+                ANALYSIS_REQUEST_TIMEOUT_SECS,
+                &analysis_retry_prompt(&prompt),
+                &payload,
+                analysis_output_tokens(config, true),
+            )
+            .await?;
+            (
+                parse_analysis_output(&retry_output)?,
+                retry_output.diagnostics,
+            )
+        }
+        Err(err) => return Err(err.into()),
+    };
+    analysis.topics.clear();
+    analysis.keywords.clear();
+    Ok(AiAnalysisResult {
+        analysis,
+        diagnostics,
+    })
+}
+
+fn analysis_output_tokens(config: &AiConfig, retry: bool) -> u32 {
+    let tokens = if is_local_provider(config) {
+        if retry {
+            LOCAL_DEEPSEEK_ANALYSIS_OUTPUT_TOKENS + 1_024
+        } else {
+            LOCAL_DEEPSEEK_ANALYSIS_OUTPUT_TOKENS
+        }
+    } else if retry {
+        OTHER_MODEL_ANALYSIS_OUTPUT_TOKENS * 2
+    } else {
+        OTHER_MODEL_ANALYSIS_OUTPUT_TOKENS
+    };
+    tokens.try_into().unwrap_or(u32::MAX)
+}
+
+fn parse_analysis_output(output: &AiRequestOutput) -> Result<AiAnalysis, AiCallError> {
     let json = extract_json_object(&output.content)
         .map_err(|err| AiCallError::new(err.to_string(), Some(output.diagnostics.clone())))?;
-    let mut analysis: AiAnalysis = serde_json::from_str(&json).map_err(|err| {
+    serde_json::from_str(&json).map_err(|err| {
         AiCallError::new(
             format!(
                 "AI返回JSON解析失败：{}；片段：{}",
@@ -48,13 +87,17 @@ pub(crate) async fn request_profile_analysis(
             ),
             Some(output.diagnostics.clone()),
         )
-    })?;
-    analysis.topics.clear();
-    analysis.keywords.clear();
-    Ok(AiAnalysisResult {
-        analysis,
-        diagnostics: output.diagnostics,
     })
+}
+
+fn should_retry_analysis_parse(err: &AiCallError, diagnostics: &AiCallDiagnostics) -> bool {
+    should_retry_json_parse(err, diagnostics)
+}
+
+fn analysis_retry_prompt(prompt: &str) -> String {
+    format!(
+        "{prompt}\n\n重试输出约束：上一次待回复和待办事项 JSON 被截断或不是有效 JSON。请只返回一个完整 JSON 对象，顶层只能包含 actionItems；没有明确事项时返回 {{\"actionItems\":[]}}。请压缩每个字段内容，title 不超过 16 字，description/evidenceSummary/suggestedReply 都用一句短句；最多返回 20 个最重要事项。必须一次性闭合完整 JSON，不要 Markdown，不要解释。"
+    )
 }
 
 pub(crate) fn analysis_system_prompt(config: &AiConfig) -> String {
@@ -183,8 +226,13 @@ fn parse_summary_output(output: &AiRequestOutput) -> Result<AiSummary, AiCallErr
 }
 
 fn should_retry_summary_parse(err: &AiCallError, diagnostics: &AiCallDiagnostics) -> bool {
+    should_retry_json_parse(err, diagnostics)
+}
+
+fn should_retry_json_parse(err: &AiCallError, diagnostics: &AiCallDiagnostics) -> bool {
     let message = err.message.as_str();
     let looks_incomplete = message.contains("不是完整JSON")
+        || message.contains("不是JSON")
         || message.contains("EOF while parsing")
         || message.contains("expected")
         || message.contains("trailing characters");
@@ -602,6 +650,53 @@ fn diagnostic_snippet(value: &str, limit: usize) -> Option<String> {
 
 fn char_count(value: &str) -> usize {
     value.chars().count()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn diagnostics_with_finish_reason(finish_reason: Option<&str>) -> AiCallDiagnostics {
+        AiCallDiagnostics {
+            provider: "火山方舟".to_owned(),
+            model: "doubao-seed".to_owned(),
+            endpoint: "https://ark.cn-beijing.volces.com/api/v3/chat/completions".to_owned(),
+            max_tokens: 2048,
+            response_format: Some("json_object".to_owned()),
+            http_status: Some(200),
+            finish_reason: finish_reason.map(ToOwned::to_owned),
+            content_empty: false,
+            content_length: 128,
+            content_snippet: Some("1.1078212560161072".to_owned()),
+            reasoning_content_present: true,
+            reasoning_content_length: 512,
+            response_body_length: 1024,
+            response_body_snippet: None,
+            usage: None,
+        }
+    }
+
+    #[test]
+    fn analysis_parse_retries_when_provider_stops_at_length() {
+        let err = AiCallError::new(
+            "AI返回内容不是JSON",
+            Some(diagnostics_with_finish_reason(Some("length"))),
+        );
+
+        assert!(should_retry_analysis_parse(
+            &err,
+            &diagnostics_with_finish_reason(Some("length")),
+        ));
+    }
+
+    #[test]
+    fn analysis_retry_prompt_requires_compact_complete_json() {
+        let prompt = analysis_retry_prompt("原始提示");
+
+        assert!(prompt.contains("顶层只能包含 actionItems"));
+        assert!(prompt.contains("{\"actionItems\":[]}"));
+        assert!(prompt.contains("必须一次性闭合完整 JSON"));
+    }
 }
 
 async fn send_with_retry<F>(
