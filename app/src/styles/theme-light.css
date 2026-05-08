@@ -341,6 +341,12 @@
   background: rgba(44, 143, 120, 0.08);
 }
 
+.theme-light .profile-row.profile-row-updated {
+  border-color: rgba(35, 127, 112, 0.48);
+  background: rgba(42, 157, 143, 0.12);
+  box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.1);
+}
+
 .profile-drag-layer-light .profile-row.profile-drag-floating {
   border-color: rgba(44, 143, 120, 0.42);
   background:

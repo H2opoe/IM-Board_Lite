@@ -609,6 +609,12 @@
   background: rgba(44, 143, 120, 0.12);
 }
 
+.profile-row.profile-row-updated {
+  border-color: rgba(125, 224, 173, 0.56);
+  background: rgba(44, 143, 120, 0.18);
+  box-shadow: 0 0 0 3px rgba(125, 224, 173, 0.11);
+}
+
 .profile-batch-toolbar {
   border-color: var(--im-border-soft);
   background: rgba(255, 255, 255, 0.035);

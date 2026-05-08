@@ -20,7 +20,7 @@ export interface DingtalkIdentity {
 }
 
 export interface AccountIdentity {
-  platform: Extract<Platform, "feishu" | "dingtalk">;
+  platform: Extract<Platform, "wecom" | "feishu" | "dingtalk">;
   tenantId: string;
   tenantName: string;
   userId: string;

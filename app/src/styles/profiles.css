@@ -214,6 +214,26 @@
   background: rgba(47, 111, 104, 0.08);
 }
 
+.profile-row.profile-row-updated {
+  border-color: rgba(42, 157, 143, 0.7);
+  background: rgba(42, 157, 143, 0.14);
+  box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.12);
+  animation: profile-row-updated-pulse 1.25s ease-in-out 3;
+}
+
+@keyframes profile-row-updated-pulse {
+  0%,
+  100% {
+    border-color: rgba(42, 157, 143, 0.7);
+    box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.12);
+  }
+
+  50% {
+    border-color: rgba(42, 157, 143, 0.95);
+    box-shadow: 0 0 0 6px rgba(42, 157, 143, 0.18);
+  }
+}
+
 .profile-select,
 .profile-batch-select-all {
   display: inline-flex;

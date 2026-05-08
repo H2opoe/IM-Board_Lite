@@ -26,6 +26,7 @@ import type { ImProfile, Platform } from "../model/types";
 interface UseOfficialCliBindControllerParams {
   orderedProfiles: ImProfile[];
   onProfilesChange: () => Promise<void>;
+  onDuplicateProfileReplaced: (profileId: string) => void;
   cancelDeploymentRequest: () => void;
   cleanupPlatformCliIfUnused: (platform: Platform) => Promise<void>;
   isDeploymentRequestActive: (requestId: number) => boolean;
@@ -42,6 +43,7 @@ interface UseOfficialCliBindControllerParams {
 
 export function useOfficialCliBindController({
   orderedProfiles,
+  onDuplicateProfileReplaced,
   onProfilesChange,
   cancelDeploymentRequest,
   cleanupPlatformCliIfUnused,
@@ -156,14 +158,26 @@ export function useOfficialCliBindController({
           throw new Error(config.missingIdentityMessage ?? "未能读取当前授权身份。");
         }
       }
-      if (identity && config.duplicateMessage && (platform === "feishu" || platform === "dingtalk")) {
+      let profileToSave = identity ? withAccountIdentity(profile, identity) : profile;
+      let persistedStateSource = setupProfile;
+      let replacedProfileId = "";
+      if (identity) {
         const duplicate = await findDuplicateAccountIdentity(platform, identity, profile.id, orderedProfiles);
         if (duplicate) {
-          setFormMessage(config.duplicateMessage(duplicate, identity));
-          return;
+          persistedStateSource = duplicate;
+          replacedProfileId = duplicate.id;
+          profileToSave = {
+            ...profileToSave,
+            id: duplicate.id,
+            enabled: duplicate.enabled,
+            status: duplicate.status,
+            sortOrder: duplicate.sortOrder,
+            createdAt: duplicate.createdAt
+          };
         }
       }
-      await upsertProfile(preservePersistedProfileState(setupProfile, identity ? withAccountIdentity(profile, identity) : profile));
+      await upsertProfile(preservePersistedProfileState(persistedStateSource, profileToSave));
+      if (replacedProfileId) onDuplicateProfileReplaced(replacedProfileId);
       closeOfficialCliSetup();
       await onProfilesChange();
     } catch (error) {

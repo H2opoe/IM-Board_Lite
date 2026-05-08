@@ -53,6 +53,7 @@ export const PROFILE_MESSAGES = {
   selectForManage: "请先选择需要管理的账号。",
   selectForDelete: "请先选择需要删除的账号。",
   selectForReadTest: "请先选择需要测试读取的账号。",
+  accountUpdatedByDuplicate: "该账号已绑定，已按最新配置更新账号。",
   profileOrderSaved: "账号排序已更新。",
   profileOrderFailed: "账号排序保存失败。",
   deleteImpact: "删除后会移除此账号配置和同步状态。",

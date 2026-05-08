@@ -40,6 +40,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   const [isDeveloperContactOpen, setIsDeveloperContactOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [isBatchManaging, setIsBatchManaging] = useState(false);
+  const [highlightedProfileId, setHighlightedProfileId] = useState("");
   const {
     cancelDeploymentRequest,
     cleanupPlatformCliIfUnused,
@@ -80,6 +81,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     cleanupPlatformCliIfUnused,
     isDeploymentRequestActive,
     nextDeploymentRequest,
+    onDuplicateProfileReplaced: handleDuplicateProfileReplaced,
     onProfilesChange,
     orderedProfiles,
     preservePersistedProfileState,
@@ -196,6 +198,14 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     resetModalCompositionState();
   }, [officialCliFlow.profile]);
 
+  useEffect(() => {
+    if (!highlightedProfileId) return;
+    const timer = window.setTimeout(() => setHighlightedProfileId(""), 5200);
+    const row = document.querySelector<HTMLElement>(`[data-profile-id="${CSS.escape(highlightedProfileId)}"]`);
+    row?.scrollIntoView({ block: "center", behavior: "smooth" });
+    return () => window.clearTimeout(timer);
+  }, [highlightedProfileId]);
+
   function setProfileNotice(message: string, isError = false) {
     setProfileMessageIsError(isError);
     setProfileMessage(message);
@@ -207,6 +217,11 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
       message,
       variant
     });
+  }
+
+  function handleDuplicateProfileReplaced(profileId: string) {
+    setHighlightedProfileId(profileId);
+    setProfileNotice(PROFILE_MESSAGES.accountUpdatedByDuplicate);
   }
 
   async function saveProfileOrder(nextProfiles: ImProfile[]) {
@@ -388,6 +403,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
             orderedProfiles={orderedProfiles}
             visibleProfiles={visibleProfiles}
             selectedProfileIds={selectedProfileIds}
+            highlightedProfileId={highlightedProfileId}
             isBatchManaging={isBatchManaging}
             draggedProfileId={draggedProfileId}
             dragTargetProfileId={dragTargetProfileId}

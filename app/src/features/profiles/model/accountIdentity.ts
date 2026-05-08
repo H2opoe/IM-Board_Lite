@@ -1,7 +1,7 @@
 import { getDingtalkIdentity, getOfficialCliAccountIdentity } from "../../../api/profileReadApi";
 import type { AccountIdentity, ImProfile, Platform } from "./types";
 
-type SupportedIdentityPlatform = Extract<Platform, "feishu" | "dingtalk">;
+type SupportedIdentityPlatform = Extract<Platform, "wecom" | "feishu" | "dingtalk">;
 
 export async function readBoundAccountIdentity(profile: ImProfile): Promise<AccountIdentity | null> {
   if (profile.platform === "dingtalk") {
@@ -14,7 +14,7 @@ export async function readBoundAccountIdentity(profile: ImProfile): Promise<Acco
       userName: identity.userName
     };
   }
-  if (profile.platform === "feishu") {
+  if (profile.platform === "wecom" || profile.platform === "feishu") {
     return getOfficialCliAccountIdentity(profile);
   }
   return null;
