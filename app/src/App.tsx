@@ -41,7 +41,7 @@ export function App() {
     setSyncFrequencyMinutes,
     dismissSyncMessage,
     closeSyncProgressNotice
-  } = useSyncController({ activeProfileId, demoMode, setDashboard });
+  } = useSyncController({ activeProfileId, demoMode, profiles, setDashboard });
 
   return (
     <AppShell

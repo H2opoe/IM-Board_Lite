@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getDashboard } from "../../dashboard/api/dashboardApi";
 import type { DashboardSetter } from "../../dashboard/hooks/useDashboardStore";
 import type { DashboardData } from "../../dashboard/model/types";
+import type { ImProfile } from "../../profiles/model/types";
 import { cancelSync, runSyncJob, watchSyncProgress } from "../api/syncApi";
 import type { SyncJobMode, SyncProgress, SyncResult } from "../model/types";
 import {
@@ -31,6 +32,7 @@ export interface SyncProgressNotice {
 interface UseSyncControllerOptions {
   activeProfileId: string;
   demoMode: boolean;
+  profiles: ImProfile[];
   setDashboard: DashboardSetter;
 }
 
@@ -70,7 +72,7 @@ function syncWarningNotices(warnings: string[]): SyncProgressNotice[] {
   }));
 }
 
-export function useSyncController({ activeProfileId, demoMode, setDashboard }: UseSyncControllerOptions) {
+export function useSyncController({ activeProfileId, demoMode, profiles, setDashboard }: UseSyncControllerOptions) {
   const [syncState, setSyncState] = useState<SyncUiState>("idle");
   const [syncMessage, setSyncMessage] = useState("");
   const [syncMessagePages, setSyncMessagePages] = useState<string[]>([]);
@@ -132,6 +134,19 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
 
   function markDashboardRefreshSettled() {
     dashboardRefreshSeq.current += 1;
+  }
+
+  function isDisabledSingleProfile(profileId: string) {
+    if (profileId === "aggregate") return false;
+    return profiles.some((profile) => profile.id === profileId && !profile.enabled);
+  }
+
+  function showDisabledProfileSyncMessage() {
+    setSyncState("idle");
+    setIsSyncCancelArmed(false);
+    setSyncProgressNotices([]);
+    setSyncMessagePages([]);
+    setSyncMessage(SYNC_RUNTIME_MESSAGES.accountSyncDisabled);
   }
 
   const setDashboardForVisibleProfile = useCallback(
@@ -260,6 +275,10 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
 
   const handleSyncButtonClick = useCallback(() => {
     if (!isCancellableSyncState(syncState)) {
+      if (isDisabledSingleProfile(activeProfileId)) {
+        showDisabledProfileSyncMessage();
+        return;
+      }
       void executeSyncJob("incremental", activeProfileId);
       return;
     }
@@ -277,11 +296,15 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
       setSyncMessagePages([message]);
       setSyncMessage(message);
     });
-  }, [activeProfileId, executeSyncJob, isSyncCancelArmed, syncState]);
+  }, [activeProfileId, executeSyncJob, isSyncCancelArmed, profiles, syncState]);
 
   const runMaintenanceAction = useCallback(
     async (action: SyncMaintenanceAction, targetProfileId = activeProfileId) => {
       const mode: SyncJobMode = action === "retry-analysis" ? "retry_analysis" : "full_resync";
+      if (isDisabledSingleProfile(targetProfileId)) {
+        showDisabledProfileSyncMessage();
+        return;
+      }
       if (!syncInFlight.current) {
         await executeSyncJob(mode, targetProfileId);
         return;
@@ -312,7 +335,7 @@ export function useSyncController({ activeProfileId, demoMode, setDashboard }: U
         setSyncMessage(message);
       }
     },
-    [activeProfileId, executeSyncJob]
+    [activeProfileId, executeSyncJob, profiles]
   );
 
   useEffect(() => {

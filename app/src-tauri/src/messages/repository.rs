@@ -8,6 +8,8 @@ use crate::messages::normalizer::DailyMessage;
 use crate::storage::models::ImProfile;
 use crate::storage::AppState;
 
+const PROFILE_SYNC_DISABLED_MESSAGE: &str = "该账号未启用同步，可到平台管理页开启。";
+
 pub(crate) fn reset_ai_generated_cache(
     state: &State<'_, AppState>,
     day: &daily_cache::DashboardDay,
@@ -322,12 +324,16 @@ pub(crate) fn resolve_target_profiles(
             profiles.push(row?);
         }
     } else {
-        profiles.push(conn.query_row(
+        let profile = conn.query_row(
             "select id, platform, label, enabled, config_json, status, sort_order, created_at, updated_at
              from profiles where id = ?1",
             params![profile_id],
             map_profile,
-        )?);
+        )?;
+        if !profile.enabled {
+            anyhow::bail!(PROFILE_SYNC_DISABLED_MESSAGE);
+        }
+        profiles.push(profile);
     }
 
     Ok(profiles)
