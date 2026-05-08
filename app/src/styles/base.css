@@ -50,10 +50,6 @@
   text-rendering: optimizeLegibility;
 }
 
-:root[data-platform="macos"] {
-  --im-font-sans: "PingFang SC", "PingFang TC", "Hiragino Sans GB", sans-serif;
-}
-
 * {
   box-sizing: border-box;
 }

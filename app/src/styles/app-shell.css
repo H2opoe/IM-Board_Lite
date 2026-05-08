@@ -112,7 +112,9 @@
   align-content: start;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding-top: 2px;
   padding-right: 2px;
+  padding-bottom: 2px;
   scrollbar-gutter: stable;
 }
 

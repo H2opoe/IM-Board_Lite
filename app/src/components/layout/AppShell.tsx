@@ -6,7 +6,7 @@ import type { ActionItem } from "../../features/dashboard/model/types";
 import type { ImProfile } from "../../features/profiles/model/types";
 import { AppIcon } from "../shared/AppIcon";
 import { PlatformIcon } from "../shared/PlatformIcon";
-import { platformLabel } from "../../constants/platforms";
+import { PROFILE_STATUS_LABELS, platformLabel } from "../../constants/platforms";
 import { formatRelativeDateTime } from "../../utils/dates";
 import { profileRemark } from "../../utils/profiles";
 
@@ -131,12 +131,13 @@ export function AppShell({
         <nav className="profile-list">
           {profiles.map((profile) => {
             const subtitle = profileSubtitle(profile);
+            const statusLabel = PROFILE_STATUS_LABELS[profile.status] ?? profile.status;
             return (
               <button
                 key={profile.id}
                 className={activeView === "dashboard" && activeProfileId === profile.id ? "nav-item active" : "nav-item"}
                 onClick={() => onSelectProfile(profile.id)}
-                title={`${platformLabel(profile.platform)}${subtitle ? `·${subtitle}` : ""}·${profile.status}`}
+                title={`${platformLabel(profile.platform)}${subtitle ? `·${subtitle}` : ""}·${statusLabel}`}
               >
                 <span className="platform-nav-icon">
                   <PlatformIcon platform={profile.platform} className="platform-icon-sm" />

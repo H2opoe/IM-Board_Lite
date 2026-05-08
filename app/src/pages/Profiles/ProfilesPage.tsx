@@ -288,6 +288,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
 
   function renderModalFormMessage() {
     if (!formMessage) return null;
+    const messageElement = formMessage.includes("\n") ? "pre" : "span";
     return (
       <FloatingNoticeStack scope="modal">
         <FloatingNotice
@@ -300,6 +301,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
             text={formMessage}
             className="modal-form-message-content"
             controlsClassName="modal-form-message-pager"
+            element={messageElement}
             maxLines={4}
             compactCopy
           />
