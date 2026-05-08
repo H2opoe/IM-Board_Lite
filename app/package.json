@@ -1,7 +1,7 @@
 {
   "name": "im-board",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.1.2-lite",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
