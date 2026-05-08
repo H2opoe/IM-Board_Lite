@@ -1,9 +1,12 @@
 import { getDingtalkIdentity, getOfficialCliAccountIdentity } from "../../../api/profileReadApi";
 import type { AccountIdentity, ImProfile, Platform } from "./types";
 
-type SupportedIdentityPlatform = Extract<Platform, "wecom" | "feishu" | "dingtalk">;
+type SupportedIdentityPlatform = Extract<Platform, "wechat" | "wecom" | "feishu" | "dingtalk">;
 
 export async function readBoundAccountIdentity(profile: ImProfile): Promise<AccountIdentity | null> {
+  if (profile.platform === "wechat") {
+    return readWechatAccountIdentity(profile);
+  }
   if (profile.platform === "dingtalk") {
     const identity = await getDingtalkIdentity(profile);
     return {
@@ -73,6 +76,20 @@ function accountIdentityFromProfile(profile: ImProfile): AccountIdentity | null 
     tenantName: stringField(record, "tenantName") || stringField(record, "orgName"),
     userId,
     userName: stringField(record, "userName")
+  };
+}
+
+function readWechatAccountIdentity(profile: ImProfile): AccountIdentity | null {
+  const dbDir = stringField(profile.configJson, "dbDir");
+  const profileDir = stringField(profile.configJson, "profileDir");
+  const userId = dbDir || profileDir || profile.id.trim();
+  if (!userId) return null;
+  return {
+    platform: "wechat",
+    tenantId: "",
+    tenantName: "微信",
+    userId,
+    userName: stringField(profile.configJson, "remark") || profile.label
   };
 }
 
