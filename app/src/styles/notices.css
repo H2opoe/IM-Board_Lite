@@ -95,6 +95,7 @@
   padding: 10px 10px 10px 12px;
   background: rgba(47, 111, 104, 0.92);
   color: #2f6f68;
+  font-family: var(--im-font-sans);
   box-shadow: var(--im-shadow-soft, 0 16px 42px rgba(26, 32, 31, 0.16));
   backdrop-filter: blur(14px);
   pointer-events: auto;
