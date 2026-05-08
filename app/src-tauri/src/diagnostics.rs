@@ -192,7 +192,10 @@ fn bridge_error_category(code: &str, detail: &str) -> &'static str {
     {
         return "runtime_incomplete";
     }
-    if code.contains("NOT_AUTHENTICATED") || code.contains("KEYS_EMPTY") {
+    if code.contains("NOT_AUTHENTICATED")
+        || code.contains("NOT_LOGGED_IN")
+        || code.contains("KEYS_EMPTY")
+    {
         return "auth";
     }
     if code.contains("PERMISSION") || code.contains("UNSUPPORTED") {
@@ -224,6 +227,7 @@ fn bridge_user_message(platform: &str, code: &str, category: &str) -> String {
                 .to_owned()
         }
         "WECHAT_KEYS_EMPTY" => "微信当前未登录，请先在微信窗口完成登录后重试。".to_owned(),
+        "WECHAT_NOT_LOGGED_IN" => "微信读取不到消息，请确认电脑微信是否已登录后重试。".to_owned(),
         "WECHAT_RESTART_REQUIRED" => {
             "微信需要重启后才能继续绑定，请重新打开微信并登录后重试。".to_owned()
         }
@@ -515,6 +519,18 @@ mod tests {
         assert_eq!(
             bridge_user_message("wechat", "WECHAT_DECRYPT_FAILED", "runtime_incomplete"),
             "微信CLI运行时不完整或版本不匹配，请重新准备CLI后再同步。"
+        );
+    }
+
+    #[test]
+    fn classifies_wechat_not_logged_in_as_auth() {
+        assert_eq!(
+            bridge_error_category("WECHAT_NOT_LOGGED_IN", "微信未登录"),
+            "auth"
+        );
+        assert_eq!(
+            bridge_user_message("wechat", "WECHAT_NOT_LOGGED_IN", "auth"),
+            "微信读取不到消息，请确认电脑微信是否已登录后重试。"
         );
     }
 

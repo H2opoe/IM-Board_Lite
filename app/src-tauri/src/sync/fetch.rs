@@ -181,6 +181,22 @@ fn profile_sync_failure_message(profile: &ImProfile, error: &str) -> String {
     )
 }
 
+fn wechat_read_not_logged_in_message() -> &'static str {
+    "微信读取不到消息，请确认电脑微信是否已登录后重试。"
+}
+
+fn is_wechat_empty_session_sync(profile: &ImProfile, session_count: usize) -> bool {
+    profile.platform == "wechat" && session_count == 0
+}
+
+fn is_wechat_zero_message_sync(
+    profile: &ImProfile,
+    fetched_messages: usize,
+    inserted_messages: i64,
+) -> bool {
+    profile.platform == "wechat" && fetched_messages == 0 && inserted_messages == 0
+}
+
 async fn sync_profile_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -267,6 +283,9 @@ async fn sync_profile_messages(
     warnings.extend(sessions.warnings);
     if !sessions.ok {
         if let Some(error) = sessions.error {
+            if is_wechat_not_logged_in_error(&profile, &error.code) {
+                return Err(wechat_read_not_logged_in_message().to_owned());
+            }
             warnings.push(format!("{}：{}", profile.label, error.message));
         }
         emit_profile_sync_done(app, &profile, inserted_messages);
@@ -279,6 +298,9 @@ async fn sync_profile_messages(
     let mut all_sessions = contact_sessions;
     all_sessions.extend(value_array(&sessions.data).into_iter().cloned());
     let all_sessions = dedupe_sessions(all_sessions);
+    if is_wechat_empty_session_sync(&profile, all_sessions.len()) {
+        return Err(wechat_read_not_logged_in_message().to_owned());
+    }
     if all_sessions.is_empty() {
         if let Some(warning) = (connector.empty_session_warning)(&profile) {
             warnings.push(warning);
@@ -305,7 +327,7 @@ async fn sync_profile_messages(
         total,
     );
 
-    let (_, profile_inserted_messages) = fetch_recent_session_messages(
+    let (profile_fetched_messages, profile_inserted_messages) = fetch_recent_session_messages(
         app,
         state,
         &profile,
@@ -319,6 +341,13 @@ async fn sync_profile_messages(
         &mut warnings,
     )
     .await?;
+    if is_wechat_zero_message_sync(
+        &profile,
+        profile_fetched_messages,
+        profile_inserted_messages,
+    ) {
+        return Err(wechat_read_not_logged_in_message().to_owned());
+    }
     inserted_messages += profile_inserted_messages;
     emit_profile_sync_done(app, &profile, inserted_messages);
 
@@ -485,5 +514,72 @@ mod tests {
             profile_sync_failure_message(&profile, "Bridge进程执行失败"),
             "【微信 · 工作号】同步失败：Bridge进程执行失败"
         );
+    }
+
+    #[test]
+    fn profile_sync_failure_message_guides_wechat_login() {
+        let profile = ImProfile {
+            id: "wechat-1".to_owned(),
+            platform: "wechat".to_owned(),
+            label: "微信账号".to_owned(),
+            enabled: true,
+            config_json: json!({ "remark": "工作号" }),
+            status: "active".to_owned(),
+            sort_order: 0,
+            created_at: "2026-05-07T00:00:00+08:00".to_owned(),
+            updated_at: "2026-05-07T00:00:00+08:00".to_owned(),
+        };
+
+        assert_eq!(
+            profile_sync_failure_message(&profile, wechat_read_not_logged_in_message()),
+            "【微信 · 工作号】同步失败：微信读取不到消息，请确认电脑微信是否已登录后重试。"
+        );
+    }
+
+    #[test]
+    fn empty_wechat_sessions_require_login_check() {
+        let wechat = ImProfile {
+            id: "wechat-1".to_owned(),
+            platform: "wechat".to_owned(),
+            label: "微信账号".to_owned(),
+            enabled: true,
+            config_json: json!({ "remark": "工作号" }),
+            status: "active".to_owned(),
+            sort_order: 0,
+            created_at: "2026-05-07T00:00:00+08:00".to_owned(),
+            updated_at: "2026-05-07T00:00:00+08:00".to_owned(),
+        };
+        let feishu = ImProfile {
+            platform: "feishu".to_owned(),
+            ..wechat.clone()
+        };
+
+        assert!(is_wechat_empty_session_sync(&wechat, 0));
+        assert!(!is_wechat_empty_session_sync(&wechat, 1));
+        assert!(!is_wechat_empty_session_sync(&feishu, 0));
+    }
+
+    #[test]
+    fn zero_wechat_messages_require_login_check() {
+        let wechat = ImProfile {
+            id: "wechat-1".to_owned(),
+            platform: "wechat".to_owned(),
+            label: "微信账号".to_owned(),
+            enabled: true,
+            config_json: json!({ "remark": "工作号" }),
+            status: "active".to_owned(),
+            sort_order: 0,
+            created_at: "2026-05-07T00:00:00+08:00".to_owned(),
+            updated_at: "2026-05-07T00:00:00+08:00".to_owned(),
+        };
+        let feishu = ImProfile {
+            platform: "feishu".to_owned(),
+            ..wechat.clone()
+        };
+
+        assert!(is_wechat_zero_message_sync(&wechat, 0, 0));
+        assert!(!is_wechat_zero_message_sync(&wechat, 1, 0));
+        assert!(!is_wechat_zero_message_sync(&wechat, 0, 1));
+        assert!(!is_wechat_zero_message_sync(&feishu, 0, 0));
     }
 }
