@@ -26,6 +26,7 @@ import {
 const CLEAR_MODEL_CONFIRM_TIMEOUT_MS = 3_000;
 const CLEAR_MODEL_DONE_TIMEOUT_MS = 1_800;
 const TEST_CONNECTION_NOTICE_ID = "ai-settings-test-connection";
+const LOCAL_MODEL_DOWNLOAD_CANCELLED_NOTICE_ID = "ai-settings-local-model-download-cancelled";
 
 let cachedConfigDraft: AiConfig | null = null;
 let cachedHasUnsavedConfig = false;
@@ -113,6 +114,11 @@ export function useAiSettingsController() {
       clearModelConfirmNoticeId.current = null;
     }
   }, []);
+
+  const notifyLocalModelDownloadCancelled = useCallback(() => {
+    // 取消下载会同时收到命令返回和后台进度事件，统一复用同一个提示，避免重复弹出相同文案。
+    setNotice(LOCAL_MODEL_DOWNLOAD_CANCELLED_NOTICE_ID, AI_SETTINGS_MESSAGES.downloadCancelled, "success");
+  }, [setNotice]);
 
   const updateConfigDraft = useCallback((nextConfig: AiConfig) => {
     hasUnsavedConfigRef.current = true;
@@ -206,14 +212,14 @@ export function useAiSettingsController() {
         window.localStorage.removeItem(localDeepseekEnablePendingKey);
       } else if (progress.status === "cancelled") {
         setStatus("idle");
-        pushNotice(AI_SETTINGS_MESSAGES.downloadCancelled, "success");
+        notifyLocalModelDownloadCancelled();
         window.localStorage.removeItem(localDeepseekEnablePendingKey);
       }
     }).then((cleanup) => {
       unlisten = cleanup;
     });
     return () => unlisten?.();
-  }, [completeLocalDeepseekEnable, pushNotice]);
+  }, [completeLocalDeepseekEnable, notifyLocalModelDownloadCancelled, pushNotice]);
 
   useEffect(() => {
     return () => {
@@ -323,7 +329,7 @@ export function useAiSettingsController() {
       setDownloadProgress((progress) => (progress ? { ...progress, status: "cancelled" } : null));
       window.localStorage.removeItem(localDeepseekEnablePendingKey);
       setStatus("idle");
-      pushNotice(AI_SETTINGS_MESSAGES.downloadCancelled, "success");
+      notifyLocalModelDownloadCancelled();
     } catch (error) {
       setStatus("error");
       pushNotice(userErrorMessage(error, AI_SETTINGS_MESSAGES.cancelDownloadFailed), "error");

@@ -19,10 +19,11 @@ pub(super) fn resolve_bridge_executable(resource_dir: &Path, request: &BridgeReq
     }
     let platform = request.platform.as_str();
     let file_name = match platform {
-        "wecom" => "wecom-bridge",
-        "feishu" => "feishu-bridge",
-        "dingtalk" => "dingtalk-bridge",
-        _ => "bridge_main",
+        "wechat" => "wechat-cli.cmd",
+        "wecom" => "wecom-bridge.exe",
+        "feishu" => "feishu-bridge.exe",
+        "dingtalk" => "dingtalk-bridge.exe",
+        _ => "bridge.exe",
     };
     if let Ok(root) = std::env::var("IM_BOARD_BRIDGE_ROOT") {
         let configured = PathBuf::from(root);
@@ -100,7 +101,7 @@ pub(super) fn resolve_official_cli_for_runtime(
         .and_then(|profile| profile.config_json.get("cliPath"))
         .and_then(|value| value.as_str())
         .filter(|value| !value.trim().is_empty());
-    // 官方CLI优先走应用后台热更新目录；用户配置路径只作为兜底，避免把开发机上的 node/npm 依赖带入打包版运行边界。
+    // 官方 CLI 优先走应用后台热更新目录；用户配置路径只作为兜底，避免把开发机上的 node/npm 依赖带入打包版运行边界。
     resolve_hot_updated_official_cli(resource_dir, platform, package, bin).or_else(|| {
         configured
             .and_then(resolve_existing_command)
@@ -139,47 +140,46 @@ fn official_cli_candidates(root: &Path, platform: &str, package: &str, bin: &str
     let package_root = root.join(platform).join("node_modules");
     let package_dir = package.split('/').collect::<PathBuf>();
     let mut candidates = Vec::new();
-    let npm_arch = current_npm_arch();
     match platform {
         "wecom" => candidates.push(
             package_root
-                .join(format!("@wecom/cli-darwin-{npm_arch}"))
+                .join("@wecom")
+                .join("cli-win32-x64")
                 .join("bin")
-                .join("wecom-cli"),
+                .join("wecom-cli.exe"),
         ),
         "feishu" => {
             candidates.push(
                 package_root
                     .join(&package_dir)
                     .join("bin")
-                    .join(format!("lark-cli-darwin-{npm_arch}")),
+                    .join("lark-cli-windows-x64.exe"),
             );
-            candidates.push(package_root.join(&package_dir).join("bin").join("lark-cli"));
+            candidates.push(
+                package_root
+                    .join(&package_dir)
+                    .join("bin")
+                    .join("lark-cli.exe"),
+            );
         }
         "dingtalk" => {
             candidates.push(
                 package_root
                     .join(&package_dir)
                     .join("vendor")
-                    .join(format!("dws-darwin-{npm_arch}")),
+                    .join("dws-windows-x64.exe"),
             );
-            candidates.push(package_root.join(&package_dir).join("vendor").join("dws"));
-            candidates.push(package_root.join(&package_dir).join("bin").join("dws.js"));
+            candidates.push(
+                package_root
+                    .join(&package_dir)
+                    .join("vendor")
+                    .join("dws.exe"),
+            );
         }
         _ => {}
     }
-    candidates.push(package_root.join(".bin").join(bin));
+    candidates.push(package_root.join(".bin").join(format!("{bin}.exe")));
     candidates
-}
-
-fn current_npm_arch() -> &'static str {
-    if cfg!(target_arch = "aarch64") {
-        "arm64"
-    } else if cfg!(target_arch = "x86_64") {
-        "x64"
-    } else {
-        std::env::consts::ARCH
-    }
 }
 
 fn resolve_existing_command(command: &str) -> Option<PathBuf> {
@@ -188,7 +188,11 @@ fn resolve_existing_command(command: &str) -> Option<PathBuf> {
         return expanded.exists().then_some(expanded);
     }
     let path = std::env::var_os("PATH")?;
-    let extensions: &[&str] = &[""];
+    let extensions: &[&str] = if Path::new(command).extension().is_none() {
+        &["", ".exe", ".cmd", ".bat"]
+    } else {
+        &[""]
+    };
     std::env::split_paths(&path).find_map(|entry| {
         extensions
             .iter()
@@ -204,6 +208,9 @@ pub(super) fn is_dependency_free_cli(path: &Path) -> bool {
         .unwrap_or_default()
         .to_ascii_lowercase();
     if matches!(extension.as_str(), "js" | "cmd" | "bat") {
+        return false;
+    }
+    if extension != "exe" {
         return false;
     }
     if let Ok(bytes) = std::fs::read(path) {

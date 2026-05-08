@@ -30,13 +30,12 @@
 }
 
 .floating-notice-layer.modal {
-  position: absolute;
-  top: 72px;
-  left: 18px;
-  right: 18px;
+  position: sticky;
+  top: 46px;
   z-index: 12;
-  height: auto;
+  height: 0;
   padding: 0;
+  overflow: visible;
 }
 
 .floating-notice-layer.modal .floating-notice {
@@ -96,6 +95,7 @@
   padding: 10px 10px 10px 12px;
   background: rgba(47, 111, 104, 0.92);
   color: #2f6f68;
+  font-family: var(--im-font-sans);
   box-shadow: var(--im-shadow-soft, 0 16px 42px rgba(26, 32, 31, 0.16));
   backdrop-filter: blur(14px);
   pointer-events: auto;
@@ -143,7 +143,8 @@
 }
 
 .paged-text-viewport pre,
-.paged-text-viewport code {
+.paged-text-viewport code,
+.paged-text-viewport span {
   display: block;
   margin: 0;
   white-space: pre-wrap;
@@ -266,6 +267,10 @@
   color: currentColor;
 }
 
+.floating-notice-message-pager {
+  color: currentColor;
+}
+
 .modal-form-message-content pre {
   margin: 0;
   white-space: pre-wrap;
@@ -278,4 +283,3 @@
 .modal-form-message-pager {
   color: currentColor;
 }
-

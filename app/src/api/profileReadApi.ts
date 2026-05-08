@@ -63,11 +63,12 @@ export async function verifyOfficialCliAuthorization(profile: ImProfile): Promis
 }
 
 export async function getOfficialCliAccountIdentity(profile: ImProfile): Promise<AccountIdentity | null> {
-  if (profile.platform !== "feishu") {
+  if (profile.platform !== "wecom" && profile.platform !== "feishu") {
     return null;
   }
   if (!isTauri) return requireTauri("读取账号授权身份");
-  const envelope = await runBridgeCommand(profile, "auth-status", {});
+  const envelope = await runBridgeCommand(profile, profile.platform === "wecom" ? "account-identity" : "auth-status", {});
+  if (profile.platform === "wecom") return parseWecomIdentity(envelope.data);
   return parseFeishuIdentity(envelope.data);
 }
 
@@ -126,7 +127,19 @@ function parseDingtalkIdentity(data: unknown): DingtalkIdentity {
 function parseFeishuIdentity(data: unknown): AccountIdentity | null {
   const records = flattenRecords(data);
   for (const record of records) {
-    const userId = recordString(record, ["userId", "user_id", "openId", "open_id", "unionId", "union_id", "employeeId", "employee_id", "email"]);
+    const userId = recordString(record, [
+      "userId",
+      "user_id",
+      "userOpenId",
+      "user_open_id",
+      "openId",
+      "open_id",
+      "unionId",
+      "union_id",
+      "employeeId",
+      "employee_id",
+      "email"
+    ]);
     if (!userId) continue;
     return {
       platform: "feishu",
@@ -137,6 +150,19 @@ function parseFeishuIdentity(data: unknown): AccountIdentity | null {
     };
   }
   return null;
+}
+
+function parseWecomIdentity(data: unknown): AccountIdentity | null {
+  const record = recordObject(data);
+  const botId = recordString(record, ["botId", "bot_id", "id"]);
+  if (!botId) return null;
+  return {
+    platform: "wecom",
+    tenantId: "",
+    tenantName: "企业微信机器人",
+    userId: botId,
+    userName: recordString(record, ["name", "userName", "user_name"]) || "机器人"
+  };
 }
 
 function flattenRecords(value: unknown): Array<Record<string, unknown>> {

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "beforeDevCommand": "node_modules\\.bin\\vite.cmd --host 127.0.0.1",
+    "beforeBuildCommand": "node_modules\\.bin\\tsc.cmd && node_modules\\.bin\\vite.cmd build"
+  },
+  "bundle": {
+    "icon": [
+      "icons/icon-dark.ico"
+    ],
+    "resources": [
+      "../runtime/llama.cpp/*/win-cpu-x64/**/*",
+      "../runtime/python/*/win-x64/**/*",
+      "icons/icon-light.png",
+      "icons/icon-dark.png"
+    ]
+  }
+}

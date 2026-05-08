@@ -80,6 +80,8 @@ fn start_ai_analysis_run(
     .ok()?;
     Some(AiRunTracker {
         id: run_id,
+        profile_id: profile_id.to_owned(),
+        request_kind: request_kind.to_owned(),
         started_at: Instant::now(),
         diagnostic,
     })
@@ -96,6 +98,8 @@ fn finish_ai_analysis_run(
         return;
     };
     let duration_ms = run.started_at.elapsed().as_millis();
+    let error_text = error.map(ToOwned::to_owned);
+    let diagnostic_for_event = diagnostic.clone();
     let token_usage_json = diagnostic
         .as_ref()
         .and_then(|value| value.get("usage").cloned())
@@ -125,6 +129,17 @@ fn finish_ai_analysis_run(
                 run.id
             ],
         );
+        if status == "failed" {
+            if let Some(error_text) = error_text {
+                let event = crate::diagnostics::ai_error_event(
+                    Some(run.profile_id),
+                    run.request_kind,
+                    &error_text,
+                    diagnostic_for_event,
+                );
+                let _ = crate::diagnostics::record_error_event_conn(&conn, event);
+            }
+        }
     }
 }
 

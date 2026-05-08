@@ -1,11 +1,12 @@
 import { ChevronRight, KeyRound, LayoutDashboard, Link2, Monitor, Moon, Settings, SunMedium, X } from "lucide-react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useRef, useState } from "react";
 import type { ThemeChoice, ThemeMode } from "../../hooks/useThemeController";
 import type { ActionItem } from "../../features/dashboard/model/types";
 import type { ImProfile } from "../../features/profiles/model/types";
 import { AppIcon } from "../shared/AppIcon";
 import { PlatformIcon } from "../shared/PlatformIcon";
-import { platformLabel } from "../../constants/platforms";
+import { PROFILE_STATUS_LABELS, platformLabel } from "../../constants/platforms";
 import { formatRelativeDateTime } from "../../utils/dates";
 import { profileRemark } from "../../utils/profiles";
 
@@ -32,6 +33,11 @@ function profileSubtitle(profile: ImProfile) {
   const label = platformLabel(profile.platform);
   if (remark) return remark;
   return profile.label !== label ? profile.label : "";
+}
+
+function startWindowDrag(event: React.MouseEvent<HTMLElement>) {
+  if (event.button !== 0) return;
+  void getCurrentWindow().startDragging().catch(() => {});
 }
 
 export function AppShell({
@@ -98,8 +104,9 @@ export function AppShell({
 
   return (
     <div className={`app-shell theme-${effectiveThemeMode} theme-choice-${themeChoice}${isTauri ? " tauri-window" : ""}`}>
+      {isTauri && <div className="window-drag-region" data-tauri-drag-region onMouseDown={startWindowDrag} />}
       <aside className="sidebar">
-        <div className="brand">
+        <div className="brand" data-tauri-drag-region={isTauri ? "" : undefined} onMouseDown={isTauri ? startWindowDrag : undefined}>
           <AppIcon className="brand-mark" variant={effectiveThemeMode} />
           <div>
             <strong className="brand-title">
@@ -124,12 +131,13 @@ export function AppShell({
         <nav className="profile-list">
           {profiles.map((profile) => {
             const subtitle = profileSubtitle(profile);
+            const statusLabel = PROFILE_STATUS_LABELS[profile.status] ?? profile.status;
             return (
               <button
                 key={profile.id}
                 className={activeView === "dashboard" && activeProfileId === profile.id ? "nav-item active" : "nav-item"}
                 onClick={() => onSelectProfile(profile.id)}
-                title={`${platformLabel(profile.platform)}${subtitle ? `·${subtitle}` : ""}·${profile.status}`}
+                title={`${platformLabel(profile.platform)}${subtitle ? `·${subtitle}` : ""}·${statusLabel}`}
               >
                 <span className="platform-nav-icon">
                   <PlatformIcon platform={profile.platform} className="platform-icon-sm" />

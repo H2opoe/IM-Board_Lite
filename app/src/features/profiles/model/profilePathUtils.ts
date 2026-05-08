@@ -1,3 +1,4 @@
+import type { PlatformDeployment } from "../../../api/bridgeApi";
 import { PLATFORM_LABELS } from "../../../constants/platforms";
 import { profileRemark } from "../../../utils/profiles";
 import type { ImProfile } from "./types";
@@ -7,9 +8,10 @@ export function joinNativePath(baseDir: string, leaf: string): string {
   return `${baseDir.replace(/[\\/]+$/, "")}${separator}${leaf}`;
 }
 
-export function commandLineToolName(deployment?: { command: string } | null): string {
-  const command = deployment?.command.trimStart() ?? "";
-  return command.startsWith("$env:") || command.startsWith("New-Item") ? "Windows PowerShell" : "macOS终端";
+export function commandLineToolName(deployment?: PlatformDeployment | null): string {
+  const commandShell = deployment?.commandShell?.trim();
+  if (commandShell) return commandShell;
+  return "macOS终端";
 }
 
 export function formatCliVersion(version: string): string {

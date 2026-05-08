@@ -214,6 +214,26 @@
   background: rgba(47, 111, 104, 0.08);
 }
 
+.profile-row.profile-row-updated {
+  border-color: rgba(42, 157, 143, 0.7);
+  background: rgba(42, 157, 143, 0.14);
+  box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.12);
+  animation: profile-row-updated-pulse 1.25s ease-in-out 3;
+}
+
+@keyframes profile-row-updated-pulse {
+  0%,
+  100% {
+    border-color: rgba(42, 157, 143, 0.7);
+    box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.12);
+  }
+
+  50% {
+    border-color: rgba(42, 157, 143, 0.95);
+    box-shadow: 0 0 0 6px rgba(42, 157, 143, 0.18);
+  }
+}
+
 .profile-select,
 .profile-batch-select-all {
   display: inline-flex;
@@ -283,6 +303,7 @@
   position: fixed;
   inset: 0;
   z-index: 2400;
+  background: transparent;
   pointer-events: none;
 }
 
@@ -331,7 +352,7 @@
     #2f6f68;
 }
 
-.theme-dark .profile-row.profile-drag-floating {
+.profile-drag-layer-dark .profile-row.profile-drag-floating {
   border-color: rgba(125, 224, 173, 0.38);
   background:
     linear-gradient(180deg, rgba(31, 45, 48, 0.98), rgba(16, 26, 28, 0.96)),
@@ -339,7 +360,7 @@
   box-shadow: 0 24px 52px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(125, 224, 173, 0.08);
 }
 
-.theme-dark .profile-drag-floating .profile-checkbox-preview {
+.profile-drag-layer-dark .profile-drag-floating .profile-checkbox-preview {
   border-color: rgba(125, 224, 173, 0.32);
   background: rgba(255, 255, 255, 0.08);
 }

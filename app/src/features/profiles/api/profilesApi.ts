@@ -1,15 +1,21 @@
 import { invoke } from "@tauri-apps/api/core";
 import { platformLabel } from "../../../constants/platforms";
 import { APP_CACHE_ROOT, APP_SUPPORT_ROOT } from "../../../constants/storage";
+import { demoProfiles } from "../../../demo/demoData";
+import { isDemoMode } from "../../../api/demoMode";
 import { isTauri, requireTauri } from "../../../api/tauri";
 import type { ImProfile, Platform } from "../model/types";
 
 export async function listProfiles(): Promise<ImProfile[]> {
+  if (isDemoMode()) return [...demoProfiles].sort((left, right) => left.sortOrder - right.sortOrder);
   if (isTauri) return invoke("list_profiles");
   return requireTauri("读取账号配置");
 }
 
 export async function upsertProfile(profile: ImProfile): Promise<ImProfile> {
+  if (profile.platform === "wechat" && profile.enabled) {
+    throw new Error("Lite版暂不支持微信账号同步");
+  }
   if (isTauri) return invoke("upsert_profile", { profile });
   return requireTauri("保存账号配置");
 }

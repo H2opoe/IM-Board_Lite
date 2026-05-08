@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use super::{current_npm_arch, platform_label, PlatformCliSpec, OFFICIAL_CLIS};
+use super::{platform_label, PlatformCliSpec, OFFICIAL_CLIS};
 
 pub fn cli_spec(platform: &str) -> Option<&'static PlatformCliSpec> {
     OFFICIAL_CLIS.iter().find(|spec| spec.platform == platform)
@@ -35,13 +35,13 @@ fn official_cli_roots(resource_dir: &Path, app_dir: &Path) -> Vec<PathBuf> {
 fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> {
     let package_root = root.join(spec.platform).join("node_modules");
     let mut candidates = Vec::new();
-    let npm_arch = current_npm_arch();
     if spec.platform == "wecom" {
         candidates.push(
             package_root
-                .join(format!("@wecom/cli-darwin-{npm_arch}"))
+                .join("@wecom")
+                .join("cli-win32-x64")
                 .join("bin")
-                .join("wecom-cli"),
+                .join("wecom-cli.exe"),
         );
     }
     if spec.platform == "feishu" {
@@ -49,13 +49,13 @@ fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> 
             package_root
                 .join(package_dir(spec.package))
                 .join("bin")
-                .join(format!("lark-cli-darwin-{npm_arch}")),
+                .join("lark-cli-windows-x64.exe"),
         );
         candidates.push(
             package_root
                 .join(package_dir(spec.package))
                 .join("bin")
-                .join("lark-cli"),
+                .join("lark-cli.exe"),
         );
         candidates.push(
             package_root
@@ -69,13 +69,13 @@ fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> 
             package_root
                 .join(package_dir(spec.package))
                 .join("vendor")
-                .join(format!("dws-darwin-{npm_arch}")),
+                .join("dws-windows-x64.exe"),
         );
         candidates.push(
             package_root
                 .join(package_dir(spec.package))
                 .join("vendor")
-                .join("dws"),
+                .join("dws.exe"),
         );
         candidates.push(
             package_root
@@ -84,6 +84,8 @@ fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> 
                 .join("dws.js"),
         );
     }
+    candidates.push(package_root.join(".bin").join(format!("{}.cmd", spec.bin)));
+    candidates.push(package_root.join(".bin").join(format!("{}.exe", spec.bin)));
     candidates.push(package_root.join(".bin").join(spec.bin));
     candidates
 }
@@ -97,6 +99,9 @@ fn is_dependency_free_cli(path: &Path) -> bool {
     if matches!(extension.as_str(), "js" | "cmd" | "bat") {
         return false;
     }
+    if extension != "exe" {
+        return false;
+    }
     if let Ok(bytes) = std::fs::read(path) {
         let head = String::from_utf8_lossy(&bytes[..bytes.len().min(96)]).to_ascii_lowercase();
         if head.contains("/usr/bin/env node") || head.contains("node ") {
@@ -106,8 +111,7 @@ fn is_dependency_free_cli(path: &Path) -> bool {
     true
 }
 
-fn is_usable_cli_candidate(path: &Path, spec: &PlatformCliSpec) -> bool {
-    let _ = spec;
+fn is_usable_cli_candidate(path: &Path, _spec: &PlatformCliSpec) -> bool {
     is_dependency_free_cli(path)
 }
 
@@ -163,7 +167,7 @@ pub fn writable_cli_install_root(
     let install_root = app_dir.join("OfficialCli").join(spec.platform);
     std::fs::create_dir_all(&install_root).map_err(|err| {
         format!(
-            "无法创建{}官方CLI更新目录 {}：{err}",
+            "无法创建{}官方 CLI 更新目录 {}：{err}",
             platform_label(spec.platform),
             install_root.display()
         )

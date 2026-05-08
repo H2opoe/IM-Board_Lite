@@ -40,7 +40,7 @@ pub(super) async fn run_official_wecom_cli(
     ) else {
         return Ok(bridge_error(
             "WECOM_CLI_MISSING",
-            "企业微信官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
+            "官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成，或重新安装IM-Board。",
             true,
             started_at,
         ));
@@ -84,6 +84,79 @@ pub(super) async fn run_official_wecom_cli(
             started_at,
         ));
     }
+    if request.command == "account-identity" {
+        let Some(config_dir) = profile
+            .config_json
+            .get("configDir")
+            .and_then(|value| value.as_str())
+        else {
+            return Ok(bridge_error(
+                "WECOM_IDENTITY_UNAVAILABLE",
+                "未能读取企业微信机器人身份，请确认绑定命令已完成并生成有效配置。",
+                true,
+                started_at,
+            ));
+        };
+        command.env("WECOM_CLI_CONFIG_DIR", expand_home(config_dir));
+        command
+            .arg("auth")
+            .arg("show")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        let child = match command.spawn() {
+            Ok(child) => child,
+            Err(err) => {
+                return Ok(bridge_error(
+                    "WECOM_CLI_MISSING",
+                    &format!("无法启动企业微信官方CLI：{err}"),
+                    true,
+                    started_at,
+                ));
+            }
+        };
+        let child_id = child.id();
+        register_pid(active_pids, child_id);
+        let output = child.wait_with_output().await?;
+        unregister_pid(active_pids, child_id);
+        if !output.status.success() {
+            return Ok(bridge_error(
+                "WECOM_IDENTITY_UNAVAILABLE",
+                "未能读取企业微信机器人身份，请确认绑定命令已完成并生成有效配置。",
+                true,
+                started_at,
+            ));
+        }
+        let raw: serde_json::Value =
+            serde_json::from_slice(&output.stdout).unwrap_or_else(|_| serde_json::json!({}));
+        let bot_id = raw
+            .get("id")
+            .and_then(|value| value.as_str())
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
+        let Some(bot_id) = bot_id else {
+            return Ok(bridge_error(
+                "WECOM_IDENTITY_UNAVAILABLE",
+                "未能读取企业微信机器人身份，请确认绑定命令已完成并生成有效配置。",
+                true,
+                started_at,
+            ));
+        };
+        return Ok(BridgeEnvelope {
+            ok: true,
+            data: serde_json::json!({
+                "platform": "wecom",
+                "botId": bot_id,
+                "createTime": raw.get("create_time").cloned().unwrap_or(serde_json::Value::Null)
+            }),
+            warnings: Vec::new(),
+            error: None,
+            meta: serde_json::json!({
+                "platform": "wecom",
+                "source": "https://github.com/WecomTeam/wecom-cli",
+                "duration_ms": started_at.elapsed().as_millis()
+            }),
+        });
+    }
     let payload = match request.command.as_str() {
         "list-contacts" => serde_json::json!({}),
         "list-chats" => serde_json::json!({
@@ -96,7 +169,7 @@ pub(super) async fn run_official_wecom_cli(
             if chat_id.trim().is_empty() {
                 return Ok(bridge_error(
                     "MISSING_CHAT",
-                    "fetch-messages 缺少 chat 参数。",
+                    "fetch-messages缺少chat参数。",
                     true,
                     started_at,
                 ));
@@ -211,7 +284,7 @@ pub(super) async fn run_official_wecom_cli(
         let errmsg = raw
             .get("errmsg")
             .and_then(|value| value.as_str())
-            .unwrap_or("企业微信 API 返回错误。");
+            .unwrap_or("企业微信API返回错误。");
         let error = classify_wecom_cli_error(errmsg).unwrap_or_else(|| BridgeError {
             code: "WECOM_API_ERROR".to_owned(),
             message: errmsg.to_owned(),

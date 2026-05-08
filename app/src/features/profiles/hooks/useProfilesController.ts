@@ -4,6 +4,7 @@ import { userErrorMessage } from "../../../utils/errors";
 import { profileDisplayName } from "../../../utils/profiles";
 import { createProfileDraft, deleteProfile, upsertProfile } from "../api/profilesApi";
 import { isOfficialCliBindPlatform, type OfficialCliBindPlatform } from "../bind-flows/officialCli";
+import { isLiteUnsupportedWechatProfile } from "../model/liteWechatSync";
 import type { ImProfile, Platform } from "../model/types";
 
 interface UseProfilesControllerParams {
@@ -55,6 +56,10 @@ export function useProfilesController({
   }
 
   async function toggleProfile(profile: ImProfile) {
+    if (isLiteUnsupportedWechatProfile(profile) && !profile.enabled) {
+      setProfileNotice(PROFILE_MESSAGES.liteWechatSyncUnsupported, true);
+      return;
+    }
     await upsertProfile({
       ...profile,
       enabled: !profile.enabled,

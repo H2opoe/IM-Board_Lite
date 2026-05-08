@@ -4,6 +4,19 @@ version = "2.1.2-lite"
 description = "Local-first IM intelligent dashboard"
 authors = ["Codex"]
 edition = "2021"
+include = [
+  "build.rs",
+  "Cargo.toml",
+  "src/**",
+  "capabilities/**",
+  "tauri.conf.json",
+  "tauri.windows.conf.json",
+]
+exclude = [
+  "UNC/**",
+  "gen/**",
+  "migrations/**",
+]
 
 [lib]
 name = "im_board_lib"
@@ -31,3 +44,8 @@ tokio = { version = "1", features = ["process", "rt-multi-thread", "macros", "ti
 uuid = { version = "1", features = ["v4", "serde"] }
 zip = { version = "2", default-features = false, features = ["deflate"] }
 tauri-plugin-dialog = "2.7.1"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSImage"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData"] }

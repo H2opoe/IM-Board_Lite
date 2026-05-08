@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState } from "react";
+import { isDemoMode } from "./api/demoMode";
 import { AppShell, type AppView } from "./components/layout/AppShell";
 import { useDashboardStore } from "./features/dashboard/hooks/useDashboardStore";
 import { useProfilesStore } from "./features/profiles/hooks/useProfilesStore";
@@ -23,9 +24,11 @@ export function App() {
   const [activeProfileId, setActiveProfileId] = useState("aggregate");
   const [activeView, setActiveView] = useState<AppView>("dashboard");
   const [drawerItem, setDrawerItem] = useState<ActionItem | null>(null);
+  const demoMode = isDemoMode();
   const { profiles, refreshProfiles } = useProfilesStore();
   const { themeChoice, effectiveThemeMode, handleThemeChange } = useThemeController();
   const { dashboard, dashboardProfileId, setDashboard } = useDashboardStore(activeProfileId, activeView === "dashboard");
+  const isDashboardReady = Boolean(dashboard && dashboardProfileId === activeProfileId);
   const {
     syncState,
     syncMessage,
@@ -38,7 +41,7 @@ export function App() {
     setSyncFrequencyMinutes,
     dismissSyncMessage,
     closeSyncProgressNotice
-  } = useSyncController({ activeProfileId, setDashboard });
+  } = useSyncController({ activeProfileId, demoMode, profiles, setDashboard });
 
   return (
     <AppShell
@@ -57,8 +60,8 @@ export function App() {
       onThemeChange={handleThemeChange}
     >
       <Suspense fallback={<PageLoadingFallback />}>
-        {activeView === "dashboard" && !dashboard && <PageLoadingFallback />}
-        {activeView === "dashboard" && dashboard && dashboardProfileId === activeProfileId && (
+        {activeView === "dashboard" && !isDashboardReady && <PageLoadingFallback />}
+        {activeView === "dashboard" && isDashboardReady && dashboard && (
           <DashboardPage
             key={activeProfileId}
             data={dashboard}
@@ -69,6 +72,7 @@ export function App() {
             syncMessagePages={syncMessagePages}
             syncProgressNotices={syncProgressNotices}
             syncFrequencyMinutes={syncFrequencyMinutes}
+            isDemoMode={demoMode}
             onOpenSource={setDrawerItem}
             onDashboardChange={setDashboard}
             isSyncCancelArmed={isSyncCancelArmed}

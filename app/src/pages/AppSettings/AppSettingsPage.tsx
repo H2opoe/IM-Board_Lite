@@ -155,7 +155,7 @@ export function AppSettingsPage() {
           </header>
 
           <p className="app-settings-copy">
-            导出脱敏诊断包，便于排查同步失败、AI返回异常、账号授权和运行时问题。诊断包不会包含聊天内容、API Key等任何敏感数据。
+            导出脱敏诊断包，便于排查同步失败、AI返回异常、账号授权和运行时问题。诊断包不会包含聊天内容、API Key等敏感数据。
           </p>
 
           <div className="form-actions app-settings-actions-left">

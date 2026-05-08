@@ -20,6 +20,41 @@ fn is_node_cli_entry(path: &Path) -> bool {
         .is_some_and(|extension| extension.eq_ignore_ascii_case("js"))
 }
 
+#[cfg(windows)]
+pub(super) fn official_cli_command(path: &Path) -> Command {
+    if is_node_cli_entry(path) {
+        let mut command = Command::new("node");
+        command.arg(path);
+        hide_windows_console(&mut command);
+        return command;
+    }
+    windows_command_for_path(path)
+}
+
+#[cfg(windows)]
+fn windows_command_for_path(path: &Path) -> Command {
+    let is_batch_entry = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|extension| {
+            extension.eq_ignore_ascii_case("cmd") || extension.eq_ignore_ascii_case("bat")
+        });
+
+    if is_batch_entry {
+        // Windows 的 .cmd/.bat 需要通过 cmd.exe 执行，否则 tokio::process 不能稳定启动脚本入口。
+        let mut command = Command::new("cmd.exe");
+        command.args(["/d", "/c"]);
+        command.arg(path);
+        hide_windows_console(&mut command);
+        return command;
+    }
+
+    let mut command = Command::new(path);
+    hide_windows_console(&mut command);
+    command
+}
+
+#[cfg(not(windows))]
 pub(super) fn official_cli_command(path: &Path) -> Command {
     if is_node_cli_entry(path) {
         let mut command = Command::new("node");
@@ -27,6 +62,12 @@ pub(super) fn official_cli_command(path: &Path) -> Command {
         return command;
     }
     Command::new(path)
+}
+
+#[cfg(windows)]
+pub(super) fn hide_windows_console(command: &mut Command) {
+    // Windows GUI版同步消息时会频繁启动官方CLI；隐藏子进程控制台，避免每次拉取会话历史都弹出终端窗口。
+    command.creation_flags(CREATE_NO_WINDOW);
 }
 
 pub(super) fn apply_official_cli_env(command: &mut Command) {
@@ -52,6 +93,21 @@ fn node_path_candidates() -> Vec<PathBuf> {
         PathBuf::from("/usr/bin"),
         PathBuf::from("/bin"),
     ];
+    if cfg!(windows) {
+        for key in [
+            "ProgramFiles",
+            "ProgramFiles(x86)",
+            "LOCALAPPDATA",
+            "APPDATA",
+        ] {
+            if let Some(root) = std::env::var_os(key) {
+                let root = PathBuf::from(root);
+                candidates.push(root.join("nodejs"));
+                candidates.push(root.join("Programs").join("nodejs"));
+                candidates.push(root.join("npm"));
+            }
+        }
+    }
     if let Some(home) = dirs::home_dir() {
         collect_child_bin_dirs(
             &home.join(".nvm").join("versions").join("node"),

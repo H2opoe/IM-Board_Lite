@@ -20,6 +20,7 @@ export interface PlatformDeployment {
   cliPath: string;
   configDir: string;
   command: string;
+  commandShell?: string;
   source: string;
   currentVersion: string;
 }
@@ -101,13 +102,15 @@ function formatBridgeError(envelope: { warnings?: string[]; error?: { code?: str
   ) {
     return envelope.error.message;
   }
+  if (envelope.error?.code === "WECHAT_NOT_LOGGED_IN") {
+    return envelope.error.message || "微信读取不到消息，请确认电脑微信是否已登录后重试。";
+  }
   const label = bridgeErrorCodeLabel(envelope.error?.code);
   const message = envelope.error?.message;
   return [isBridgeErrorLabelRedundant(label, message) ? "" : label, message, ...(envelope.warnings ?? [])]
     .filter(Boolean)
     .join("\n");
 }
-
 function isBridgeErrorLabelRedundant(label?: string, message?: string) {
   if (!label || !message) return false;
   const normalizedLabel = normalizeBridgeErrorPrefix(label);
@@ -125,6 +128,7 @@ function bridgeErrorCodeLabel(code?: string) {
     BRIDGE_CRASHED: "桥接进程执行失败",
     BRIDGE_SPAWN_FAILED: "桥接进程启动失败",
     MISSING_CHAT: "缺少会话参数",
+    WECHAT_NOT_LOGGED_IN: "微信未登录",
     WECOM_PROFILE_NOT_FOUND: "缺少企业微信账号配置",
     WECOM_UNSUPPORTED_COMMAND: "企业微信命令不支持",
     WECOM_CLI_MISSING: "企业微信CLI不可用",

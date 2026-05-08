@@ -5,10 +5,18 @@ use crate::security::sanitize_log;
 use super::{BridgeEnvelope, BridgeError};
 
 pub(super) fn classify_wecom_cli_error(detail: &str) -> Option<BridgeError> {
+    let normalized = detail.to_ascii_lowercase();
+    if normalized.contains("not authenticated") || detail.contains("401") {
+        return Some(BridgeError {
+            code: "WECOM_NOT_AUTHENTICATED".to_owned(),
+            message: not_authenticated_message("企业微信"),
+            recoverable: true,
+        });
+    }
     if detail.contains("暂不支持授权机器人") && detail.contains("消息") {
         return Some(BridgeError {
             code: "WECOM_MESSAGE_PERMISSION_UNSUPPORTED".to_owned(),
-            message: "当前企业或授权机器人暂不支持企业微信「消息」权限；IM看板需要读取会话列表和聊天记录，因此无法同步企业微信消息。请在企业微信管理后台确认 API 模式智能机器人是否开放消息能力，或更换支持消息权限的企业/机器人后重新绑定。".to_owned(),
+            message: "当前企业或授权机器人暂不支持企业微信「消息」权限；IM看板需要读取会话列表和聊天记录，因此无法同步企业微信消息。请在企业微信管理后台确认API模式智能机器人是否开放消息能力，或更换支持消息权限的企业/机器人后重新绑定。".to_owned(),
             recoverable: true,
         });
     }
@@ -23,11 +31,7 @@ pub(super) fn not_authenticated_message(platform_label: &str) -> String {
 }
 
 pub(super) fn platform_command_shell_name() -> &'static str {
-    if cfg!(windows) {
-        "Windows PowerShell"
-    } else {
-        "macOS终端"
-    }
+    "Windows PowerShell"
 }
 
 pub(super) fn feishu_app_config_incomplete_message() -> String {
@@ -134,7 +138,7 @@ pub(super) fn classify_feishu_cli_error(stdout: &str, stderr: &str) -> Option<Br
     {
         return Some(BridgeError {
             code: "FEISHU_B2C_APP_UNSUPPORTED".to_owned(),
-            message: "该会话是飞书应用/机器人会话，飞书官方接口返回 231204（b2c app not support），当前CLI不能用用户身份读取这类会话历史；已跳过，不影响其他会话同步。".to_owned(),
+            message: "该会话是飞书应用/机器人会话，飞书官方接口返回231204（b2c app not support），当前CLI不能用用户身份读取这类会话历史；已跳过，不影响其他会话同步。".to_owned(),
             recoverable: true,
         });
     }
@@ -197,6 +201,7 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
         .filter(|value| !value.is_empty())
         .collect::<Vec<_>>()
         .join("\n");
+    let compact_detail = detail.split_whitespace().collect::<String>();
     let raw = serde_json::from_str::<serde_json::Value>(stdout).ok();
     let error = raw.as_ref().and_then(|value| value.get("error"));
     let reason = raw
@@ -260,8 +265,15 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
         || nested_code == "PAT_MEDIUM_RISK_NO_PERMISSION"
         || detail.contains("PAT_MEDIUM_RISK_NO_PERMISSION")
         || detail.contains("chat.message:list")
+        || detail.contains("该组织尚未开启CLI数据访问权限")
         || detail.contains("该组织尚未开启 CLI数据访问权限")
+        || compact_detail.contains("CLI数据访问权限")
         || detail.contains("TOKEN_VERIFIED_FAILED")
+        || (detail.contains("business_error")
+            && detail.contains("group-chat")
+            && (detail.contains("developerSettings")
+                || detail.contains("developersSettings")
+                || compact_detail.contains("CLI数据访问权限")))
         || (reason == "business_error"
             && category == "api"
             && server_key == "group-chat"
@@ -272,12 +284,13 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
                 || action_url.contains("developersSettings")
                 || message.contains("developerSettings")
                 || message.contains("developersSettings")
+                || detail.contains("该组织尚未开启CLI数据访问权限")
                 || detail.contains("该组织尚未开启 CLI数据访问权限")
                 || detail.contains("TOKEN_VERIFIED_FAILED")))
     {
         return Some(BridgeError {
             code: "DINGTALK_MESSAGE_PERMISSION_MISSING".to_owned(),
-            message: "钉钉当前账号或组织没有开通消息读取权限，可能缺少 chat.message:list 授权，或组织尚未开启 CLI数据访问权限。请重新授权钉钉官方CLI，或联系组织主管理员开启后再同步。".to_owned(),
+            message: "钉钉当前账号或组织没有开通消息读取权限，可能缺少chat.message:list授权，或组织尚未开启CLI数据访问权限。请重新授权钉钉官方CLI，或联系组织主管理员开启后再同步。".to_owned(),
             recoverable: true,
         });
     }

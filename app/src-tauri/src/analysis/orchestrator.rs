@@ -29,6 +29,8 @@ struct AiCallFailure {
 
 struct AiRunTracker {
     id: String,
+    profile_id: String,
+    request_kind: String,
     started_at: Instant,
     diagnostic: serde_json::Value,
 }
@@ -230,11 +232,15 @@ pub(crate) async fn analyze_pending_messages(
                                     );
                                     analysis = refined_result.analysis;
                                     warnings.push(format!(
-                                        "{}已补充 {} 条历史上下文并重新分析。",
+                                        "{}已补充{}条历史上下文并重新分析。",
                                         analysis_scope_label, history_count
                                     ));
                                 }
                                 Err(err) => {
+                                    let user_message = crate::diagnostics::classify_ai_user_message(
+                                        &err.message,
+                                        err.diagnostic.as_ref(),
+                                    );
                                     finish_ai_analysis_run(
                                         state,
                                         refine_run_id,
@@ -244,7 +250,7 @@ pub(crate) async fn analyze_pending_messages(
                                     );
                                     warnings.push(format!(
                                         "{}历史上下文重新分析失败，已保留首次AI结果：{}",
-                                        analysis_scope_label, err.message
+                                        analysis_scope_label, user_message
                                     ));
                                 }
                             }
@@ -283,7 +289,7 @@ pub(crate) async fn analyze_pending_messages(
                             {
                                 Ok(0) => {}
                                 Ok(count) => warnings.push(format!(
-                                    "{}已为 {} 个事项补读历史证据。",
+                                    "{}已为{}个事项补读历史证据。",
                                     analysis_scope_label, count
                                 )),
                                 Err(err) => warnings.push(format!(
@@ -303,7 +309,7 @@ pub(crate) async fn analyze_pending_messages(
                         }
                         ai_status = "failed".to_owned();
                         warnings.push(format!(
-                            "{}待回复和待办事项识别结果保存失败（第 {}/{} 批）：{}",
+                            "{}待回复和待办事项识别结果保存失败（第{}/{}批）：{}",
                             analysis_scope_label,
                             batch_index + 1,
                             total_batches,
@@ -313,17 +319,21 @@ pub(crate) async fn analyze_pending_messages(
                 }
             }
             Err(err) => {
+                let user_message = crate::diagnostics::classify_ai_user_message(
+                    &err.message,
+                    err.diagnostic.as_ref(),
+                );
                 finish_ai_analysis_run(state, run_id, "failed", Some(&err.message), err.diagnostic);
                 if let Ok(conn) = state.db.lock() {
                     let _ = ai::keep_analysis_pending_for_messages(&conn, day, &primary_messages);
                 }
                 ai_status = "failed".to_owned();
                 warnings.push(format!(
-                    "{}待回复和待办事项识别失败（第 {}/{} 批）：{}",
+                    "{}待回复和待办事项识别失败（第{}/{}批）：{}",
                     analysis_scope_label,
                     batch_index + 1,
                     total_batches,
-                    err.message
+                    user_message
                 ));
             }
         }
@@ -409,7 +419,7 @@ pub(crate) async fn analyze_pending_messages(
                     target_profiles,
                     "summary",
                     format!(
-                        "正在识别{}热门话题和关键词第 {}/{} 批…",
+                        "正在识别{}热门话题和关键词第{}/{}批…",
                         analysis_scope_label,
                         summary_batch_index + 1,
                         total_summary_batches
@@ -462,6 +472,10 @@ pub(crate) async fn analyze_pending_messages(
                         result.summary
                     }
                     Err(err) => {
+                        let user_message = crate::diagnostics::classify_ai_user_message(
+                            &err.message,
+                            err.diagnostic.as_ref(),
+                        );
                         if let Some(plan) = keyword_refine_for_batch {
                             if let Ok(conn) = state.db.lock() {
                                 let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
@@ -475,11 +489,11 @@ pub(crate) async fn analyze_pending_messages(
                             err.diagnostic,
                         );
                         warnings.push(format!(
-                            "{}热门话题和关键词识别失败（第 {}/{} 批）：{}",
+                            "{}热门话题和关键词识别失败（第{}/{}批）：{}",
                             analysis_scope_label,
                             summary_batch_index + 1,
                             total_summary_batches,
-                            err.message
+                            user_message
                         ));
                         return Ok((ai_status, analyzed_messages));
                     }
@@ -502,7 +516,7 @@ pub(crate) async fn analyze_pending_messages(
                             Ok(_) => {}
                             Err(err) => {
                                 let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
-                                warnings.push(format!("关键词 AI 识别结果保存失败：{}", err));
+                                warnings.push(format!("关键词AI识别结果保存失败：{}", err));
                             }
                         }
                     }
@@ -516,7 +530,7 @@ pub(crate) async fn analyze_pending_messages(
                 };
                 if let Err(err) = persist_result {
                     warnings.push(format!(
-                        "{}热门话题和关键词保存失败（第 {}/{} 批）：{}",
+                        "{}热门话题和关键词保存失败（第{}/{}批）：{}",
                         analysis_scope_label,
                         summary_batch_index + 1,
                         total_summary_batches,
@@ -528,7 +542,7 @@ pub(crate) async fn analyze_pending_messages(
                         target_profiles,
                         "summary_done",
                         format!(
-                            "已更新{}热门话题和关键词第 {}/{} 批，正在刷新看板…",
+                            "已更新{}热门话题和关键词第{}/{}批，正在刷新看板…",
                             analysis_scope_label,
                             summary_batch_index + 1,
                             total_summary_batches

@@ -1,14 +1,17 @@
 use std::fs;
-use std::io::{Cursor, Write};
-use std::path::{Path, PathBuf};
+use std::io::Write;
+use std::path::PathBuf;
 
 use rusqlite::Connection;
-use tauri::State;
+use tauri::{Manager, State};
 use zip::write::SimpleFileOptions;
 
 use crate::daily_cache;
 use crate::security::sanitize_log;
 use crate::storage::AppState;
+
+const MAIN_WINDOW_LABEL: &str = "main";
+const MAIN_TRAY_ID: &str = "main-tray";
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -53,9 +56,9 @@ pub fn export_diagnostic_package(
 }
 
 #[tauri::command]
-pub fn set_theme_dock_icon(_app: tauri::AppHandle, theme: String) -> Result<(), String> {
+pub fn set_theme_dock_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
     match theme.as_str() {
-        "light" | "dark" => Ok(()),
+        "light" | "dark" => set_theme_dock_icon_impl(app, &theme),
         _ => Err("主题参数无效。".to_string()),
     }
 }
@@ -79,20 +82,13 @@ fn export_diagnostic_package_impl(
     let file = fs::File::create(&file_path)?;
     let mut zip = zip::ZipWriter::new(file);
     let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-
-    add_zip_text(
-        &mut zip,
-        options,
-        "README.txt",
-        "IM-Board诊断包\n\n此诊断包用于定位同步、AI分析、账号绑定和运行时问题。\n包内默认不包含聊天内容、API Key等任何敏感信息。\n如果问题涉及特定聊天，请另行提供对应截图或手动脱敏后的上下文。\n",
-    )?;
+    add_zip_text(&mut zip, options, "README.txt", "IM-Board 诊断包\n\n此诊断包用于定位同步、AI 分析、账号绑定和运行时问题。\n包内默认不包含聊天内容、API Key 等敏感信息。\n如果问题涉及特定聊天，请另行提供对应截图或手动脱敏后的上下文。\n")?;
     add_zip_text(
         &mut zip,
         options,
         "diagnostic.json",
         &serde_json::to_string_pretty(&diagnostic)?,
     )?;
-    add_recent_crash_reports(&mut zip, options)?;
     zip.finish()?;
 
     Ok(DiagnosticExport {
@@ -105,7 +101,6 @@ fn normalize_diagnostic_export_path(file_path: String) -> anyhow::Result<PathBuf
     if trimmed.is_empty() {
         anyhow::bail!("诊断包保存路径无效。");
     }
-
     let path = PathBuf::from(trimmed);
     if path.exists() && path.is_dir() {
         anyhow::bail!("请选择具体的诊断包文件名，不能直接保存到文件夹。");
@@ -138,6 +133,7 @@ fn build_diagnostic_json(
         "syncState": collect_sync_state(conn)?,
         "dailySummary": collect_daily_summary(conn)?,
         "recentAiRuns": collect_recent_ai_runs(conn)?,
+        "recentErrorEvents": collect_recent_error_events(conn)?,
     }))
 }
 
@@ -164,11 +160,7 @@ fn collect_app_meta(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>>
 }
 
 fn collect_profiles(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>> {
-    let mut stmt = conn.prepare(
-        "select id, platform, label, enabled, status, sort_order, config_json, created_at, updated_at
-         from profiles
-         order by sort_order, updated_at desc",
-    )?;
+    let mut stmt = conn.prepare("select id, platform, label, enabled, status, sort_order, config_json, created_at, updated_at from profiles order by sort_order, updated_at desc")?;
     let rows = stmt.query_map([], |row| {
         let config_json: String = row.get(6)?;
         let config = serde_json::from_str::<serde_json::Value>(&config_json)
@@ -189,13 +181,7 @@ fn collect_profiles(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>>
 }
 
 fn collect_ai_config(conn: &Connection) -> anyhow::Result<Option<serde_json::Value>> {
-    let mut stmt = conn.prepare(
-        "select provider, base_url, model, user_prompt, analysis_prompt, summary_prompt,
-                analysis_prompt_custom, summary_prompt_custom, analysis_batch_size, enabled,
-                test_status, updated_at
-         from ai_config
-         where id = 1",
-    )?;
+    let mut stmt = conn.prepare("select provider, base_url, model, user_prompt, analysis_prompt, summary_prompt, analysis_prompt_custom, summary_prompt_custom, analysis_batch_size, enabled, test_status, updated_at from ai_config where id = 1")?;
     let mut rows = stmt.query([])?;
     let Some(row) = rows.next()? else {
         return Ok(None);
@@ -217,12 +203,7 @@ fn collect_ai_config(conn: &Connection) -> anyhow::Result<Option<serde_json::Val
 }
 
 fn collect_sync_state(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>> {
-    let mut stmt = conn.prepare(
-        "select profile_id, day, last_sync_at, last_analysis_at, cursor_json, updated_at
-         from sync_state
-         order by updated_at desc
-         limit 40",
-    )?;
+    let mut stmt = conn.prepare("select profile_id, day, last_sync_at, last_analysis_at, cursor_json, updated_at from sync_state order by updated_at desc limit 40")?;
     let rows = stmt.query_map([], |row| {
         let cursor_json: String = row.get(4)?;
         let cursor = serde_json::from_str::<serde_json::Value>(&cursor_json)
@@ -240,13 +221,7 @@ fn collect_sync_state(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value
 }
 
 fn collect_recent_ai_runs(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>> {
-    let mut stmt = conn.prepare(
-        "select id, day, profile_id, status, model, token_usage_json, error, created_at, finished_at,
-                input_message_ids, diagnostic_json
-         from ai_analysis_runs
-         order by created_at desc
-         limit 40",
-    )?;
+    let mut stmt = conn.prepare("select id, day, profile_id, status, model, token_usage_json, error, created_at, finished_at, input_message_ids, diagnostic_json from ai_analysis_runs order by created_at desc limit 40")?;
     let rows = stmt.query_map([], |row| {
         let token_usage_json: Option<String> = row.get(5)?;
         let token_usage = token_usage_json
@@ -283,32 +258,40 @@ fn collect_recent_ai_runs(conn: &Connection) -> anyhow::Result<Vec<serde_json::V
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
+fn collect_recent_error_events(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>> {
+    let mut stmt = conn.prepare("select id, source, category, severity, profile_id, platform, operation, user_message, raw_detail_json, context_json, created_at from diagnostic_error_events order by created_at desc limit 100")?;
+    let rows = stmt.query_map([], |row| {
+        let raw_detail = row
+            .get::<_, String>(8)
+            .ok()
+            .and_then(|value| serde_json::from_str::<serde_json::Value>(&value).ok())
+            .map(redact_json_value)
+            .unwrap_or_else(|| serde_json::json!({}));
+        let context = row
+            .get::<_, String>(9)
+            .ok()
+            .and_then(|value| serde_json::from_str::<serde_json::Value>(&value).ok())
+            .map(redact_json_value)
+            .unwrap_or_else(|| serde_json::json!({}));
+        Ok(serde_json::json!({
+            "id": row.get::<_, String>(0)?,
+            "source": row.get::<_, String>(1)?,
+            "category": row.get::<_, String>(2)?,
+            "severity": row.get::<_, String>(3)?,
+            "profileId": row.get::<_, Option<String>>(4)?,
+            "platform": row.get::<_, Option<String>>(5)?,
+            "operation": row.get::<_, String>(6)?,
+            "userMessage": row.get::<_, String>(7)?,
+            "rawDetail": raw_detail,
+            "context": context,
+            "createdAt": row.get::<_, String>(10)?,
+        }))
+    })?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
 fn collect_daily_summary(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>> {
-    let mut stmt = conn.prepare(
-        "select
-           messages.day,
-           messages.profile_id,
-           messages.platform,
-           count(*) as message_count,
-           sum(case when messages.analyzed_at is null then 1 else 0 end) as pending_analysis_count,
-           count(distinct messages.chat_id) as chat_count,
-           coalesce(topics.topic_count, 0) as topic_count,
-           coalesce(actions.action_count, 0) as action_count
-         from daily_messages messages
-         left join (
-           select day, profile_id, count(*) as topic_count
-           from daily_topics
-           group by day, profile_id
-         ) topics on topics.day = messages.day and topics.profile_id = messages.profile_id
-         left join (
-           select date(first_detected_at) as day, profile_id, count(*) as action_count
-           from action_items
-           group by date(first_detected_at), profile_id
-         ) actions on actions.day = messages.day and actions.profile_id = messages.profile_id
-         group by messages.day, messages.profile_id, messages.platform
-         order by messages.day desc, messages.profile_id
-         limit 80",
-    )?;
+    let mut stmt = conn.prepare("select messages.day, messages.profile_id, messages.platform, count(*) as message_count, sum(case when messages.analyzed_at is null then 1 else 0 end) as pending_analysis_count, count(distinct messages.chat_id) as chat_count, coalesce(topics.topic_count, 0) as topic_count, coalesce(actions.action_count, 0) as action_count from daily_messages messages left join (select day, profile_id, count(*) as topic_count from daily_topics group by day, profile_id) topics on topics.day = messages.day and topics.profile_id = messages.profile_id left join (select date(first_detected_at) as day, profile_id, count(*) as action_count from action_items group by date(first_detected_at), profile_id) actions on actions.day = messages.day and actions.profile_id = messages.profile_id group by messages.day, messages.profile_id, messages.platform order by messages.day desc, messages.profile_id limit 80")?;
     let rows = stmt.query_map([], |row| {
         Ok(serde_json::json!({
             "day": row.get::<_, String>(0)?,
@@ -322,55 +305,6 @@ fn collect_daily_summary(conn: &Connection) -> anyhow::Result<Vec<serde_json::Va
         }))
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
-}
-
-fn add_recent_crash_reports<W: Write + std::io::Seek>(
-    zip: &mut zip::ZipWriter<W>,
-    options: SimpleFileOptions,
-) -> anyhow::Result<()> {
-    let Some(home_dir) = dirs::home_dir() else {
-        return Ok(());
-    };
-    let report_dir = home_dir
-        .join("Library")
-        .join("Logs")
-        .join("DiagnosticReports");
-    if !report_dir.exists() {
-        return Ok(());
-    }
-
-    let mut reports = fs::read_dir(report_dir)?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| is_im_board_crash_report(path))
-        .filter_map(|path| {
-            let modified = fs::metadata(&path)
-                .and_then(|metadata| metadata.modified())
-                .ok()?;
-            Some((modified, path))
-        })
-        .collect::<Vec<_>>();
-    reports.sort_by(|left, right| right.0.cmp(&left.0));
-
-    for (_, path) in reports.into_iter().take(3) {
-        let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
-            continue;
-        };
-        let content = fs::read(&path)?;
-        zip.start_file(format!("crash-reports/{file_name}"), options)?;
-        let mut reader = Cursor::new(content);
-        std::io::copy(&mut reader, zip)?;
-    }
-    Ok(())
-}
-
-fn is_im_board_crash_report(path: &Path) -> bool {
-    let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
-        return false;
-    };
-    let normalized = file_name.to_ascii_lowercase();
-    normalized.starts_with("im-board")
-        && (normalized.ends_with(".ips") || normalized.ends_with(".crash"))
 }
 
 fn redact_json_value(value: serde_json::Value) -> serde_json::Value {
@@ -399,7 +333,7 @@ fn redact_json_value(value: serde_json::Value) -> serde_json::Value {
 
 fn is_sensitive_key(key: &str) -> bool {
     let normalized = key.to_ascii_lowercase();
-    // 诊断包可以定位路径、平台和状态，但不能外带授权令牌或密钥。
+    // 诊断包可以包含路径、平台和状态，但不能外带授权令牌或密钥。
     [
         "key",
         "token",
@@ -419,6 +353,42 @@ fn truncate_for_diagnostic(value: &str, limit: usize) -> String {
     let mut output = value.chars().take(limit).collect::<String>();
     output.push_str("...");
     output
+}
+
+fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), String> {
+    let icon = tauri::image::Image::from_path(desktop_icon_path(&app, theme_icon_file_name(theme)))
+        .map_err(|error| format!("读取应用图标失败：{error}"))?;
+    // Windows 的 exe 与快捷方式图标来自安装包静态资源；运行中同步窗口任务栏图标与后台托盘图标。
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        window
+            .set_icon(icon.clone())
+            .map_err(|error| format!("切换窗口图标失败：{error}"))?;
+    }
+    if let Some(tray) = app.tray_by_id(MAIN_TRAY_ID) {
+        tray.set_icon(Some(icon))
+            .map_err(|error| format!("切换后台图标失败：{error}"))?;
+    }
+    Ok(())
+}
+
+fn theme_icon_file_name(theme: &str) -> &'static str {
+    if theme == "dark" {
+        "icon-dark.png"
+    } else {
+        "icon-light.png"
+    }
+}
+
+fn desktop_icon_path(app: &tauri::AppHandle, file_name: &str) -> std::path::PathBuf {
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let bundled_icon = resource_dir.join("icons").join(file_name);
+        if bundled_icon.exists() {
+            return bundled_icon;
+        }
+    }
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("icons")
+        .join(file_name)
 }
 
 fn parse_time_to_minutes(value: &str) -> Result<i64, String> {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { deleteProfile, upsertProfile } from "../api/profilesApi";
 import { APP_MESSAGES, PROFILE_MESSAGES } from "../../../constants/messages";
 import { userErrorMessage } from "../../../utils/errors";
+import { isLiteUnsupportedWechatProfile } from "../model/liteWechatSync";
 import type { ImProfile, Platform } from "../model/types";
 
 const BULK_DELETE_ID = "__bulk_delete__";
@@ -14,6 +15,7 @@ interface UseProfileBatchManagementParams {
   resetProfileDragState: () => void;
   setIsBatchManaging: (value: boolean) => void;
   setProfileNotice: (message: string, isError?: boolean) => void;
+  appendProfileNotice: (message: string, variant: "info" | "success" | "error") => void;
   clearPendingDelete: () => void;
   cleanupPlatformCliIfUnused: (platform: Platform) => Promise<void>;
 }
@@ -26,6 +28,7 @@ export function useProfileBatchManagement({
   resetProfileDragState,
   setIsBatchManaging,
   setProfileNotice,
+  appendProfileNotice,
   clearPendingDelete,
   cleanupPlatformCliIfUnused
 }: UseProfileBatchManagementParams) {
@@ -100,11 +103,19 @@ export function useProfileBatchManagement({
       return;
     }
     const label = enabled ? "启用" : "暂停";
+    const unsupportedWechatProfiles = selectedProfiles.filter(isLiteUnsupportedWechatProfile);
+    const profilesToUpdate = enabled
+      ? selectedProfiles.filter((profile) => !isLiteUnsupportedWechatProfile(profile))
+      : selectedProfiles;
+    if (profilesToUpdate.length === 0) {
+      setProfileNotice(PROFILE_MESSAGES.liteWechatSyncUnsupported, true);
+      return;
+    }
     setPendingBulkDeleteIds([]);
-    setProfileNotice(PROFILE_MESSAGES.batchStatusStart(label, selectedProfiles.length));
+    setProfileNotice(PROFILE_MESSAGES.batchStatusStart(label, profilesToUpdate.length));
     try {
       await Promise.all(
-        selectedProfiles.map((profile) =>
+        profilesToUpdate.map((profile) =>
           upsertProfile({
             ...profile,
             enabled,
@@ -113,7 +124,11 @@ export function useProfileBatchManagement({
           })
         )
       );
-      setProfileNotice(PROFILE_MESSAGES.batchStatusSuccess(label, selectedProfiles.length));
+      const successMessage = PROFILE_MESSAGES.batchStatusSuccess(label, profilesToUpdate.length);
+      setProfileNotice(successMessage);
+      if (enabled && unsupportedWechatProfiles.length > 0) {
+        appendProfileNotice(PROFILE_MESSAGES.liteWechatSyncUnsupported, "error");
+      }
       await onProfilesChange();
     } catch (error) {
       setProfileNotice(userErrorMessage(error, PROFILE_MESSAGES.batchStatusFailed(label)), true);

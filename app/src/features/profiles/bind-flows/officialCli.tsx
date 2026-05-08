@@ -1,9 +1,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { PlatformCliDeploymentProgress, PlatformCliVersionStatus, PlatformDeployment } from "../../../api/bridgeApi";
 import { OFFICIAL_CLI_MESSAGES } from "../../../constants/messages";
-import type { AccountIdentity, ImProfile, Platform } from "../model/types";
-import { profileDisplayName } from "../../../utils/profiles";
-import { formatAccountIdentity } from "../model/accountIdentity";
+import type { ImProfile, Platform } from "../model/types";
 import { buildDingtalkProfile, buildFeishuProfile, buildWecomProfile } from "../model/profileBuilders";
 import { OfficialCliBindModal } from "./OfficialCliBindModal";
 
@@ -32,7 +30,6 @@ export interface OfficialCliBindFlowConfig {
   verifyAuthorizationBeforeSave: boolean;
   identityMode: OfficialCliIdentityMode;
   missingIdentityMessage?: string;
-  duplicateMessage?: (duplicate: ImProfile, identity: AccountIdentity) => string;
   buildProfile: (profile: ImProfile, sortOrder: number, remark: string, cliPath: string, deployment: PlatformDeployment) => ImProfile;
 }
 
@@ -56,7 +53,8 @@ const OFFICIAL_CLI_BIND_FLOW_CONFIGS: Record<OfficialCliBindPlatform, OfficialCl
     openSourceText: "本功能使用绑定时热更新的@wecom/cli（MIT）。",
     saveFailedMessage: "企业微信账号配置保存失败。",
     verifyAuthorizationBeforeSave: true,
-    identityMode: "none",
+    identityMode: "required",
+    missingIdentityMessage: "未能读取企业微信机器人身份，请确认绑定命令已完成并生成有效配置。",
     buildProfile: buildWecomProfile
   },
   feishu: {
@@ -68,9 +66,8 @@ const OFFICIAL_CLI_BIND_FLOW_CONFIGS: Record<OfficialCliBindPlatform, OfficialCl
     saveFailedMessage: "飞书账号配置保存失败。",
     detailLabel: "绑定命令",
     verifyAuthorizationBeforeSave: true,
-    identityMode: "optional",
-    duplicateMessage: (duplicate, identity) =>
-      `这个飞书授权已绑定为「${profileDisplayName(duplicate)}」：${formatAccountIdentity(identity)}。请先在绑定命令中重新登录另一个飞书账号。`,
+    identityMode: "required",
+    missingIdentityMessage: "未能读取飞书当前授权身份，请确认绑定命令最后的auth status --verify返回了用户信息。",
     buildProfile: buildFeishuProfile
   },
   dingtalk: {
@@ -83,8 +80,6 @@ const OFFICIAL_CLI_BIND_FLOW_CONFIGS: Record<OfficialCliBindPlatform, OfficialCl
     verifyAuthorizationBeforeSave: false,
     identityMode: "required",
     missingIdentityMessage: "未能读取钉钉当前授权身份，请确认绑定命令最后的get-self返回了用户信息。",
-    duplicateMessage: (duplicate, identity) =>
-      `这个钉钉授权已绑定为「${profileDisplayName(duplicate)}」：${formatAccountIdentity(identity)}。请先在绑定命令中重新扫码另一个钉钉账号。`,
     buildProfile: buildDingtalkProfile
   }
 };
@@ -101,6 +96,7 @@ interface OfficialCliBindFlowModalProps {
   onOpenAbout: () => void;
   onClose: () => void;
   onSave: () => void;
+  isSaving: boolean;
   onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => void;
   onCompositionStart: () => void;
   onCompositionEnd: () => void;
@@ -137,6 +133,7 @@ export function OfficialCliBindFlowModal({
   onOpenAbout,
   onClose,
   onSave,
+  isSaving,
   onKeyDown,
   onCompositionStart,
   onCompositionEnd
@@ -165,6 +162,7 @@ export function OfficialCliBindFlowModal({
       onOpenAbout={onOpenAbout}
       onClose={onClose}
       onSave={onSave}
+      isSaving={isSaving}
       saveDisabled={!state.deployment}
       formMessage={formMessage}
       onKeyDown={onKeyDown}

@@ -54,7 +54,7 @@ pub(super) async fn npm_metadata(
             emit_platform_cli_progress(
                 progress,
                 "checking_remote",
-                format!("正在从镜像源核查 {} 最新版本…", package),
+                format!("正在从镜像源核查{}最新版本…", package),
                 2,
                 5,
                 Some(registry),
@@ -76,7 +76,7 @@ pub(super) async fn npm_metadata(
                                 emit_platform_cli_progress(
                                     progress,
                                     "version_resolved",
-                                    format!("已确认 {} 最新版本 v{}。", package, version),
+                                    format!("已确认{}最新版本v{}。", package, version),
                                     2,
                                     5,
                                     Some(registry),
@@ -105,9 +105,9 @@ pub(super) async fn npm_metadata(
                 progress,
                 "checking_remote_retry",
                 if has_fallback {
-                    format!("镜像源暂不可用，正在切换备用源核查 {}。", package)
+                    format!("镜像源暂不可用，正在切换备用源核查{}。", package)
                 } else {
-                    format!("{} 版本核查失败。", package)
+                    format!("{}版本核查失败。", package)
                 },
                 2,
                 5,

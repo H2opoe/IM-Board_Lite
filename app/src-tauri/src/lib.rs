@@ -4,6 +4,7 @@ mod bridge_runner;
 mod commands;
 mod connectors;
 mod daily_cache;
+mod diagnostics;
 mod domain;
 mod messages;
 mod profile_manager;
@@ -34,17 +35,17 @@ fn show_main_window(app: &tauri::AppHandle) {
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState::new().expect("初始化应用状态失败"))
+        .manage(AppState::new().expect("failed to initialize app state"))
         .setup(|app| {
             let show_item =
-                MenuItem::with_id(app, TRAY_MENU_SHOW, "显示主窗口", true, None::<&str>)?;
+                MenuItem::with_id(app, TRAY_MENU_SHOW, "Show main window", true, None::<&str>)?;
             let quit_item =
-                MenuItem::with_id(app, TRAY_MENU_QUIT, "退出 IM-Board", true, None::<&str>)?;
+                MenuItem::with_id(app, TRAY_MENU_QUIT, "Quit IM-Board", true, None::<&str>)?;
             let tray_menu = Menu::with_items(app, &[&show_item, &quit_item])?;
             let mut tray = TrayIconBuilder::with_id("main-tray")
                 .menu(&tray_menu)
                 .show_menu_on_left_click(true)
-                .tooltip("IM-Board 正在后台运行")
+                .tooltip("IM-Board is running")
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     TRAY_MENU_SHOW => show_main_window(app),
                     TRAY_MENU_QUIT => app.exit(0),
@@ -103,7 +104,7 @@ pub fn run() {
             commands::sync::run_sync_job
         ])
         .build(tauri::generate_context!())
-        .expect("构建 Tauri 应用失败");
+        .expect("failed to build Tauri app");
 
     app.run(|_app, _event| {});
 }

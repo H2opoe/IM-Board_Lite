@@ -35,7 +35,7 @@ pub(crate) fn emit_analysis_progress_for_scope(
         app,
         "analysis",
         format!(
-            "正在识别全平台待回复和待办事项第 {}/{} 批…",
+            "正在识别全平台待回复和待办事项第{}/{}批…",
             batch_index, total_batches
         ),
         batch_index as i64,
@@ -55,7 +55,7 @@ pub(crate) fn emit_analysis_done_for_scope(
             &target_profiles[0],
             "analysis_done",
             format!(
-                "已完成【{} · {}】待回复和待办事项识别第 {}/{} 批，正在更新看板…",
+                "已完成【{} · {}】待回复和待办事项识别第{}/{}批，正在更新看板…",
                 platform_label(&target_profiles[0].platform),
                 profile_remark(&target_profiles[0]),
                 batch_index,
@@ -70,7 +70,7 @@ pub(crate) fn emit_analysis_done_for_scope(
         app,
         "analysis_done",
         format!(
-            "已完成全平台待回复和待办事项识别第 {}/{} 批，正在更新看板…",
+            "已完成全平台待回复和待办事项识别第{}/{}批，正在更新看板…",
             batch_index, total_batches
         ),
         batch_index as i64,
@@ -125,7 +125,7 @@ fn emit_analysis_progress(
         profile,
         "analysis",
         format!(
-            "正在识别【{} · {}】待回复和待办事项第 {}/{} 批…",
+            "正在识别【{} · {}】待回复和待办事项第{}/{}批…",
             platform_label(&profile.platform),
             profile_remark(profile),
             batch_index,

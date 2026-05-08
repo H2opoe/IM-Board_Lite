@@ -57,7 +57,7 @@ pub(super) async fn run_official_dingtalk_cli(
             "dingtalk",
             "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
             "DINGTALK_CLI_MISSING",
-            "钉钉官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
+            "官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成，或重新安装IM-Board。",
             true,
             started_at,
         ));
@@ -65,33 +65,6 @@ pub(super) async fn run_official_dingtalk_cli(
 
     let mut command = official_cli_command(&cli_path);
     apply_official_cli_env(&mut command);
-    if cfg!(windows) {
-        let dingtalk_home_dir = profile
-            .config_json
-            .get("homeDir")
-            .and_then(|value| value.as_str())
-            .filter(|value| !value.trim().is_empty())
-            .map(expand_home)
-            .or_else(|| {
-                profile
-                    .config_json
-                    .get("configDir")
-                    .and_then(|value| value.as_str())
-                    .filter(|value| !value.trim().is_empty())
-                    .map(|value| expand_home(value).join("home"))
-            });
-        if let Some(home_dir) = dingtalk_home_dir {
-            std::fs::create_dir_all(&home_dir)?;
-            command.env("HOME", &home_dir).env("USERPROFILE", &home_dir);
-            let appdata_dir = home_dir.join("AppData").join("Roaming");
-            let local_appdata_dir = home_dir.join("AppData").join("Local");
-            std::fs::create_dir_all(&appdata_dir)?;
-            std::fs::create_dir_all(&local_appdata_dir)?;
-            command
-                .env("APPDATA", appdata_dir)
-                .env("LOCALAPPDATA", local_appdata_dir);
-        }
-    }
     if let Some(auth_identity) = profile
         .config_json
         .get("authIdentity")
@@ -156,7 +129,7 @@ pub(super) async fn run_official_dingtalk_cli(
                     "dingtalk",
                     "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
                     "MISSING_CHAT",
-                    "fetch-messages 缺少 chat 参数。",
+                    "fetch-messages缺少chat参数。",
                     true,
                     started_at,
                 ));

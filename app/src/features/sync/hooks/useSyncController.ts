@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getDashboard } from "../../dashboard/api/dashboardApi";
-import { cancelSync, runSyncJob, watchSyncProgress } from "../api/syncApi";
+import type { DashboardSetter } from "../../dashboard/hooks/useDashboardStore";
 import type { DashboardData } from "../../dashboard/model/types";
+import type { ImProfile } from "../../profiles/model/types";
+import { cancelSync, runSyncJob, watchSyncProgress } from "../api/syncApi";
 import type { SyncJobMode, SyncProgress, SyncResult } from "../model/types";
 import {
   SYNC_CANCEL_CONFIRM_MESSAGES,
@@ -9,6 +11,7 @@ import {
   SYNC_RUNTIME_MESSAGES,
   type SyncMaintenanceAction,
   shouldShowSyncWarning,
+  isSyncMessageError,
   syncCompletionMessage,
   syncErrorMessage,
   syncMaintenancePendingMessage,
@@ -28,7 +31,9 @@ export interface SyncProgressNotice {
 
 interface UseSyncControllerOptions {
   activeProfileId: string;
-  setDashboard: Dispatch<SetStateAction<DashboardData | null>>;
+  demoMode: boolean;
+  profiles: ImProfile[];
+  setDashboard: DashboardSetter;
 }
 
 const DEFAULT_SYNC_FREQUENCY_MINUTES = 15;
@@ -59,7 +64,15 @@ function nextStateForProgress(progress: SyncProgress): SyncUiState | null {
   return progress.phase === "analysis" ? "analyzing" : null;
 }
 
-export function useSyncController({ activeProfileId, setDashboard }: UseSyncControllerOptions) {
+function syncWarningNotices(warnings: string[]): SyncProgressNotice[] {
+  return warnings.map((warning, index) => ({
+    id: `sync-warning-${index}`,
+    message: warning,
+    variant: isSyncMessageError(warning) ? "error" : "info"
+  }));
+}
+
+export function useSyncController({ activeProfileId, demoMode, profiles, setDashboard }: UseSyncControllerOptions) {
   const [syncState, setSyncState] = useState<SyncUiState>("idle");
   const [syncMessage, setSyncMessage] = useState("");
   const [syncMessagePages, setSyncMessagePages] = useState<string[]>([]);
@@ -72,6 +85,11 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
   const maintenanceRequestSeq = useRef(0);
   const dashboardRefreshSeq = useRef(0);
   const initialSyncStarted = useRef(false);
+  const activeProfileIdRef = useRef(activeProfileId);
+
+  useEffect(() => {
+    activeProfileIdRef.current = activeProfileId;
+  }, [activeProfileId]);
 
   useEffect(() => {
     window.localStorage.setItem(SYNC_FREQUENCY_STORAGE_KEY, String(syncFrequencyMinutes));
@@ -100,21 +118,44 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
 
   const refreshDashboardForArrivedBatch = useCallback(() => {
     const requestSeq = dashboardRefreshSeq.current + 1;
+    const visibleProfileId = activeProfileIdRef.current;
     dashboardRefreshSeq.current = requestSeq;
-    void getDashboard(activeProfileId)
+    void getDashboard(visibleProfileId)
       .then((nextDashboard) => {
         // AI 分批结果会连续落库并触发多次刷新，只接受最后一次返回，避免旧批次请求晚到后覆盖新批次。
         if (dashboardRefreshSeq.current !== requestSeq) return;
-        setDashboard(nextDashboard);
+        if (activeProfileIdRef.current !== visibleProfileId) return;
+        setDashboard(nextDashboard, visibleProfileId);
       })
       .catch((error) => {
         logRecoverableError("刷新看板失败，已等待下一次同步进度刷新", error);
       });
-  }, [activeProfileId, setDashboard]);
+  }, [setDashboard]);
 
   function markDashboardRefreshSettled() {
     dashboardRefreshSeq.current += 1;
   }
+
+  function isDisabledSingleProfile(profileId: string) {
+    if (profileId === "aggregate") return false;
+    return profiles.some((profile) => profile.id === profileId && !profile.enabled);
+  }
+
+  function showDisabledProfileSyncMessage() {
+    setSyncState("idle");
+    setIsSyncCancelArmed(false);
+    setSyncProgressNotices([]);
+    setSyncMessagePages([]);
+    setSyncMessage(SYNC_RUNTIME_MESSAGES.accountSyncDisabled);
+  }
+
+  const setDashboardForVisibleProfile = useCallback(
+    (nextDashboard: DashboardData, profileId: string) => {
+      if (activeProfileIdRef.current !== profileId) return;
+      setDashboard(nextDashboard, profileId);
+    },
+    [setDashboard]
+  );
 
   const executeSyncJob = useCallback(
     (mode: SyncJobMode, targetProfileId = activeProfileId) => {
@@ -125,13 +166,16 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
         syncInFlight.current = true;
         setSyncState(config.initialState);
         if (mode === "retry_analysis") {
-          setDashboard((currentDashboard) =>
-            currentDashboard
-              ? {
-                  ...currentDashboard,
-                  aiStatus: "analyzing"
-                }
-              : currentDashboard
+          const visibleProfileId = activeProfileIdRef.current;
+          setDashboard(
+            (currentDashboard) =>
+              currentDashboard
+                ? {
+                    ...currentDashboard,
+                    aiStatus: "analyzing"
+                  }
+                : currentDashboard,
+            visibleProfileId
           );
         }
         setIsSyncCancelArmed(false);
@@ -159,13 +203,17 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
 
           const result = await runSyncJob(targetProfileId, config.mode);
           markDashboardRefreshSettled();
-          const nextDashboard = await getDashboard(activeProfileId);
+          const analyzingProfileId = targetProfileId === "aggregate" ? activeProfileIdRef.current : targetProfileId;
+          const nextDashboard = await getDashboard(analyzingProfileId);
           if (mode !== "retry_analysis" && result.analyzedMessages > 0) {
-            setDashboard({
-              ...nextDashboard,
-              syncStatus: "analyzing",
-              aiStatus: "analyzing"
-            });
+            setDashboardForVisibleProfile(
+              {
+                ...nextDashboard,
+                syncStatus: "analyzing",
+                aiStatus: "analyzing"
+              },
+              analyzingProfileId
+            );
             setSyncState("analyzing");
             setSyncMessagePages([]);
             setSyncMessage(SYNC_RUNTIME_MESSAGES.refreshingDashboard(result.insertedMessages, result.analyzedMessages));
@@ -173,18 +221,22 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
           }
 
           markDashboardRefreshSettled();
-          const finalDashboard = await getDashboard(activeProfileId);
-          setDashboard({
-            ...finalDashboard,
-            syncStatus: result.syncStatus,
-            aiStatus: result.aiStatus
-          });
+          const finalProfileId = targetProfileId === "aggregate" ? activeProfileIdRef.current : targetProfileId;
+          const finalDashboard = await getDashboard(finalProfileId);
+          setDashboardForVisibleProfile(
+            {
+              ...finalDashboard,
+              syncStatus: result.syncStatus,
+              aiStatus: result.aiStatus
+            },
+            finalProfileId
+          );
           setSyncState(result.aiStatus === "failed" ? "failed" : "done");
           const visibleWarnings = result.warnings.filter(shouldShowSyncWarning);
           if (visibleWarnings.length > 0) {
-            setSyncProgressNotices([]);
-            setSyncMessagePages(visibleWarnings);
-            setSyncMessage(visibleWarnings[0]);
+            setSyncProgressNotices(syncWarningNotices(visibleWarnings));
+            setSyncMessagePages([]);
+            setSyncMessage("");
           } else {
             setSyncMessagePages([]);
             setSyncProgressNotices([]);
@@ -218,11 +270,15 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
       syncRunPromise.current = trackedRun;
       return syncRunPromise.current;
     },
-    [activeProfileId, refreshDashboardForArrivedBatch, setDashboard]
+    [activeProfileId, refreshDashboardForArrivedBatch, setDashboard, setDashboardForVisibleProfile]
   );
 
   const handleSyncButtonClick = useCallback(() => {
     if (!isCancellableSyncState(syncState)) {
+      if (isDisabledSingleProfile(activeProfileId)) {
+        showDisabledProfileSyncMessage();
+        return;
+      }
       void executeSyncJob("incremental", activeProfileId);
       return;
     }
@@ -240,11 +296,15 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
       setSyncMessagePages([message]);
       setSyncMessage(message);
     });
-  }, [activeProfileId, executeSyncJob, isSyncCancelArmed, syncState]);
+  }, [activeProfileId, executeSyncJob, isSyncCancelArmed, profiles, syncState]);
 
   const runMaintenanceAction = useCallback(
     async (action: SyncMaintenanceAction, targetProfileId = activeProfileId) => {
       const mode: SyncJobMode = action === "retry-analysis" ? "retry_analysis" : "full_resync";
+      if (isDisabledSingleProfile(targetProfileId)) {
+        showDisabledProfileSyncMessage();
+        return;
+      }
       if (!syncInFlight.current) {
         await executeSyncJob(mode, targetProfileId);
         return;
@@ -275,7 +335,7 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
         setSyncMessage(message);
       }
     },
-    [activeProfileId, executeSyncJob]
+    [activeProfileId, executeSyncJob, profiles]
   );
 
   useEffect(() => {
@@ -295,17 +355,19 @@ export function useSyncController({ activeProfileId, setDashboard }: UseSyncCont
   }, [isSyncCancelArmed, syncState]);
 
   useEffect(() => {
+    if (demoMode) return;
     if (initialSyncStarted.current) return;
     initialSyncStarted.current = true;
     void executeSyncJob("incremental", "aggregate");
-  }, [executeSyncJob]);
+  }, [demoMode, executeSyncJob]);
 
   useEffect(() => {
+    if (demoMode) return undefined;
     const interval = window.setInterval(() => {
       void executeSyncJob("incremental", "aggregate");
     }, syncFrequencyMinutes * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [executeSyncJob, syncFrequencyMinutes]);
+  }, [demoMode, executeSyncJob, syncFrequencyMinutes]);
 
   return {
     syncState,

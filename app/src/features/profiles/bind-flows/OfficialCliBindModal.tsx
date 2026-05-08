@@ -39,6 +39,7 @@ interface OfficialCliBindModalProps extends OfficialCliSharedProps {
   onOpenAbout: () => void;
   onClose: () => void;
   onSave: () => void;
+  isSaving: boolean;
   saveDisabled: boolean;
   formMessage: ReactNode;
   onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => void;
@@ -59,6 +60,7 @@ export function OfficialCliBindModal({
   onOpenAbout,
   onClose,
   onSave,
+  isSaving,
   saveDisabled,
   formMessage,
   onKeyDown,
@@ -100,9 +102,9 @@ export function OfficialCliBindModal({
             <X size={16} />
             {APP_MESSAGES.cancel}
           </button>
-          <button className="primary-button" onClick={onSave} disabled={saveDisabled}>
-            <Save size={16} />
-            {APP_MESSAGES.saveConfig}
+          <button className="primary-button" onClick={onSave} disabled={saveDisabled || isSaving}>
+            {isSaving ? <RefreshCw size={16} className="spin" /> : <Save size={16} />}
+            {isSaving ? "正在保存" : APP_MESSAGES.saveConfig}
           </button>
         </footer>
       </article>
@@ -226,6 +228,20 @@ function CliStatusBox({
   const isDownloadProgress = isCurrentPlatformProgress && ["installing", "installed", "locating"].includes(latestProgress.phase);
   const progressPercent = latestProgress ? Math.max(6, Math.min(100, Math.round((latestProgress.current / Math.max(latestProgress.total, 1)) * 100))) : 0;
   const currentVersion = versionStatus?.currentVersion || deployment?.currentVersion || latestProgress?.version || "未知";
+
+  if (isCheckingVersion && deployment) {
+    return (
+      <div className="cli-version-box cli-checking-box">
+        <div>
+          <strong>检查更新中</strong>
+          <span>{OFFICIAL_CLI_MESSAGES.checkingVersion}</span>
+        </div>
+        <span className="cli-version-action busy">
+          <RefreshCw size={15} className="spin" />
+        </span>
+      </div>
+    );
+  }
 
   if (isCurrentPlatformProgress && !isDownloadProgress) {
     return (

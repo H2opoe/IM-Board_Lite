@@ -50,15 +50,17 @@ export const APP_SETTINGS_MESSAGES = {
 };
 
 export const PROFILE_MESSAGES = {
-  wechatPaidOnly: "微信功能仅限付费用户使用，请联系开发者开通。",
   selectForManage: "请先选择需要管理的账号。",
   selectForDelete: "请先选择需要删除的账号。",
   selectForReadTest: "请先选择需要测试读取的账号。",
+  accountUpdatedByDuplicate: "该账号已绑定，已按最新配置更新账号。",
   profileOrderSaved: "账号排序已更新。",
   profileOrderFailed: "账号排序保存失败。",
   deleteImpact: "删除后会移除此账号配置和同步状态。",
   deleteFailed: "删除账号配置失败。",
   readTestFailed: "账号配置读取测试失败。",
+  wechatPaidOnly: "微信功能仅限付费用户使用，请联系开发者开通。",
+  liteWechatSyncUnsupported: "Lite版暂不支持微信账号同步",
   batchDeleteButton: "批量删除",
   bulkDeletePrompt: (count: number) => `确认删除${count}个账号配置？这会移除所选账号配置和同步状态。`,
   bulkDeleteConfirmButton: (count: number) => `确认删除${count}个`,
@@ -80,12 +82,12 @@ export const OFFICIAL_CLI_MESSAGES = {
   readyStatusTitle: "已加载CLI",
   preparingStatusTitle: "CLI准备中",
   pendingReady: "等待CLI就绪",
-  prepareFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI准备失败。`,
-  versionCheckFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI版本核查失败。`,
-  waitReady: (platform: Platform) => `请先等待${platformDisplayName(platform)}官方CLI准备完成。`,
-  updateFailed: (platform: Platform) => `${platformDisplayName(platform)}官方CLI更新失败。`,
-  cleanupFailed: (platform: Platform) => `清理${platformDisplayName(platform)}官方CLI失败。`,
-  placeholder: (platform: Platform) => `正在准备${platformDisplayName(platform)}官方CLI…`
+  prepareFailed: (platform: Platform) => `${platformCliDisplayName(platform)}准备失败。`,
+  versionCheckFailed: (platform: Platform) => `${platformCliDisplayName(platform)}版本核查失败。`,
+  waitReady: (platform: Platform) => `请先等待${platformCliDisplayName(platform)}准备完成。`,
+  updateFailed: (platform: Platform) => `${platformCliDisplayName(platform)}更新失败。`,
+  cleanupFailed: (platform: Platform) => `清理${platformCliDisplayName(platform)}失败。`,
+  placeholder: (platform: Platform) => `正在准备${platformCliDisplayName(platform)}…`
 };
 
 export const AI_SETTINGS_MESSAGES = {
@@ -113,4 +115,9 @@ export const AI_SETTINGS_MESSAGES = {
 
 function platformDisplayName(platform: Platform): string {
   return PLATFORM_LABELS[platform] ?? "平台";
+}
+
+function platformCliDisplayName(platform: Platform): string {
+  if (platform === "wechat") return "微信CLI";
+  return `${platformDisplayName(platform)}官方CLI`;
 }

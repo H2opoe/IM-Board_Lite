@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Settings2 } from "lucide-react";
-import { deployPlatformBridge, updatePlatformCli } from "../../api/bridgeApi";
+import {
+  deployPlatformBridge,
+  updatePlatformCli
+} from "../../api/bridgeApi";
 import type { PlatformDeployment } from "../../api/bridgeApi";
 import { reorderProfiles } from "../../features/profiles/api/profilesApi";
 import type { ImProfile, Platform } from "../../features/profiles/model/types";
@@ -37,6 +40,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   const [isDeveloperContactOpen, setIsDeveloperContactOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [isBatchManaging, setIsBatchManaging] = useState(false);
+  const [highlightedProfileId, setHighlightedProfileId] = useState("");
   const {
     cancelDeploymentRequest,
     cleanupPlatformCliIfUnused,
@@ -65,6 +69,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   } = useModalEnterGuard();
   const {
     closeOfficialCliSetup,
+    isSavingOfficialCliProfile,
     officialCliFlow,
     openOfficialCliSetup,
     saveOfficialCliProfile,
@@ -76,6 +81,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     cleanupPlatformCliIfUnused,
     isDeploymentRequestActive,
     nextDeploymentRequest,
+    onDuplicateProfileReplaced: handleDuplicateProfileReplaced,
     onProfilesChange,
     orderedProfiles,
     preservePersistedProfileState,
@@ -129,7 +135,8 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     orderedProfiles,
     resetProfileDragState,
     setIsBatchManaging,
-    setProfileNotice
+    setProfileNotice,
+    appendProfileNotice
   });
   const {
     addProfile,
@@ -191,9 +198,30 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     resetModalCompositionState();
   }, [officialCliFlow.profile]);
 
+  useEffect(() => {
+    if (!highlightedProfileId) return;
+    const timer = window.setTimeout(() => setHighlightedProfileId(""), 5200);
+    const row = document.querySelector<HTMLElement>(`[data-profile-id="${CSS.escape(highlightedProfileId)}"]`);
+    row?.scrollIntoView({ block: "center", behavior: "smooth" });
+    return () => window.clearTimeout(timer);
+  }, [highlightedProfileId]);
+
   function setProfileNotice(message: string, isError = false) {
     setProfileMessageIsError(isError);
     setProfileMessage(message);
+  }
+
+  function appendProfileNotice(message: string, variant: FloatingNoticeVariant) {
+    updateProfileReadNotice({
+      id: `profile-notice-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      message,
+      variant
+    });
+  }
+
+  function handleDuplicateProfileReplaced(profileId: string) {
+    setHighlightedProfileId(profileId);
+    setProfileNotice(PROFILE_MESSAGES.accountUpdatedByDuplicate);
   }
 
   async function saveProfileOrder(nextProfiles: ImProfile[]) {
@@ -287,6 +315,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
             text={formMessage}
             className="modal-form-message-content"
             controlsClassName="modal-form-message-pager"
+            element="span"
             maxLines={4}
             compactCopy
           />
@@ -374,6 +403,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
             orderedProfiles={orderedProfiles}
             visibleProfiles={visibleProfiles}
             selectedProfileIds={selectedProfileIds}
+            highlightedProfileId={highlightedProfileId}
             isBatchManaging={isBatchManaging}
             draggedProfileId={draggedProfileId}
             dragTargetProfileId={dragTargetProfileId}
@@ -422,6 +452,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
             onRemarkChange: (remark) => setOfficialCliFlow((current) => ({ ...current, remark })),
             onClose: closeOfficialCliSetup,
             onSave: saveOfficialCliProfile,
+            isSaving: isSavingOfficialCliProfile,
             onKeyDown: saveOfficialCliSetupFromEnter
           }
         }}

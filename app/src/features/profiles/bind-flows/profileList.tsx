@@ -34,6 +34,7 @@ interface ProfileAccountListProps {
   orderedProfiles: ImProfile[];
   visibleProfiles: ImProfile[];
   selectedProfileIds: Set<string>;
+  highlightedProfileId: string;
   isBatchManaging: boolean;
   draggedProfileId: string;
   dragTargetProfileId: string;
@@ -143,6 +144,7 @@ export function ProfileAccountList({
   orderedProfiles,
   visibleProfiles,
   selectedProfileIds,
+  highlightedProfileId,
   isBatchManaging,
   draggedProfileId,
   dragTargetProfileId,
@@ -173,6 +175,7 @@ export function ProfileAccountList({
             "profile-row",
             isBatchManaging ? "batch-mode" : "",
             selectedProfileIds.has(profile.id) ? "selected" : "",
+            highlightedProfileId === profile.id ? "profile-row-updated" : "",
             draggedProfileId === profile.id ? "dragging" : "",
             dragTargetProfileId === profile.id ? `drag-over-${dragPlacement}` : ""
           ]
@@ -282,7 +285,7 @@ function ProfileDragFloating({
   };
 
   return createPortal(
-    <div className={`profile-drag-floating-layer theme-${themeMode}`}>
+    <div className={`profile-drag-floating-layer profile-drag-layer-${themeMode}`}>
       <div className={`profile-row batch-mode profile-drag-floating ${isSelected ? "selected" : ""}`} style={floatingStyle} aria-hidden="true">
         <span className="profile-select profile-select-preview">
           <span className={`profile-checkbox-preview ${isSelected ? "checked" : ""}`} />

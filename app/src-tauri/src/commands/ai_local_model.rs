@@ -17,6 +17,7 @@ fn start_local_deepseek_download(app: &AppHandle, state: &AppState) -> Result<()
     }
 
     let app_dir = state.app_dir.clone();
+    let db_path = state.app_dir.join("app.sqlite");
     let app_for_task = app.clone();
     state
         .local_model_download_cancel_requested
@@ -25,9 +26,22 @@ fn start_local_deepseek_download(app: &AppHandle, state: &AppState) -> Result<()
     tauri::async_runtime::spawn(async move {
         if let Err(err) = download_local_deepseek_model(app_for_task.clone(), app_dir).await {
             eprintln!("本地DeepSeek模型下载失败：{err}");
+            record_local_ai_error_to_db(&db_path, "download_local_deepseek_model", &err);
         }
     });
     Ok(())
+}
+
+fn record_local_ai_error_to_db(db_path: &Path, operation: &str, message: &str) {
+    let Ok(conn) = rusqlite::Connection::open(db_path) else {
+        return;
+    };
+    let event = crate::diagnostics::local_ai_error_event(
+        operation,
+        message,
+        serde_json::json!({ "provider": "本地DeepSeek" }),
+    );
+    let _ = crate::diagnostics::record_error_event_conn(&conn, event);
 }
 
 fn stop_tracked_llama_server(state: &AppState) -> Result<(), String> {

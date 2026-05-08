@@ -15,10 +15,20 @@ pub async fn run_bridge_command(
     state: State<'_, AppState>,
     request: BridgeRequest,
 ) -> Result<BridgeEnvelope, String> {
+    if request.platform == "wechat" {
+        return Err("Lite版暂不支持微信账号同步。".to_owned());
+    }
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
-    bridge_runner::run_bridge(request, resource_dir, state.cache_dir.clone())
+    let diagnostic_request = request.clone();
+    let envelope = bridge_runner::run_bridge(request, resource_dir, state.cache_dir.clone())
         .await
-        .map_err(|err| err.to_string())
+        .map_err(|err| {
+            let message = err.to_string();
+            crate::diagnostics::record_bridge_failure(&state, &diagnostic_request, &message);
+            message
+        })?;
+    crate::diagnostics::record_bridge_envelope(&state, &diagnostic_request, &envelope);
+    Ok(envelope)
 }
 
 #[tauri::command]
@@ -29,8 +39,11 @@ pub async fn deploy_platform_bridge(
     profile_id: String,
 ) -> Result<PlatformDeployment, String> {
     let platform = platform.trim().to_ascii_lowercase();
-    let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
+    if platform == "wechat" {
+        return Err("Lite版暂不支持微信账号绑定。".to_owned());
+    }
+    let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let progress = PlatformCliProgressContext {
         app: &app,
         platform: &platform,
@@ -40,8 +53,8 @@ pub async fn deploy_platform_bridge(
         &progress,
         "checking_local",
         format!(
-            "正在核查 {} 官方CLI准备状态…",
-            official_cli::platform_label(&platform)
+            "Checking {} local readiness...",
+            official_cli::platform_cli_label(&platform)
         ),
         1,
         5,
@@ -55,20 +68,42 @@ pub async fn deploy_platform_bridge(
         spec,
         Some(&progress),
     )
-    .await?;
+    .await
+    .map_err(|err| {
+        crate::diagnostics::record_cli_lifecycle_error(
+            &state,
+            &platform,
+            Some(profile_id.clone()),
+            "deploy_platform_bridge",
+            &err,
+        );
+        err
+    })?;
     let current_version = official_cli::official_cli_version(&cli_path, spec).unwrap_or_default();
     let config_dir = state
         .app_dir
         .join("Profiles")
         .join(&profile_id)
         .join(&platform);
-    std::fs::create_dir_all(&config_dir).map_err(|err| err.to_string())?;
+    std::fs::create_dir_all(&config_dir).map_err(|err| {
+        let message = err.to_string();
+        crate::diagnostics::record_cli_lifecycle_error(
+            &state,
+            &platform,
+            Some(profile_id.clone()),
+            "deploy_platform_bridge",
+            &message,
+        );
+        message
+    })?;
 
     Ok(PlatformDeployment {
         platform: platform.clone(),
         cli_path: cli_path.to_string_lossy().to_string(),
         config_dir: config_dir.to_string_lossy().to_string(),
         command: official_cli::default_bind_command(&platform, &cli_path, &config_dir),
+        command_shell: official_cli::command_shell_name().to_owned(),
+        source_dir: None,
         source: spec.source.to_owned(),
         current_version,
     })
@@ -81,17 +116,37 @@ pub async fn check_platform_cli_update(
     platform: String,
 ) -> Result<PlatformCliVersionStatus, String> {
     let platform = platform.trim().to_ascii_lowercase();
+    if platform == "wechat" {
+        return Err("Lite版暂不支持微信CLI版本核查。".to_owned());
+    }
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let cli_path = official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec)
         .ok_or_else(|| {
-            format!(
-                "尚未准备好 {} 官方CLI。",
-                official_cli::platform_label(&platform)
-            )
+            let message = format!(
+                "{} has not been prepared.",
+                official_cli::platform_cli_label(&platform)
+            );
+            crate::diagnostics::record_cli_lifecycle_error(
+                &state,
+                &platform,
+                None,
+                "check_platform_cli_update",
+                &message,
+            );
+            message
         })?;
-    let current_version = official_cli::official_cli_version(&cli_path, spec)
-        .ok_or_else(|| "无法读取 CLI版本。".to_owned())?;
+    let current_version = official_cli::official_cli_version(&cli_path, spec).ok_or_else(|| {
+        let message = "无法读取CLI版本。".to_owned();
+        crate::diagnostics::record_cli_lifecycle_error(
+            &state,
+            &platform,
+            None,
+            "check_platform_cli_update",
+            &message,
+        );
+        message
+    })?;
     let latest_version = official_cli::npm_latest_version(spec.package, None)
         .await
         .unwrap_or_else(|_| current_version.clone());
@@ -112,10 +167,36 @@ pub async fn update_platform_cli(
     platform: String,
 ) -> Result<PlatformCliVersionStatus, String> {
     let platform = platform.trim().to_ascii_lowercase();
+    if platform == "wechat" {
+        return Err("Lite版暂不支持微信CLI更新。".to_owned());
+    }
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
-    let latest_version = official_cli::npm_latest_version(spec.package, None).await?;
-    let install_root = official_cli::writable_cli_install_root(&state.app_dir, spec)?;
+    let latest_version = official_cli::npm_latest_version(spec.package, None)
+        .await
+        .map_err(|err| {
+            let message = err.to_string();
+            crate::diagnostics::record_cli_lifecycle_error(
+                &state,
+                &platform,
+                None,
+                "update_platform_cli",
+                &message,
+            );
+            message
+        })?;
+    let install_root =
+        official_cli::writable_cli_install_root(&state.app_dir, spec).map_err(|err| {
+            let message = err.to_string();
+            crate::diagnostics::record_cli_lifecycle_error(
+                &state,
+                &platform,
+                None,
+                "update_platform_cli",
+                &message,
+            );
+            message
+        })?;
     official_cli::install_package(
         &install_root,
         spec.package,
@@ -123,19 +204,48 @@ pub async fn update_platform_cli(
         &resource_dir,
         None,
     )
-    .await?;
+    .await
+    .map_err(|err| {
+        let message = err.to_string();
+        crate::diagnostics::record_cli_lifecycle_error(
+            &state,
+            &platform,
+            None,
+            "update_platform_cli",
+            &message,
+        );
+        message
+    })?;
 
     let refreshed_cli_path =
         official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec).ok_or_else(
             || {
-                format!(
-                    "更新后未找到 {} 官方CLI。",
-                    official_cli::platform_label(&platform)
-                )
+                let message = format!(
+                    "{} was not found after update.",
+                    official_cli::platform_cli_label(&platform)
+                );
+                crate::diagnostics::record_cli_lifecycle_error(
+                    &state,
+                    &platform,
+                    None,
+                    "update_platform_cli",
+                    &message,
+                );
+                message
             },
         )?;
     let current_version = official_cli::official_cli_version(&refreshed_cli_path, spec)
-        .ok_or_else(|| "更新后无法读取 CLI版本。".to_owned())?;
+        .ok_or_else(|| {
+            let message = "更新后无法读取CLI版本。".to_owned();
+            crate::diagnostics::record_cli_lifecycle_error(
+                &state,
+                &platform,
+                None,
+                "update_platform_cli",
+                &message,
+            );
+            message
+        })?;
     Ok(PlatformCliVersionStatus {
         platform,
         update_available: official_cli::version_is_newer(&latest_version, &current_version),
@@ -152,6 +262,9 @@ pub fn cleanup_unused_platform_cli(
     platform: String,
 ) -> Result<bool, String> {
     let platform = platform.trim().to_ascii_lowercase();
+    if platform == "wechat" {
+        return Err("Lite版暂不支持微信CLI清理。".to_owned());
+    }
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let bound_count = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
@@ -170,8 +283,8 @@ pub fn cleanup_unused_platform_cli(
     if install_root.exists() {
         fs::remove_dir_all(&install_root).map_err(|err| {
             format!(
-                "删除{}官方CLI缓存 {} 失败：{err}",
-                official_cli::platform_label(spec.platform),
+                "删除{}缓存 {} 失败：{err}",
+                official_cli::platform_cli_label(spec.platform),
                 install_root.display()
             )
         })?;

@@ -45,7 +45,7 @@ pub(super) async fn run_official_feishu_cli(
             "feishu",
             "https://github.com/larksuite/cli",
             "FEISHU_CLI_MISSING",
-            "飞书官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成或重新安装 IM-Board。",
+            "官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成，或重新安装IM-Board。",
             true,
             started_at,
         ));
@@ -92,7 +92,7 @@ pub(super) async fn run_official_feishu_cli(
                     "feishu",
                     "https://github.com/larksuite/cli",
                     "MISSING_CHAT",
-                    "fetch-messages 缺少 chat 参数。",
+                    "fetch-messages缺少chat参数。",
                     true,
                     started_at,
                 ));
@@ -287,16 +287,6 @@ fn feishu_lark_config_dir(config: &serde_json::Value) -> Option<PathBuf> {
         .filter(|value| !value.trim().is_empty())
     {
         return Some(expand_home(config_dir));
-    }
-    if let Some(home_dir) = config
-        .get("homeDir")
-        .and_then(|value| value.as_str())
-        .filter(|value| !value.trim().is_empty())
-    {
-        let legacy_dir = expand_home(home_dir).join(".lark-cli");
-        if legacy_dir.join("config.json").exists() {
-            return Some(legacy_dir);
-        }
     }
     config
         .get("configDir")
