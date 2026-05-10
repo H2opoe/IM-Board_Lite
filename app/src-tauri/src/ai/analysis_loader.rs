@@ -2,6 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use rusqlite::params;
 
+use crate::messages::wechat_accounts::is_wechat_system_account;
+
 use super::action_items::{
     analysis_message_sources, load_action_items_for_context,
     load_action_items_for_profiles_context, persist_analysis_across_profiles,
@@ -23,7 +25,14 @@ pub(crate) fn load_analysis_messages(
          limit 1200",
     )?;
     let rows = stmt.query_map(params![day, profile_id], |row| {
+        let chat_id: String = row.get(3)?;
+        if is_wechat_system_account(&chat_id) {
+            return Ok(None);
+        }
         let sender_id: String = row.get(7)?;
+        if is_wechat_system_account(&sender_id) {
+            return Ok(None);
+        }
         let sender_name: String = row.get(8)?;
         let is_me = is_self_sender(&sender_id, &sender_name);
         let msg_type: String = row.get(10)?;
@@ -35,7 +44,7 @@ pub(crate) fn load_analysis_messages(
             id: row.get(0)?,
             profile_id: row.get(1)?,
             platform: row.get(2)?,
-            chat_id: row.get(3)?,
+            chat_id,
             chat_name: row.get(4)?,
             is_group: row.get::<_, i64>(5)? == 1,
             timestamp: row.get(6)?,

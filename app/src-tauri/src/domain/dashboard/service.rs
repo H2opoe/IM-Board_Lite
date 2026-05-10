@@ -15,6 +15,7 @@ pub fn get_dashboard(
         .db
         .lock()
         .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    daily_cache::detect_day_rollover(&conn)?;
     let day = daily_cache::current_dashboard_day(&conn)?;
     let profile_filter = profile_id.unwrap_or_else(|| "aggregate".to_owned());
 

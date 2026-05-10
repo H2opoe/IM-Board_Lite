@@ -6,6 +6,8 @@ use sha2::{Digest, Sha256};
 use crate::storage::models::ImProfile;
 use crate::sync::fetch::MessageImportWindow;
 
+use super::wechat_accounts::is_wechat_system_account;
+
 pub(crate) fn profile_remark(profile: &ImProfile) -> String {
     profile
         .config_json
@@ -95,7 +97,7 @@ pub(crate) fn normalize_message(
         &["chatId", "chat_id", "talker", "Talker", "roomId", "room_id"],
     )
     .unwrap_or_else(|| fallback_chat_id.to_owned());
-    if is_gh_account(&chat_id) {
+    if is_wechat_system_account(&chat_id) {
         return None;
     }
     let chat_name = first_string(
@@ -122,7 +124,7 @@ pub(crate) fn normalize_message(
             chat_id.clone()
         }
     });
-    if is_gh_account(&sender_id) {
+    if is_wechat_system_account(&sender_id) {
         return None;
     }
     let sender_name = first_string(
@@ -195,7 +197,7 @@ fn normalize_text_message(
     fallback_chat_name: &str,
     fallback_is_group: bool,
 ) -> Option<DailyMessage> {
-    if is_gh_account(fallback_chat_id) {
+    if is_wechat_system_account(fallback_chat_id) {
         return None;
     }
 
@@ -219,7 +221,7 @@ fn normalize_text_message(
     } else {
         sender_name.to_owned()
     };
-    if is_gh_account(&sender_id) {
+    if is_wechat_system_account(&sender_id) {
         return None;
     }
     let content_hash = hash_text(&format!(
@@ -291,18 +293,7 @@ pub(crate) fn dedupe_sessions(sessions: Vec<serde_json::Value>) -> Vec<serde_jso
 pub(crate) fn should_sync_session(value: &serde_json::Value) -> bool {
     let username = first_string(value, &["username", "userName", "chatId", "chat_id", "id"])
         .unwrap_or_default();
-    !is_gh_account(&username) && !is_wechat_pseudo_session(&username)
-}
-
-fn is_gh_account(value: &str) -> bool {
-    value.trim().to_ascii_lowercase().starts_with("gh_")
-}
-
-fn is_wechat_pseudo_session(value: &str) -> bool {
-    matches!(
-        value.trim().to_ascii_lowercase().as_str(),
-        "brandsessionholder" | "@placeholder_foldgroup"
-    )
+    !is_wechat_system_account(&username)
 }
 
 pub(crate) fn should_skip_chat_history(
@@ -438,4 +429,101 @@ fn hash_text(value: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(value.as_bytes());
     format!("{:x}", hasher.finalize())
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    fn test_profile() -> ImProfile {
+        ImProfile {
+            id: "profile-1".to_owned(),
+            platform: "wechat".to_owned(),
+            label: "微信工作号".to_owned(),
+            enabled: true,
+            config_json: json!({}),
+            status: "active".to_owned(),
+            sort_order: 0,
+            created_at: "2026-05-01 00:00:00".to_owned(),
+            updated_at: "2026-05-01 00:00:00".to_owned(),
+        }
+    }
+
+    fn test_window() -> MessageImportWindow {
+        MessageImportWindow {
+            day: "2026-05-01".to_owned(),
+            start_timestamp: 0,
+            end_timestamp: 4_102_444_799,
+        }
+    }
+
+    #[test]
+    fn should_sync_session_skips_wechat_system_accounts() {
+        for username in [
+            "filehelper",
+            "notification_messages",
+            "officialaccounts",
+            "gh_news",
+        ] {
+            assert!(!should_sync_session(&json!({ "username": username })));
+        }
+        assert!(should_sync_session(
+            &json!({ "username": "wxid_customer_123" })
+        ));
+    }
+
+    #[test]
+    fn normalize_json_message_skips_system_chat_or_sender() {
+        let profile = test_profile();
+        let window = test_window();
+        let system_chat = json!({
+            "timestamp": 1,
+            "content": "客户问报价什么时候确认？",
+            "chatId": "filehelper",
+            "senderId": "customer-1"
+        });
+        assert!(
+            normalize_message(&profile, &system_chat, &window, "fallback", "客户", false).is_none()
+        );
+
+        let system_sender = json!({
+            "timestamp": 1,
+            "content": "客户问报价什么时候确认？",
+            "chatId": "wxid_customer_123",
+            "senderId": "notification_messages"
+        });
+        assert!(
+            normalize_message(&profile, &system_sender, &window, "fallback", "客户", false)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn normalize_text_message_skips_system_fallback_chat_or_sender() {
+        let profile = test_profile();
+        let window = test_window();
+        let line = "[2026-05-01 09:30] 客户: 报价今天能确认吗？";
+        assert!(normalize_message(
+            &profile,
+            &json!(line),
+            &window,
+            "filehelper",
+            "文件传输助手",
+            false
+        )
+        .is_none());
+
+        let sender_line = "[2026-05-01 09:30] gh_news: 报价今天能确认吗？";
+        assert!(normalize_message(
+            &profile,
+            &json!(sender_line),
+            &window,
+            "wxid_customer_123",
+            "客户",
+            false
+        )
+        .is_none());
+    }
 }

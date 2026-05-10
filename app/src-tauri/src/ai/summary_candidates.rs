@@ -7,6 +7,7 @@ use crate::analysis::local_keywords::{
     keyword_texts_from_message_content, local_keyword_candidates, ANALYSIS_RISK_TERMS,
     ANALYSIS_TASK_TERMS, ANALYSIS_URGENCY_TERMS,
 };
+use crate::messages::wechat_accounts::is_wechat_system_account;
 
 use super::*;
 
@@ -62,7 +63,14 @@ fn load_summary_candidate_messages(
     let rows = stmt.query_map(
         params![day, profile_id, MAX_SUMMARY_MESSAGES as i64],
         |row| {
+            let chat_id: String = row.get(3)?;
+            if is_wechat_system_account(&chat_id) {
+                return Ok(None);
+            }
             let sender_id: String = row.get(7)?;
+            if is_wechat_system_account(&sender_id) {
+                return Ok(None);
+            }
             let sender_name: String = row.get(8)?;
             let is_me = is_self_sender(&sender_id, &sender_name);
             let msg_type: String = row.get(10)?;
@@ -74,7 +82,7 @@ fn load_summary_candidate_messages(
                 id: row.get(0)?,
                 profile_id: row.get(1)?,
                 platform: row.get(2)?,
-                chat_id: row.get(3)?,
+                chat_id,
                 chat_name: row.get(4)?,
                 is_group: row.get::<_, i64>(5)? == 1,
                 timestamp: row.get(6)?,
