@@ -130,14 +130,31 @@ async fn retry_ai_analysis(
     let started_at = chrono::Local::now().to_rfc3339();
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let cache_dir = state.cache_dir.clone();
-    let (target_profiles, day) = {
+    prepare_sync_storage_access(&state);
+    let (target_profiles, day, rollover) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
-        daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
+        let rollover = daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
         let day = daily_cache::current_dashboard_day_info(&conn).map_err(|err| err.to_string())?;
         let target_profiles =
             resolve_target_profiles(&conn, &profile_id).map_err(|err| err.to_string())?;
-        (target_profiles, day)
+        (target_profiles, day, rollover)
     };
+    if rollover.rolled_over {
+        if let Some(profile) = target_profiles.first() {
+            emit_sync_progress(
+                &app,
+                profile,
+                "history",
+                format!(
+                    "业务日已从{}切换到{}，正在重新读取今天的消息…",
+                    rollover.previous_day, rollover.current_day
+                ),
+                0,
+                0,
+            );
+        }
+        return run_manual_sync_inner(app, state, profile_id, false).await;
+    }
     reset_ai_generated_cache(&state, &day, &target_profiles).map_err(|err| err.to_string())?;
     if let Some(profile) = target_profiles.first() {
         emit_sync_progress(

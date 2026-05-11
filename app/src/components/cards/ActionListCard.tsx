@@ -140,7 +140,7 @@ export function ActionListCard({ title, aiStatus, items, onComplete, onReopen, o
             </button>
           </div>
         </div>
-      ) : aiStatus === "analyzing" ? (
+      ) : aiStatus === "analyzing" && items.length === 0 ? (
         <div className="empty-state">{EMPTY_STATE_MESSAGES.aiActionPending}</div>
       ) : items.length === 0 ? (
         <div className="empty-state">{EMPTY_STATE_MESSAGES.noActionItems}</div>

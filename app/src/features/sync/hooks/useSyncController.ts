@@ -64,6 +64,16 @@ function nextStateForProgress(progress: SyncProgress): SyncUiState | null {
   return progress.phase === "analysis" ? "analyzing" : null;
 }
 
+function shouldRefreshDashboardForProgress(mode: SyncJobMode, progress: SyncProgress) {
+  if (!progress.shouldRefreshDashboard) return false;
+  // 重新分析会先清空今日 AI 结果，再分批写回待办、话题和关键词。
+  // 在最终话题/关键词落库前刷新会把看板替换成半成品快照，导致用户正在看的数据突然消失。
+  if (mode === "retry_analysis") {
+    return progress.phase === "summary_done";
+  }
+  return true;
+}
+
 function syncWarningNotices(warnings: string[]): SyncProgressNotice[] {
   return warnings.map((warning, index) => ({
     id: `sync-warning-${index}`,
@@ -193,7 +203,7 @@ export function useSyncController({ activeProfileId, demoMode, profiles, setDash
               updateSyncProgressNotice(progress);
               const nextState = nextStateForProgress(progress);
               if (nextState) setSyncState(nextState);
-              if (progress.shouldRefreshDashboard) {
+              if (shouldRefreshDashboardForProgress(mode, progress)) {
                 refreshDashboardForArrivedBatch();
               }
             });
