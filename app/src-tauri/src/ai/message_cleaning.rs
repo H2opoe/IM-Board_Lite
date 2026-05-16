@@ -53,6 +53,9 @@ pub(super) fn group_has_analysis_signal(messages: &[AnalysisMessage]) -> bool {
         if !has_inbound && !has_self_completion {
             return false;
         }
+        if is_inbound_single_chat_file_signal(message) {
+            return true;
+        }
         if !message.is_group && !message.is_me && looks_like_reply_request(content) {
             return true;
         }
@@ -62,11 +65,14 @@ pub(super) fn group_has_analysis_signal(messages: &[AnalysisMessage]) -> bool {
 }
 
 pub(super) fn looks_like_reply_request(content: &str) -> bool {
+    let value = content
+        .trim()
+        .trim_matches(|ch: char| ch.is_ascii_punctuation() || "，。！？、；：… ".contains(ch));
     content.contains('?')
         || content.contains('？')
         || contains_any(content, ANALYSIS_REPLY_TERMS)
-        || content.ends_with("吗")
-        || content.ends_with("呢")
+        || value.ends_with("吗")
+        || value.ends_with("呢")
 }
 
 pub(crate) fn should_skip_ai_message(message: &AnalysisMessage) -> bool {
@@ -82,6 +88,9 @@ pub(crate) fn should_skip_ai_message(message: &AnalysisMessage) -> bool {
 
 pub(crate) fn clean_message_content_for_ai(msg_type: &str, content: &str) -> Option<String> {
     let trimmed = content.trim();
+    if is_file_message_type(msg_type) {
+        return clean_file_message_text(trimmed);
+    }
     if trimmed.is_empty()
         || should_skip_nonsemantic_message(trimmed)
         || !is_allowed_ai_message_type(msg_type, trimmed)
@@ -160,6 +169,8 @@ pub(super) fn is_allowed_ai_message_type(msg_type: &str, content: &str) -> bool 
             | "news"
             | "card"
             | "49"
+            | "file"
+            | "document"
             | "system"
             | "sys"
             | "notice"
@@ -185,11 +196,36 @@ pub(super) fn is_excluded_ai_message_type(msg_type: &str) -> bool {
         || kind.contains("emoji")
         || kind.contains("表情")
         || kind == "47"
-        || kind.contains("file")
-        || kind.contains("文件")
         || kind.contains("call")
         || kind.contains("voip")
         || kind.contains("通话")
+}
+
+fn is_file_message_type(msg_type: &str) -> bool {
+    let kind = normalized_message_type(msg_type);
+    kind == "file" || kind == "document" || kind.contains("文件")
+}
+
+fn is_inbound_single_chat_file_signal(message: &AnalysisMessage) -> bool {
+    !message.is_group
+        && !message.is_me
+        && is_file_message_type(&message.msg_type)
+        && message.content.trim_start().starts_with("文件：")
+}
+
+fn clean_file_message_text(content: &str) -> Option<String> {
+    let cleaned = content
+        .trim()
+        .trim_start_matches("[文件]")
+        .trim_start_matches("【文件】")
+        .trim_start_matches("文件")
+        .trim_matches(|ch: char| ch.is_whitespace() || matches!(ch, ':' | '：' | '-' | '—'))
+        .trim();
+    if cleaned.is_empty() || cleaned == content.trim() && contains_disallowed_media_content(content)
+    {
+        return None;
+    }
+    Some(format!("文件：{}", truncate_text(cleaned.to_owned(), 240)))
 }
 
 pub(super) fn is_link_or_app_message_type(msg_type: &str) -> bool {

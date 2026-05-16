@@ -29,6 +29,9 @@ pub(super) const LOCAL_KEYWORD_SEED_TERMS: &[&str] = &[
 ];
 
 pub(crate) const ANALYSIS_REPLY_TERMS: &[&str] = &[
+    "请问",
+    "问一下",
+    "咨询",
     "确认",
     "回复",
     "看看",
@@ -37,11 +40,13 @@ pub(crate) const ANALYSIS_REPLY_TERMS: &[&str] = &[
     "是否",
     "是不是",
     "有没有",
+    "能否",
     "怎么",
     "什么时候",
     "哪天",
     "多少",
     "能不能",
+    "可不可以",
     "要不要",
     "需要吗",
 ];

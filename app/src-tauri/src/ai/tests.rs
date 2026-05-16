@@ -323,12 +323,16 @@ fn clean_message_content_for_ai_keeps_only_allowed_message_types() {
         clean_message_content_for_ai("location", "上海市浦东新区世纪大道"),
         Some("上海市浦东新区世纪大道".to_owned())
     );
+    assert_eq!(
+        clean_message_content_for_ai("file", "[文件] 26）03.13—29凯乐石报销清单.xlsx"),
+        Some("文件：26）03.13—29凯乐石报销清单.xlsx".to_owned())
+    );
     for (msg_type, content) in [
         ("system", "[系统] 张三加入了群聊"),
         ("image", "客户发来的装修图片需要确认预算方案"),
         ("voice", "[语音]"),
         ("emoji", "[表情]"),
-        ("file", "报价单.pdf"),
+        ("file", "[文件]"),
         ("video", "[视频]"),
         ("voip", "[语音通话] 通话时长 00:12"),
     ] {
@@ -355,6 +359,64 @@ fn clean_link_or_app_message_text_keeps_title_and_description_without_urls_or_ip
     assert!(text.contains("审批节奏"));
     assert!(!text.contains("example.com"));
     assert!(!text.contains("192.168.1.9"));
+}
+
+#[test]
+fn filter_analysis_messages_keeps_soft_questions_and_inbound_files() {
+    let messages = vec![
+        analysis_message(
+            "msg-question",
+            "humanbeing",
+            "humanbeing",
+            "text",
+            "请问付费版的话是可以拿到源码吗！",
+            false,
+        ),
+        analysis_message(
+            "msg-file",
+            "化妆·白一玲（白白）",
+            "化妆·白一玲（白白）",
+            "file",
+            "文件：26）03.13—29凯乐石报销清单.xlsx",
+            false,
+        ),
+    ];
+
+    let kept_ids = filter_analysis_messages(messages)
+        .into_iter()
+        .map(|message| message.id)
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        kept_ids,
+        vec!["msg-question".to_owned(), "msg-file".to_owned()]
+    );
+}
+
+fn analysis_message(
+    id: &str,
+    chat_name: &str,
+    sender_name: &str,
+    msg_type: &str,
+    content: &str,
+    is_group: bool,
+) -> AnalysisMessage {
+    AnalysisMessage {
+        id: id.to_owned(),
+        profile_id: "profile-1".to_owned(),
+        platform: "wechat".to_owned(),
+        chat_id: chat_name.to_owned(),
+        chat_name: chat_name.to_owned(),
+        is_group,
+        timestamp: 1,
+        sender_id: sender_name.to_owned(),
+        sender_name: sender_name.to_owned(),
+        is_me: sender_name == "me",
+        time_text: "09:00".to_owned(),
+        msg_type: msg_type.to_owned(),
+        content: content.to_owned(),
+        partial: false,
+    }
 }
 
 #[test]
