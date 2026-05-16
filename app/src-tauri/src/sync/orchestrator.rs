@@ -231,6 +231,13 @@ async fn run_full_resync(
     run_manual_sync_inner(app, state, profile_id, false).await
 }
 
+fn prepare_sync_storage_access(state: &State<'_, AppState>) {
+    // 同步缓存可能位于外置盘，先由主 App 轻触目录，避免后续子进程首次访问时才触发系统授权。
+    for path in [&state.app_dir, &state.cache_dir] {
+        let _ = fs::read_dir(path);
+    }
+}
+
 pub(crate) async fn run_sync_bridge(
     state: &State<'_, AppState>,
     request: BridgeRequest,
