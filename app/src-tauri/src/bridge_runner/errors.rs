@@ -5,14 +5,6 @@ use crate::security::sanitize_log;
 use super::{BridgeEnvelope, BridgeError};
 
 pub(super) fn classify_wecom_cli_error(detail: &str) -> Option<BridgeError> {
-    let normalized = detail.to_ascii_lowercase();
-    if normalized.contains("not authenticated") || detail.contains("401") {
-        return Some(BridgeError {
-            code: "WECOM_NOT_AUTHENTICATED".to_owned(),
-            message: not_authenticated_message("企业微信"),
-            recoverable: true,
-        });
-    }
     if detail.contains("暂不支持授权机器人") && detail.contains("消息") {
         return Some(BridgeError {
             code: "WECOM_MESSAGE_PERMISSION_UNSUPPORTED".to_owned(),
@@ -31,7 +23,7 @@ pub(super) fn not_authenticated_message(platform_label: &str) -> String {
 }
 
 pub(super) fn platform_command_shell_name() -> &'static str {
-    "Windows PowerShell"
+    "macOS终端"
 }
 
 pub(super) fn feishu_app_config_incomplete_message() -> String {

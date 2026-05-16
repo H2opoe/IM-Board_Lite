@@ -103,13 +103,9 @@ pub(crate) fn record_cli_lifecycle_error(
     operation: &str,
     error: &str,
 ) {
-    let normalized = error.to_ascii_lowercase();
-    let category = if normalized.contains("missing") || normalized.contains("not found") {
+    let category = if error.contains("尚未准备好") || error.contains("未找到") {
         "missing_runtime"
-    } else if normalized.contains("download")
-        || normalized.contains("install")
-        || normalized.contains("update")
-    {
+    } else if error.contains("下载") || error.contains("安装") || error.contains("更新") {
         "cli_failed"
     } else {
         "unknown"
@@ -181,7 +177,12 @@ fn bridge_error_detail(envelope: &BridgeEnvelope) -> String {
 
 fn bridge_error_category(code: &str, detail: &str) -> &'static str {
     let normalized = detail.to_ascii_lowercase();
-    if normalized.contains("timeout") || normalized.contains("timed out") {
+    if normalized.contains("tls handshake timeout")
+        || normalized.contains("mcp请求超时")
+        || normalized.contains("timeout")
+        || normalized.contains("超时")
+        || normalized.contains("timed out")
+    {
         return "network_timeout";
     }
     if normalized.contains("importerror")
@@ -209,7 +210,10 @@ fn bridge_error_category(code: &str, detail: &str) -> &'static str {
     if code.contains("API_ERROR") {
         return "api_http";
     }
-    if code.contains("CRASHED") || code.contains("CLI_FAILED") || code.contains("DECRYPT_FAILED") {
+    if code.contains("CRASHED") || code.contains("CLI_FAILED") {
+        return "cli_failed";
+    }
+    if code.contains("DECRYPT_FAILED") {
         return "cli_failed";
     }
     "unknown"
@@ -246,46 +250,43 @@ fn bridge_user_message(platform: &str, code: &str, category: &str) -> String {
         _ if category == "missing_runtime" => {
             format!("{label}CLI不可用，可能下载不完整或本地缓存损坏，请重新准备CLI。")
         }
-        _ if category == "runtime_incomplete" => {
-            format!("{label}CLI运行时不完整或版本不匹配，请重新准备CLI后再同步。")
-        }
-        "WECHAT_DECRYPT_FAILED" => {
-            "微信数据库解密失败，请重新运行绑定命令刷新密钥后再同步。".to_owned()
-        }
         _ if category == "launch_failed" => {
             format!("{label}CLI启动失败，真实启动错误已写入诊断包。")
-        }
-        _ if category == "api_http" => {
-            format!("{label}接口返回错误，真实接口响应已写入诊断包。")
         }
         _ if category == "network_timeout" => {
             format!("{label}CLI请求超时，请检查网络、代理/VPN或稍后重试。")
         }
-        _ if category == "cli_failed" => {
-            format!("{label}CLI执行失败，真实返回内容已写入诊断包。")
+        _ if category == "runtime_incomplete" => {
+            format!("{label}CLI运行时不完整或版本不匹配，请重新准备CLI后再同步。")
         }
+        _ if category == "api_http" => format!("{label}接口返回错误，真实接口响应已写入诊断包。"),
+        _ if category == "cli_failed" => format!("{label}CLI执行失败，真实返回内容已写入诊断包。"),
         _ => "发生未知错误，真实错误信息已写入诊断包。".to_owned(),
     }
 }
 
 pub(crate) fn ai_error_event(
     profile_id: Option<String>,
-    operation: impl AsRef<str>,
+    operation: impl Into<String>,
     error: &str,
     diagnostic: Option<serde_json::Value>,
 ) -> DiagnosticErrorEvent {
+    let operation = operation.into();
     let category = ai_error_category(error, diagnostic.as_ref());
-    let operation = operation.as_ref();
+    let user_message = ai_user_message(category);
     DiagnosticErrorEvent {
         source: "ai",
         category,
         severity: "error",
         profile_id,
         platform: None,
-        operation: operation.to_owned(),
-        user_message: ai_user_message(category),
-        raw_detail: json!({ "error": error, "diagnostic": diagnostic }),
-        context: json!({ "operation": operation }),
+        operation,
+        user_message,
+        raw_detail: json!({
+            "error": error,
+            "diagnostic": diagnostic,
+        }),
+        context: json!({}),
     }
 }
 
@@ -297,70 +298,113 @@ pub(crate) fn classify_ai_user_message(
 }
 
 pub(crate) fn local_ai_error_event(
-    operation: &str,
+    operation: impl Into<String>,
     error: &str,
-    diagnostic: serde_json::Value,
+    context: serde_json::Value,
 ) -> DiagnosticErrorEvent {
+    let operation = operation.into();
+    let category = ai_error_category(error, None);
     DiagnosticErrorEvent {
-        source: "ai_local",
-        category: "local_runtime",
+        source: "local_ai_runtime",
+        category: if category == "unknown" {
+            "local_runtime"
+        } else {
+            category
+        },
         severity: "error",
         profile_id: None,
         platform: None,
-        operation: operation.to_owned(),
+        operation,
         user_message: local_ai_user_message(error),
-        raw_detail: json!({ "error": error, "diagnostic": diagnostic }),
-        context: json!({ "operation": operation }),
+        raw_detail: json!({ "error": error }),
+        context,
     }
 }
 
 fn ai_error_category(error: &str, diagnostic: Option<&serde_json::Value>) -> &'static str {
     let normalized = error.to_ascii_lowercase();
-    if diagnostic
-        .and_then(|value| value.get("httpStatus"))
-        .and_then(|value| value.as_i64())
-        == Some(404)
-        || normalized.contains("404")
-    {
-        return "model_unavailable";
-    }
-    if normalized.contains("timeout") || normalized.contains("timed out") {
-        return "network_timeout";
-    }
-    if normalized.contains("tls") || normalized.contains("close_notify") {
-        return "tls_closed_early";
-    }
-    if normalized.contains("401")
-        || normalized.contains("unauthorized")
-        || normalized.contains("api key")
-    {
+    if normalized.contains("api key") || normalized.contains("401") || normalized.contains("403") {
         return "auth";
     }
     if normalized.contains("429") || normalized.contains("rate limit") {
-        return "rate_limited";
+        return "api_http";
+    }
+    if normalized.contains("404") || normalized.contains("model") && normalized.contains("not") {
+        return "model_limit";
+    }
+    if normalized.contains("timeout") || normalized.contains("超时") {
+        return "network_timeout";
+    }
+    if normalized.contains("tls")
+        || normalized.contains("unexpected-eof")
+        || normalized.contains("close_notify")
+    {
+        return "tls_closed_early";
+    }
+    if normalized.contains("dns")
+        || normalized.contains("connect")
+        || normalized.contains("连接失败")
+    {
+        return "network_connect";
+    }
+    if normalized.contains("json") || normalized.contains("解析失败") {
+        return "response_parse";
+    }
+    if normalized.contains("为空") || normalized.contains("empty") {
+        return "response_empty";
+    }
+    if let Some(diagnostic) = diagnostic {
+        if diagnostic
+            .get("contentEmpty")
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false)
+        {
+            return "response_empty";
+        }
+        if diagnostic
+            .get("finishReason")
+            .and_then(|value| value.as_str())
+            .is_some_and(|reason| reason == "length")
+        {
+            return "model_limit";
+        }
+        if let Some(status) = diagnostic
+            .get("httpStatus")
+            .and_then(|value| value.as_u64())
+        {
+            return match status {
+                401 | 403 => "auth",
+                429 | 500..=599 => "api_http",
+                _ => "api_http",
+            };
+        }
     }
     "unknown"
 }
 
 fn ai_user_message(category: &str) -> String {
     match category {
-        "model_unavailable" => "当前模型不可用，请检查模型名称或账号是否有调用权限。".to_owned(),
-        "network_timeout" => "AI请求超时，请检查网络、代理或服务商响应速度。".to_owned(),
-        "tls_closed_early" => {
-            "AI连接被对端或中间网络提前断开，可稍后重试或切换网络/代理。".to_owned()
-        }
-        "auth" => "AI服务鉴权失败，请检查API Key、模型权限或账号额度。".to_owned(),
-        "rate_limited" => "AI请求触发限流，请稍后重试。".to_owned(),
-        _ => "AI请求失败，真实错误信息已写入诊断包。".to_owned(),
+        "auth" => "AI服务鉴权失败，请检查API Key、模型权限或账号额度。",
+        "model_limit" => "当前模型不可用，请检查模型名称或账号是否有调用权限。",
+        "api_http" => "AI服务返回错误，真实响应内容已写入诊断包。",
+        "network_timeout" => "AI请求超时，请检查网络、代理或服务商响应速度。",
+        "network_connect" => "AI服务连接失败，请检查DNS、代理/VPN、防火墙或公司网络策略。",
+        "tls_closed_early" => "AI连接被对端或中间网络提前断开，可稍后重试或切换网络/代理。",
+        "response_empty" => "AI返回内容为空，请检查模型输出限制或服务商兼容性。",
+        "response_parse" => "AI返回内容不是可解析的JSON，真实返回片段已写入诊断包。",
+        _ => "发生未知错误，真实错误信息已写入诊断包。",
     }
+    .to_owned()
 }
 
 fn local_ai_user_message(error: &str) -> String {
-    if error.to_ascii_lowercase().contains("missing") {
-        "本地推理运行时缺失，请重新准备内置资源后再测试。".to_owned()
-    } else {
-        "本地推理运行时不可用，真实错误信息已写入诊断包。".to_owned()
+    if error.contains("下载") {
+        return "本地DeepSeek模型下载失败，真实下载错误已写入诊断包。".to_owned();
     }
+    if error.contains("启动") {
+        return "本地DeepSeek推理服务启动失败，真实启动错误已写入诊断包。".to_owned();
+    }
+    "本地推理运行时不可用，请重新准备运行时后再测试。".to_owned()
 }
 
 fn profile_context(profile: &ImProfile) -> serde_json::Value {

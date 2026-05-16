@@ -82,10 +82,7 @@ fn lite_profile_for_storage(mut profile: ImProfile) -> ImProfile {
     profile
 }
 
-pub fn delete_profile(
-    conn: &mut Connection,
-    profile_id: &str,
-) -> anyhow::Result<Option<ImProfile>> {
+pub fn delete_profile(conn: &mut Connection, profile_id: &str) -> anyhow::Result<Option<ImProfile>> {
     let profile = profile_by_id(conn, profile_id)?;
     let tx = conn.transaction()?;
     tx.execute("delete from profiles where id = ?1", params![profile_id])?;
@@ -177,25 +174,16 @@ mod tests {
         let conn = Connection::open_in_memory().expect("open memory db");
         conn.execute_batch(include_str!("../../migrations/001_init.sql"))
             .expect("create schema");
-        let saved = upsert_profile(&conn, test_profile("wechat-a", "wechat", true, "normal"))
-            .expect("upsert profile");
+        let saved = upsert_profile(&conn, test_profile("wechat-a", "wechat", true, "normal")).expect("upsert profile");
 
         assert!(!saved.enabled);
         assert_eq!(saved.status, "disabled");
 
         let stored_enabled: i64 = conn
-            .query_row(
-                "select enabled from profiles where id = 'wechat-a'",
-                [],
-                |row| row.get(0),
-            )
+            .query_row("select enabled from profiles where id = 'wechat-a'", [], |row| row.get(0))
             .expect("stored enabled");
         let stored_status: String = conn
-            .query_row(
-                "select status from profiles where id = 'wechat-a'",
-                [],
-                |row| row.get(0),
-            )
+            .query_row("select status from profiles where id = 'wechat-a'", [], |row| row.get(0))
             .expect("stored status");
         assert_eq!(stored_enabled, 0);
         assert_eq!(stored_status, "disabled");
@@ -271,9 +259,7 @@ mod tests {
             "action_items",
         ] {
             let count: i64 = conn
-                .query_row(&format!("select count(*) from {table}"), [], |row| {
-                    row.get(0)
-                })
+                .query_row(&format!("select count(*) from {table}"), [], |row| row.get(0))
                 .expect("count rows");
             assert_eq!(count, 0, "{table} should be empty");
         }

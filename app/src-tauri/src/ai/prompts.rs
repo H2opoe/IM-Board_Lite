@@ -1,13 +1,15 @@
 pub const DEFAULT_ANALYSIS_PROMPT: &str = r#"你是一个本地即时通讯工作助理。请只根据输入的聊天消息识别真正需要用户处理的事项。
 
 事项识别规则：
+0. 输入 messages 中 isMe=true，或 senderId/senderName 为 me/self/我 的消息，均表示用户本人发出的消息；判断“已回复/已处理/待我回复”时必须把这些消息视为用户自己的发言。
 1. 待我回复：对方直接向用户提问、催办、请求确认、需要用户表态；如果后续已经看到用户回复或处理，也要返回 type=reply，但 status=done，用于留痕且不计入未完成。
 2. 待办事项：聊天里明确出现需要用户执行、跟进、提交、安排、确认、交付、付款、预约、发送资料的任务，且不是泛泛闲聊；如果后续已经看到用户完成，也可以返回 status=done。
 3. 如果证据不足，不要臆测；可通过 contextIncomplete=true 请求系统补读同聊天历史，不要把内部补读状态写入用户可见文案。
 4. 群聊里只有明确 @我、点名、分配给我、或语义上明显由我负责时才生成事项。
 5. 忽略公众号、广告、系统通知、寒暄、普通情绪表达、没有后续动作的信息。
-6. 输入的 messages 只包含本轮新增且尚未分析的消息；如果 historicalMessages 非空，请只把它当作同聊天的历史上下文证据，不要从历史消息本身新增事项。
-7. 先根据 messages 和 historicalMessages 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title、description、suggestedReply、evidenceSummary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
+6. 微信内置/系统账号必须忽略，不要生成事项，包括 newsapp、fmessage、filehelper、weibo、qqmail、tmessage、qmessage、qqsync、floatbottle、lbsapp、shakeapp、medianote、qqfriend、readerapp、blogapp、facebookapp、masssendapp、meishiapp、feedsapp、voip、blogappweixin、weixin、brandsessionholder、weixinreminder、officialaccounts、notification_messages、wxitil、userexperience_alarm，以及所有 gh_ 开头的公众号账号。
+7. 输入的 messages 只包含本轮新增且尚未分析的消息；如果 historicalMessages 非空，请只把它当作同聊天的历史上下文证据，不要从历史消息本身新增事项。
+8. 先根据 messages 和 historicalMessages 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title、description、suggestedReply、evidenceSummary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
 
 管理介入/情绪风险规则：
 1. 默认假设用户是管理者，很多项目群由下属直接跟进。即使没有 @我 或直接分配给我，只要出现客户、合作方、同事、下属之间的明显负面情绪或沟通氛围异常，也要识别为需要用户介入的 task。
@@ -69,11 +71,12 @@ pub const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个本地即时通讯工作
 4. 普通寒暄、表情、单条孤立消息不要形成热门话题。
 5. 图片、视频、语音、文件、链接等媒介分享本身不是话题；只有 snippets 明确展示了图片/文件内容，并且多人围绕该具体内容讨论时，才可归纳成内容话题，标题不能写“图片分享/文件分享/链接分享”。
 6. “微信版本不支持展示内容”“当前版本不支持”“请升级微信查看”、“拍一拍”“拍了拍”、成员通过二维码加入群聊、邀请入群、退群等客户端兼容性、互动系统文本或系统提示不是用户讨论，不要形成话题，也不要写入 summary。
-7. count 表示相关有效消息条数；sourceMessageIds 只能来自本次新增的 candidateTopics.sourceMessageIds，系统会自动合并 existingTopics.sourceMessageIds 并重算 count，不要估算，不要使用群聊总消息数。
-8. sourceChats 只能使用 existingTopics 或 candidateTopics 中的 chatName，同一 chatName 只出现一次。
-9. summary 要反映当前进展，不要写入对话名/群聊名/联系人名。
-10. 投诉、生气、不满、抱怨、公开冲突、交付/服务/价格/质量争议等沟通氛围异常，应优先形成话题，标题体现风险主题，summary 说明情绪和争议焦点。
-11. 先根据 candidateTopics 的 snippets 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title 和 summary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
+7. 微信内置/系统账号必须忽略，不要形成话题或关键词，包括 newsapp、fmessage、filehelper、weibo、qqmail、tmessage、qmessage、qqsync、floatbottle、lbsapp、shakeapp、medianote、qqfriend、readerapp、blogapp、facebookapp、masssendapp、meishiapp、feedsapp、voip、blogappweixin、weixin、brandsessionholder、weixinreminder、officialaccounts、notification_messages、wxitil、userexperience_alarm，以及所有 gh_ 开头的公众号账号。
+8. count 表示相关有效消息条数；sourceMessageIds 只能来自本次新增的 candidateTopics.sourceMessageIds，系统会自动合并 existingTopics.sourceMessageIds 并重算 count，不要估算，不要使用群聊总消息数。
+9. sourceChats 只能使用 existingTopics 或 candidateTopics 中的 chatName，同一 chatName 只出现一次。
+10. summary 要反映当前进展，不要写入对话名/群聊名/联系人名。
+11. 投诉、生气、不满、抱怨、公开冲突、交付/服务/价格/质量争议等沟通氛围异常，应优先形成话题，标题体现风险主题，summary 说明情绪和争议焦点。
+12. 先根据 candidateTopics 的 snippets 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title 和 summary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
 
 旧话题去重合并规则：
 1. existingTopics 是当前分析范围内已经汇总好的热门话题，只用于判断新候选是否需要沿用旧话题。
@@ -86,7 +89,7 @@ pub const DEFAULT_SUMMARY_PROMPT: &str = r#"你是一个本地即时通讯工作
 1. 当输入中提供关键词识别消息列表（keywordRefine.messages）时，请只根据这些原始聊天消息直接生成顶层 keywords 字段，不要把整句消息直接当作关键词。
 2. display 和 aliases 必须来自聊天消息中的明确表达，可以做轻微归一化，例如“自取货架/货架自取”合并为更自然的展示词。
 3. 每个 keyword 必须包含 profileId、display、aliases、category、valid、confidence、scoreMultiplier、sourceMessageIds；profileId 和 sourceMessageIds 必须来自 keywordRefine.messages。
-4. 过滤系统通知、入群通知、退群通知、扫码入群、撤回消息、“拍一拍”“拍了拍”、群欢迎语、营销模板、技术 payload。
+4. 过滤系统通知、入群通知、退群通知、扫码入群、撤回消息、“拍一拍”“拍了拍”、群欢迎语、营销模板、技术 payload，以及 filehelper、notification_messages、officialaccounts、brandsessionholder、weixin、所有 gh_ 开头账号等微信内置/系统账号。
 5. 过滤低信息密度泛词，例如：时候、公司、系统、市场、问题、情况、时间、消息、内容、处理、收到、回复、今天、下午、上午、现在、可以、需要。
 6. 如果泛词和具体业务词组成明确话题，可以保留，例如：订单系统、库存问题、华东市场、售后问题。
 7. 普通人名不要进入主热词词云；确实返回时 category=person 且 valid=false 或 scoreMultiplier 不超过 0.3。

@@ -1,15 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
-
 use crate::security::sanitize_log;
 
 use super::{BridgeEnvelope, BridgeError};
-
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub(super) struct BridgeProcessSpec {
     pub(super) executable: PathBuf,
@@ -67,25 +61,43 @@ fn python3_path_candidates(resource_dir: &Path) -> Vec<PathBuf> {
             candidates.push(PathBuf::from(value));
         }
     }
+    if let Some(home) = dirs::home_dir() {
+        candidates.extend([
+            home.join(".local").join("bin").join("python3"),
+            home.join(".pyenv").join("shims").join("python3"),
+            home.join(".asdf").join("shims").join("python3"),
+        ]);
+    }
+    candidates.extend([
+        PathBuf::from("/opt/homebrew/bin/python3"),
+        PathBuf::from("/usr/local/bin/python3"),
+    ]);
     if let Some(path) = std::env::var_os("PATH") {
         candidates.extend(
             std::env::split_paths(&path)
-                .flat_map(|dir| {
-                    [
-                        dir.join("python.exe"),
-                        dir.join("python3.exe"),
-                        dir.join("python"),
-                    ]
-                })
+                .map(|dir| dir.join("python3"))
+                .filter(|path| !is_macos_system_python_shim(path))
                 .collect::<Vec<_>>(),
         );
+    }
+    if !cfg!(target_os = "macos") {
+        candidates.push(PathBuf::from("/usr/bin/python3"));
     }
     dedupe_existing_paths(&mut candidates);
     candidates
 }
 
+fn is_macos_system_python_shim(path: &Path) -> bool {
+    cfg!(target_os = "macos") && path == Path::new("/usr/bin/python3")
+}
+
 fn bundled_python3_candidates(resource_dir: &Path) -> Vec<PathBuf> {
-    if !(std::env::consts::OS == "windows" && std::env::consts::ARCH == "x86_64") {
+    let (arch, executable) = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("macos", "aarch64") => ("darwin-arm64", ["python", "bin", "python3.10"]),
+        ("macos", "x86_64") => ("darwin-x64", ["python", "bin", "python3.10"]),
+        _ => ("", ["", "", ""]),
+    };
+    if arch.is_empty() {
         return Vec::new();
     }
     let cwd = std::env::current_dir().ok();
@@ -100,11 +112,16 @@ fn bundled_python3_candidates(resource_dir: &Path) -> Vec<PathBuf> {
         .into_iter()
         .flatten()
         .map(|root| {
-            root.join("python")
-                .join(PYTHON_STANDALONE_VERSION)
-                .join("win-x64")
+            let mut path = root
                 .join("python")
-                .join("python.exe")
+                .join(PYTHON_STANDALONE_VERSION)
+                .join(arch)
+                .join(executable[0])
+                .join(executable[1]);
+            if !executable[2].is_empty() {
+                path = path.join(executable[2]);
+            }
+            path
         })
         .collect()
 }
@@ -115,12 +132,12 @@ fn is_usable_python3(path: &Path) -> bool {
     if !path.exists() {
         return false;
     }
-    let mut command = std::process::Command::new(path);
-    command.arg("--version");
-    command.stdout(Stdio::piped());
-    command.stderr(Stdio::piped());
-    hide_windows_console(&mut command);
-    let Ok(output) = command.output() else {
+    let Ok(output) = std::process::Command::new(path)
+        .arg("--version")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+    else {
         return false;
     };
     if !output.status.success() {
@@ -132,18 +149,6 @@ fn is_usable_python3(path: &Path) -> bool {
     ]
     .join(" ");
     version.contains("Python 3.")
-}
-
-fn hide_windows_console(command: &mut std::process::Command) {
-    #[cfg(windows)]
-    {
-        // Windows GUI 应用探测内置 Python 时不能闪出命令行窗口。
-        command.creation_flags(CREATE_NO_WINDOW);
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = command;
-    }
 }
 
 pub(super) fn bridge_spawn_error(
@@ -163,7 +168,7 @@ pub(super) fn bridge_spawn_error(
         process.executable.to_string_lossy()
     ));
     if platform == "wechat" && script.is_some() && process.prefix_args.is_empty() {
-        hints.push("应用内置 Python 运行时缺失或不可用，微信 bridge 无法运行。请重新安装或使用重新打包后的应用。".to_owned());
+        hints.push("应用内置Python运行时缺失或不可用，macOS微信bridge无法运行。请重新安装或使用重新打包后的应用。".to_owned());
     }
     hints.push(detail.clone());
     BridgeEnvelope {
@@ -172,7 +177,7 @@ pub(super) fn bridge_spawn_error(
         warnings: hints,
         error: Some(BridgeError {
             code: "BRIDGE_SPAWN_FAILED".to_owned(),
-            message: format!("Bridge 进程启动失败：{detail}"),
+            message: format!("Bridge进程启动失败：{detail}"),
             recoverable: true,
         }),
         meta: serde_json::json!({

@@ -15,9 +15,6 @@ pub async fn run_bridge_command(
     state: State<'_, AppState>,
     request: BridgeRequest,
 ) -> Result<BridgeEnvelope, String> {
-    if request.platform == "wechat" {
-        return Err("Lite版暂不支持微信账号同步。".to_owned());
-    }
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let diagnostic_request = request.clone();
     let envelope = bridge_runner::run_bridge(request, resource_dir, state.cache_dir.clone())
@@ -39,11 +36,8 @@ pub async fn deploy_platform_bridge(
     profile_id: String,
 ) -> Result<PlatformDeployment, String> {
     let platform = platform.trim().to_ascii_lowercase();
-    let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
-    if platform == "wechat" {
-        return Err("Lite版暂不支持微信账号绑定。".to_owned());
-    }
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
+    let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let progress = PlatformCliProgressContext {
         app: &app,
         platform: &platform,
@@ -53,7 +47,7 @@ pub async fn deploy_platform_bridge(
         &progress,
         "checking_local",
         format!(
-            "Checking {} local readiness...",
+            "正在核查{}准备状态…",
             official_cli::platform_cli_label(&platform)
         ),
         1,
@@ -103,7 +97,6 @@ pub async fn deploy_platform_bridge(
         config_dir: config_dir.to_string_lossy().to_string(),
         command: official_cli::default_bind_command(&platform, &cli_path, &config_dir),
         command_shell: official_cli::command_shell_name().to_owned(),
-        source_dir: None,
         source: spec.source.to_owned(),
         current_version,
     })
@@ -116,15 +109,12 @@ pub async fn check_platform_cli_update(
     platform: String,
 ) -> Result<PlatformCliVersionStatus, String> {
     let platform = platform.trim().to_ascii_lowercase();
-    if platform == "wechat" {
-        return Err("Lite版暂不支持微信CLI版本核查。".to_owned());
-    }
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let cli_path = official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec)
         .ok_or_else(|| {
             let message = format!(
-                "{} has not been prepared.",
+                "尚未准备好{}。",
                 official_cli::platform_cli_label(&platform)
             );
             crate::diagnostics::record_cli_lifecycle_error(
@@ -167,9 +157,6 @@ pub async fn update_platform_cli(
     platform: String,
 ) -> Result<PlatformCliVersionStatus, String> {
     let platform = platform.trim().to_ascii_lowercase();
-    if platform == "wechat" {
-        return Err("Lite版暂不支持微信CLI更新。".to_owned());
-    }
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let latest_version = official_cli::npm_latest_version(spec.package, None)
@@ -221,7 +208,7 @@ pub async fn update_platform_cli(
         official_cli::resolve_official_cli(&resource_dir, &state.app_dir, spec).ok_or_else(
             || {
                 let message = format!(
-                    "{} was not found after update.",
+                    "更新后未找到{}。",
                     official_cli::platform_cli_label(&platform)
                 );
                 crate::diagnostics::record_cli_lifecycle_error(
@@ -262,9 +249,6 @@ pub fn cleanup_unused_platform_cli(
     platform: String,
 ) -> Result<bool, String> {
     let platform = platform.trim().to_ascii_lowercase();
-    if platform == "wechat" {
-        return Err("Lite版暂不支持微信CLI清理。".to_owned());
-    }
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let bound_count = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;

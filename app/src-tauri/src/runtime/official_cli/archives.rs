@@ -73,29 +73,6 @@ pub(super) fn extract_tgz_bytes(
     Ok(())
 }
 
-pub(super) fn extract_zip_bytes(bytes: &[u8], destination: &Path) -> Result<(), String> {
-    let reader = Cursor::new(bytes);
-    let mut archive =
-        zip::ZipArchive::new(reader).map_err(|err| format!("读取 zip 失败：{err}"))?;
-    for index in 0..archive.len() {
-        let mut file = archive.by_index(index).map_err(|err| err.to_string())?;
-        let Some(path) = file.enclosed_name().map(|path| path.to_path_buf()) else {
-            continue;
-        };
-        let output = destination.join(path);
-        if file.is_dir() {
-            fs::create_dir_all(&output).map_err(|err| err.to_string())?;
-            continue;
-        }
-        if let Some(parent) = output.parent() {
-            fs::create_dir_all(parent).map_err(|err| err.to_string())?;
-        }
-        let mut output_file = fs::File::create(&output).map_err(|err| err.to_string())?;
-        std::io::copy(&mut file, &mut output_file).map_err(|err| err.to_string())?;
-    }
-    Ok(())
-}
-
 fn safe_archive_path(path: &Path, strip_package_prefix: bool) -> Result<PathBuf, String> {
     let mut output = PathBuf::new();
     for (index, component) in path.components().enumerate() {

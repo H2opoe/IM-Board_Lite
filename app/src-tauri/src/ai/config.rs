@@ -242,12 +242,20 @@ fn is_known_default_analysis_prompt(value: &str) -> bool {
         && (value.contains("今天聊天消息")
             || value.contains("尚未分析的今天消息")
             || value.contains("今天已有的待回复/待办"));
+    let missing_wechat_system_account_filter = trimmed
+        .starts_with("你是一个本地即时通讯工作助理。")
+        && value.contains("请返回严格 JSON")
+        && value.contains("管理介入/情绪风险规则")
+        && value.contains("批内去重与历史参考规则")
+        && !value.contains("filehelper")
+        && !value.contains("notification_messages");
     trimmed.is_empty()
         || trimmed == DEFAULT_ANALYSIS_PROMPT.trim()
         || is_old_default
         || missing_language_constraint
         || fixed_chinese_only_language_constraint
         || date_limited_default
+        || missing_wechat_system_account_filter
 }
 
 fn is_known_default_summary_prompt(value: &str) -> bool {
@@ -278,6 +286,13 @@ fn is_known_default_summary_prompt(value: &str) -> bool {
         && value.contains("请返回严格 JSON")
         && (value.contains("不要参考本地识别词，不要合并旧关键词")
             || !value.contains("旧话题去重合并规则"));
+    let missing_wechat_system_account_filter = trimmed
+        .starts_with("你是一个本地即时通讯工作助理。")
+        && value.contains("请返回严格 JSON")
+        && value.contains("candidateTopics")
+        && value.contains("旧话题去重合并规则")
+        && value.contains("关键词词云识别规则")
+        && (!value.contains("filehelper") || !value.contains("notification_messages"));
     trimmed.is_empty()
         || trimmed == DEFAULT_SUMMARY_PROMPT.trim()
         || old_frontend_default
@@ -286,4 +301,5 @@ fn is_known_default_summary_prompt(value: &str) -> bool {
         || missing_keyword_refine_section
         || old_keyword_refine_candidates_prompt
         || old_mixed_dedup_prompt
+        || missing_wechat_system_account_filter
 }

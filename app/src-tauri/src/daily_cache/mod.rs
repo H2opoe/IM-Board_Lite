@@ -53,11 +53,33 @@ pub fn detect_day_rollover(conn: &Connection) -> anyhow::Result<RolloverResult> 
 }
 
 pub fn clear_expired_daily_cache(conn: &Connection, today: &str) -> anyhow::Result<()> {
+    clear_expired_action_items(conn, today)?;
     conn.execute("delete from daily_messages where day <> ?1", params![today])?;
     conn.execute("delete from daily_stats where day <> ?1", params![today])?;
     conn.execute("delete from daily_topics where day <> ?1", params![today])?;
     conn.execute(
         "delete from ai_analysis_runs where day <> ?1 and status in ('pending', 'running')",
+        params![today],
+    )?;
+    Ok(())
+}
+
+fn clear_expired_action_items(conn: &Connection, today: &str) -> anyhow::Result<()> {
+    // 每日清理只延续历史未完成的待回复/待办；已完成、忽略和其他类型随过期看板数据一起移除。
+    conn.execute(
+        "delete from action_items
+         where not (
+           status = 'open'
+           and type in ('reply', 'task')
+           and carry_over = 1
+         )
+         and coalesce((
+           select max(daily_messages.day)
+           from daily_messages
+           where daily_messages.id in (
+             select value from json_each(action_items.source_message_ids)
+           )
+         ), date(first_detected_at)) <> ?1",
         params![today],
     )?;
     Ok(())
@@ -126,4 +148,88 @@ fn today_clear_at(minutes: i64) -> anyhow::Result<chrono::DateTime<Local>> {
         .single()
         .ok_or_else(|| anyhow::anyhow!("无法计算缓存清理时间。"))?;
     Ok(midnight + Duration::minutes(minutes))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn expired_daily_cache_clears_finished_history_and_keeps_open_items() {
+        let conn = Connection::open_in_memory().expect("in-memory sqlite");
+        conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+            .expect("schema");
+        conn.execute(
+            "insert into daily_messages(
+               id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id,
+               sender_name, timestamp, time_text, msg_type, content, content_hash
+             )
+             values('msg-old-open', '2026-05-08', 'profile-1', 'wechat', 'chat-1', '旧群', 1,
+                    'u-1', '用户', 1, '09:00', 'text', '旧未完成事项', 'hash-old-open'),
+                   ('msg-old-done', '2026-05-08', 'profile-1', 'wechat', 'chat-1', '旧群', 1,
+                    'u-1', '用户', 2, '10:00', 'text', '旧已完成事项', 'hash-old-done'),
+                   ('msg-today-done', '2026-05-09', 'profile-1', 'wechat', 'chat-1', '今日群', 1,
+                    'u-1', '用户', 3, '11:00', 'text', '今日已完成事项', 'hash-today-done')",
+            [],
+        )
+        .expect("messages");
+        conn.execute(
+            "insert into action_items(
+               id, type, status, priority, title, description, profile_id, platform, chat_id,
+               chat_name, source_message_ids, evidence_summary, carry_over, first_detected_at, last_updated_at,
+               completed_at
+             )
+             values('act-old-open', 'task', 'open', 'medium', '旧未完成', '旧未完成描述',
+                    'profile-1', 'wechat', 'chat-1', '旧群', '[\"msg-old-open\"]',
+                    '旧未完成证据', 1, '2026-05-08 09:00:00', '2026-05-08 09:00:00', null),
+                   ('act-old-done', 'task', 'done', 'medium', '旧已完成', '旧已完成描述',
+                    'profile-1', 'wechat', 'chat-1', '旧群', '[\"msg-old-done\"]',
+                    '旧已完成证据', 1, '2026-05-08 10:00:00', '2026-05-08 10:30:00',
+                    '2026-05-08 10:30:00'),
+                   ('act-old-ignored', 'reply', 'ignored', 'low', '旧已忽略', '旧已忽略描述',
+                    'profile-1', 'wechat', 'chat-1', '旧群', '[\"msg-old-done\"]',
+                    '旧已忽略证据', 1, '2026-05-08 12:00:00', '2026-05-08 12:00:00', null),
+                   ('act-today-done', 'reply', 'done', 'high', '今日已完成', '今日已完成描述',
+                    'profile-1', 'wechat', 'chat-1', '今日群', '[\"msg-today-done\"]',
+                    '今日已完成证据', 1, '2026-05-09 11:00:00', '2026-05-09 11:30:00',
+                    '2026-05-09 11:30:00'),
+                   ('act-legacy-open', 'reply', 'open', 'high', '旧版未完成', '旧版未完成描述',
+                    'profile-1', 'wechat', 'chat-1', '旧群', '[]',
+                    '旧版未完成证据', 1, '2026-05-07 08:00:00', '2026-05-07 08:00:00', null),
+                   ('act-legacy-done', 'reply', 'done', 'high', '旧版已完成', '旧版已完成描述',
+                    'profile-1', 'wechat', 'chat-1', '旧群', '[]',
+                    '旧版已完成证据', 1, '2026-05-07 08:00:00', '2026-05-07 08:30:00',
+                    '2026-05-07 08:30:00')",
+            [],
+        )
+        .expect("action items");
+
+        clear_expired_daily_cache(&conn, "2026-05-09").expect("clear expired cache");
+
+        assert_eq!(
+            action_item_ids(&conn),
+            vec![
+                "act-legacy-open".to_owned(),
+                "act-old-open".to_owned(),
+                "act-today-done".to_owned()
+            ]
+        );
+        assert_eq!(daily_message_ids(&conn), vec!["msg-today-done".to_owned()]);
+    }
+
+    fn action_item_ids(conn: &Connection) -> Vec<String> {
+        ids_from_query(conn, "select id from action_items order by id")
+    }
+
+    fn daily_message_ids(conn: &Connection) -> Vec<String> {
+        ids_from_query(conn, "select id from daily_messages order by id")
+    }
+
+    fn ids_from_query(conn: &Connection, sql: &str) -> Vec<String> {
+        let mut stmt = conn.prepare(sql).expect("prepare ids query");
+        stmt.query_map([], |row| row.get::<_, String>(0))
+            .expect("query ids")
+            .collect::<Result<Vec<_>, _>>()
+            .expect("collect ids")
+    }
 }

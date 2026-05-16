@@ -46,8 +46,11 @@ impl ConnectorAdapter {
     }
 }
 
-const CONNECTOR_REGISTRY: &[ConnectorAdapter] =
-    &[wecom::ADAPTER, feishu::ADAPTER, dingtalk::ADAPTER];
+const CONNECTOR_REGISTRY: &[ConnectorAdapter] = &[
+    wecom::ADAPTER,
+    feishu::ADAPTER,
+    dingtalk::ADAPTER,
+];
 
 pub fn find(platform: &str) -> Option<ConnectorAdapter> {
     CONNECTOR_REGISTRY

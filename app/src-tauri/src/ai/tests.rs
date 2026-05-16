@@ -970,9 +970,7 @@ fn normalize_config_preserves_frontend_prompt_text() {
 
     let normalized = normalize_config(frontend_prompt_config);
     assert!(normalized.analysis_prompt.contains("今天聊天消息识别"));
-    assert!(normalized
-        .summary_prompt
-        .contains("今天聊天消息生成看板话题"));
+    assert!(normalized.summary_prompt.contains("今天聊天消息生成看板话题"));
     assert!(!normalized.analysis_prompt_custom);
     assert!(!normalized.summary_prompt_custom);
 }
@@ -1158,6 +1156,76 @@ fn load_summary_candidates_only_reads_unsummarized_messages() {
 }
 
 #[test]
+fn analysis_and_summary_loaders_skip_wechat_system_accounts() {
+    let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+    conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+        .expect("schema");
+    for (id, chat_id, sender_id, content) in [
+        (
+            "msg-filehelper",
+            "filehelper",
+            "customer-1",
+            "客户投诉交付延迟，需要今天跟进处理",
+        ),
+        (
+            "msg-service",
+            "notification_messages",
+            "customer-1",
+            "客户投诉交付延迟，需要今天跟进处理",
+        ),
+        (
+            "msg-public",
+            "gh_news",
+            "customer-1",
+            "客户投诉交付延迟，需要今天跟进处理",
+        ),
+        (
+            "msg-system-sender",
+            "wxid_customer_123",
+            "weixin",
+            "客户投诉交付延迟，需要今天跟进处理",
+        ),
+        (
+            "msg-business",
+            "wxid_customer_123",
+            "customer-1",
+            "客户投诉交付延迟，需要今天跟进处理",
+        ),
+    ] {
+        conn.execute(
+            "insert into daily_messages(
+               id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id,
+               sender_name, timestamp, time_text, msg_type, content, content_hash
+             )
+             values(?1, '2026-05-01', 'profile-1', 'wechat', ?2, '客户', 0,
+                    ?3, '客户', 1, '09:00', 'text', ?4, ?5)",
+            params![id, chat_id, sender_id, content, format!("hash-{id}")],
+        )
+        .expect("message");
+    }
+
+    let profile_ids = vec!["profile-1".to_owned()];
+    let analysis_messages = load_analysis_messages_for_profiles(&conn, "2026-05-01", &profile_ids)
+        .expect("analysis messages");
+    let analysis_ids = analysis_messages
+        .iter()
+        .map(|message| message.id.clone())
+        .collect::<HashSet<_>>();
+    assert_eq!(analysis_ids, HashSet::from(["msg-business".to_owned()]));
+
+    let candidates = load_summary_candidates(&conn, "2026-05-01", "profile-1").expect("candidates");
+    let summary_source_ids = candidates
+        .iter()
+        .flat_map(|candidate| candidate.source_message_ids.iter().cloned())
+        .collect::<HashSet<_>>();
+    assert!(summary_source_ids.contains("msg-business"));
+    assert!(!summary_source_ids.contains("msg-filehelper"));
+    assert!(!summary_source_ids.contains("msg-service"));
+    assert!(!summary_source_ids.contains("msg-public"));
+    assert!(!summary_source_ids.contains("msg-system-sender"));
+}
+
+#[test]
 fn default_prompt_uses_explicit_existing_action_item_id() {
     assert!(DEFAULT_ANALYSIS_PROMPT.contains("existingActionItemId"));
     assert!(BATCH_DEDUP_PROMPT.contains("existingActionItemId"));
@@ -1167,6 +1235,16 @@ fn default_prompt_uses_explicit_existing_action_item_id() {
 fn default_prompts_require_primary_chat_language() {
     assert!(DEFAULT_ANALYSIS_PROMPT.contains("主要语言"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("主要语言"));
+}
+
+#[test]
+fn default_prompts_exclude_wechat_system_accounts() {
+    for prompt in [DEFAULT_ANALYSIS_PROMPT, DEFAULT_SUMMARY_PROMPT] {
+        assert!(prompt.contains("filehelper"));
+        assert!(prompt.contains("notification_messages"));
+        assert!(prompt.contains("officialaccounts"));
+        assert!(prompt.contains("gh_"));
+    }
 }
 
 #[test]

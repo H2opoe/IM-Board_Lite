@@ -67,7 +67,7 @@ export function TopicCard({
               </button>
             </div>
           </div>
-        ) : aiStatus === "analyzing" ? (
+        ) : aiStatus === "analyzing" && visibleTopics.length === 0 ? (
           <div className="empty-state">{EMPTY_STATE_MESSAGES.aiTopicPending}</div>
         ) : visibleTopics.length === 0 ? (
           <div className="empty-state">{EMPTY_STATE_MESSAGES.noActionItems}</div>

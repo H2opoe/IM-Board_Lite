@@ -288,6 +288,16 @@ fn feishu_lark_config_dir(config: &serde_json::Value) -> Option<PathBuf> {
     {
         return Some(expand_home(config_dir));
     }
+    if let Some(home_dir) = config
+        .get("homeDir")
+        .and_then(|value| value.as_str())
+        .filter(|value| !value.trim().is_empty())
+    {
+        let legacy_dir = expand_home(home_dir).join(".lark-cli");
+        if legacy_dir.join("config.json").exists() {
+            return Some(legacy_dir);
+        }
+    }
     config
         .get("configDir")
         .and_then(|value| value.as_str())

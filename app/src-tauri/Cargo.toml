@@ -1,22 +1,9 @@
 [package]
 name = "im-board"
-version = "2.1.2-lite"
+version = "2.1.3-lite"
 description = "Local-first IM intelligent dashboard"
 authors = ["Codex"]
 edition = "2021"
-include = [
-  "build.rs",
-  "Cargo.toml",
-  "src/**",
-  "capabilities/**",
-  "tauri.conf.json",
-  "tauri.windows.conf.json",
-]
-exclude = [
-  "UNC/**",
-  "gen/**",
-  "migrations/**",
-]
 
 [lib]
 name = "im_board_lib"

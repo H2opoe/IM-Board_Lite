@@ -10,10 +10,7 @@ mod npm_registry;
 mod resolver;
 mod versioning;
 
-use archives::{
-    download_first_available, extract_tgz_bytes, extract_zip_bytes, find_file_named,
-    make_executable,
-};
+use archives::{download_first_available, extract_tgz_bytes, find_file_named, make_executable};
 pub use bind_commands::{
     command_shell_name, default_bind_command, platform_cli_label, platform_label,
 };
@@ -53,10 +50,6 @@ pub const OFFICIAL_CLIS: &[PlatformCliSpec] = &[
 ];
 
 const PLATFORM_CLI_PROGRESS_EVENT: &str = "platform-cli-deployment-progress";
-const WINDOWS_DINGTALK_REGISTRY_KEY: &str = r"HKCU:\Software\DwsCli\keychain\dws-cli";
-const WINDOWS_DINGTALK_AUTH_TOKEN_VALUE: &str = "YXV0aC10b2tlbg";
-const WINDOWS_DINGTALK_PROFILE_TOKEN_FILE: &str = "windows-auth-token.regvalue";
-
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlatformDeployment {
@@ -65,7 +58,6 @@ pub struct PlatformDeployment {
     pub config_dir: String,
     pub command: String,
     pub command_shell: String,
-    pub source_dir: Option<String>,
     pub source: String,
     pub current_version: String,
 }
