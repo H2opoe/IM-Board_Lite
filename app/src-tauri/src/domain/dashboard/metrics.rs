@@ -34,7 +34,7 @@ pub fn load_metrics(
         },
         DashboardMetric {
             key: "chats".to_owned(),
-            label: "对话/群聊数".to_owned(),
+            label: "单聊/群聊数".to_owned(),
             value: chats,
             sources: chat_source_counts(conn, day, profile_id).unwrap_or_default(),
         },
