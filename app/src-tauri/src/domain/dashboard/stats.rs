@@ -251,24 +251,24 @@ mod tests {
         let merged = merge_topics(vec![
             serde_json::json!({
                 "id": "topic-a",
-                "title": "应用宝Mac公测体验群新成员邀请及参与方式",
-                "summary": "群内欢迎新成员加入应用宝Mac公测体验群",
+                "title": "应用宝Mac安装位置及查找问题",
+                "summary": "用户讨论已安装软件的位置查找",
                 "count": 35,
                 "sourceMessageIds": ["msg-1", "msg-2"],
                 "sourceChats": [{ "chatName": "应用宝Mac公测体验群", "isGroup": true }]
             }),
             serde_json::json!({
                 "id": "topic-b",
-                "title": " 应用宝Mac公测体验群新成员邀请及参与方式 ",
-                "summary": "群内欢迎新成员加入应用宝Mac公测体验群",
+                "title": " 应用宝Mac安装位置及查找问题 ",
+                "summary": "用户讨论已安装软件的位置查找",
                 "count": 17,
                 "sourceMessageIds": ["msg-2", "msg-3"],
                 "sourceChats": [{ "chatName": "应用宝Mac公测体验群", "isGroup": true }]
             }),
             serde_json::json!({
                 "id": "topic-c",
-                "title": "软件安装位置及查找问题",
-                "summary": "用户讨论已安装软件的位置查找",
+                "title": "手柄连接问题",
+                "summary": "用户讨论手柄连接和识别问题",
                 "count": 5,
                 "sourceMessageIds": ["msg-4"],
             }),
@@ -281,7 +281,7 @@ mod tests {
                 topic
                     .get("title")
                     .and_then(|value| value.as_str())
-                    .is_some_and(|title| title.contains("应用宝Mac公测体验群"))
+                    .is_some_and(|title| title.contains("应用宝Mac安装位置"))
             })
             .expect("merged topic");
         assert_eq!(merged_topic["count"], serde_json::json!(3));

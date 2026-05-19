@@ -1,3 +1,5 @@
+use crate::analysis::message_noise;
+
 pub(crate) fn keyword_texts_from_message_content(content: &str) -> Vec<String> {
     let trimmed = content.trim();
     if trimmed.is_empty() {
@@ -61,10 +63,9 @@ pub(crate) fn should_skip_keyword_message(content: &str, msg_type: Option<&str>)
         || looks_like_pure_link_or_domain(trimmed)
         || compact.contains("撤回了一条消息")
         || compact.contains("修改群名")
-        || compact.contains("群公告")
+        || message_noise::is_message_noise(Some(&msg_type), trimmed, true)
         || contains_wechat_touch_notice(trimmed)
         || contains_media_placeholder(trimmed)
-        || contains_group_membership_notice(trimmed)
         || contains_unsupported_client_notice(trimmed)
 }
 
@@ -153,36 +154,11 @@ pub(crate) fn contains_disallowed_media_content(content: &str) -> bool {
 }
 
 pub(crate) fn contains_unsupported_client_notice(content: &str) -> bool {
-    let compact = content
-        .chars()
-        .filter(|ch| !ch.is_whitespace())
-        .collect::<String>();
-    (compact.contains("微信版本不支持") || compact.contains("当前版本不支持"))
-        && (compact.contains("展示内容")
-            || compact.contains("显示内容")
-            || compact.contains("查看")
-            || compact.contains("升级"))
+    message_noise::contains_client_compatibility_notice(content)
 }
 
 pub(crate) fn contains_group_membership_notice(content: &str) -> bool {
-    let compact = content
-        .chars()
-        .filter(|ch| !ch.is_whitespace())
-        .collect::<String>();
-    if compact.is_empty() {
-        return false;
-    }
-
-    // 入群、退群、邀请入群属于平台系统事件，不能参与词云或热门话题聚类。
-    compact.contains("让我们一起欢迎新人")
-        || compact.contains("欢迎新人")
-        || compact.contains("加入了群聊")
-        || compact.contains("退出了群聊")
-        || compact.contains("退出群聊")
-        || compact.contains("移出群聊")
-        || (compact.contains("邀请") && compact.contains("加入群聊"))
-        || (compact.contains("通过") && compact.contains("加入群聊"))
-        || (compact.contains("二维码") && compact.contains("加入"))
+    message_noise::contains_group_membership_notice(content)
 }
 
 fn contains_wechat_touch_notice(content: &str) -> bool {

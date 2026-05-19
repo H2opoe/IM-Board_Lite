@@ -345,6 +345,57 @@ fn clean_message_content_for_ai_keeps_only_allowed_message_types() {
 }
 
 #[test]
+fn clean_message_content_for_ai_filters_group_noise_templates() {
+    for content in [
+        r#"[系统] "Mr.成"通过扫描"管家芽芽"分享的二维码加入群聊"#,
+        "🖥 欢迎 孙文康、皮蛋瘦肉周 加入应用宝Mac公测体验群！\n🔹 如何参与公测？",
+        "微信版本不支持展示内容，请升级至最新版本查看",
+        "当前版本不支持显示内容",
+        "请升级微信查看",
+        "张三拍了拍李四",
+        "@荣少\n今日第 58 个签到，加 5.0 积分 当前会员总积分：470.0 已连续签到5天",
+        "[系统] 群公告 已更新",
+        "[链接/文件] #接龙 🔥老温开团【周日5.24早上送货】",
+        "#接龙\n百香果团购\n1. 王霞 1箱\n2. 钟予馨2箱\n3. 昕彤1箱",
+    ] {
+        assert_eq!(
+            clean_message_content_for_ai("text", content),
+            None,
+            "group noise should not be sent to AI: {content}"
+        );
+    }
+
+    for content in [
+        "Steam官网被墙了，直接其他渠道找一个Steam的安装包，也一样的",
+        "softwareupdate --install-rosetta 在【终端】里执行下这个命令试试",
+        "早！不好意思，昨天有点事搞忘了，还在不，我一会过来拿",
+    ] {
+        assert_eq!(
+            clean_message_content_for_ai("text", content),
+            Some(content.to_owned())
+        );
+    }
+}
+
+#[test]
+fn filter_analysis_messages_filters_group_only_checkin_text() {
+    let mut checkin = test_message("msg-1".to_owned(), "chat-a");
+    checkin.is_group = true;
+    checkin.content = "签到".to_owned();
+
+    let mut business = test_message("msg-2".to_owned(), "chat-a");
+    business.is_group = true;
+    business.content = "需要今天处理Steam安装没反应的问题".to_owned();
+
+    let kept_ids = filter_analysis_messages(vec![checkin, business])
+        .into_iter()
+        .map(|message| message.id)
+        .collect::<Vec<_>>();
+
+    assert_eq!(kept_ids, vec!["msg-2"]);
+}
+
+#[test]
 fn clean_link_or_app_message_text_keeps_title_and_description_without_urls_or_ips() {
     let content = r#"{
           "title": "客户续费方案",

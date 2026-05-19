@@ -1,6 +1,7 @@
 use rusqlite::params;
 
 use crate::ai::clean_message_content_for_ai;
+use crate::analysis::message_noise;
 use crate::messages::wechat_accounts::is_wechat_system_account;
 
 use super::types::LocalKeywordMessage;
@@ -13,7 +14,7 @@ pub(super) fn load_local_keyword_messages(
     profile_id: &str,
 ) -> anyhow::Result<Vec<LocalKeywordMessage>> {
     let mut stmt = conn.prepare(
-        "select chat_id, sender_id, msg_type, content, timestamp from daily_messages
+        "select chat_id, sender_id, msg_type, content, timestamp, is_group from daily_messages
          where day = ?1 and profile_id = ?2 and trim(content) <> ''
          order by timestamp desc
          limit ?3",
@@ -31,6 +32,10 @@ pub(super) fn load_local_keyword_messages(
             }
             let msg_type: String = row.get(2)?;
             let raw_content: String = row.get(3)?;
+            let is_group = row.get::<_, i64>(5)? == 1;
+            if message_noise::is_message_noise(Some(&msg_type), &raw_content, is_group) {
+                return Ok(None);
+            }
             let Some(content) = clean_message_content_for_ai(&msg_type, &raw_content) else {
                 return Ok(None);
             };

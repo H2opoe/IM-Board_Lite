@@ -7,6 +7,7 @@ use crate::analysis::local_keywords::{
     looks_like_noise_keyword, ANALYSIS_COMPLETION_TERMS, ANALYSIS_REPLY_TERMS, ANALYSIS_RISK_TERMS,
     ANALYSIS_TASK_TERMS, ANALYSIS_URGENCY_TERMS,
 };
+use crate::analysis::message_noise;
 
 use super::*;
 
@@ -14,6 +15,9 @@ pub(crate) fn filter_analysis_messages(messages: Vec<AnalysisMessage>) -> Vec<An
     let mut chat_index = HashMap::<String, usize>::new();
     let mut chat_groups = Vec::<Vec<AnalysisMessage>>::new();
     for message in messages {
+        if should_skip_ai_message(&message) {
+            continue;
+        }
         if let Some(index) = chat_index.get(&message.chat_id).copied() {
             chat_groups[index].push(message);
             continue;
@@ -83,6 +87,7 @@ pub(crate) fn should_skip_ai_message(message: &AnalysisMessage) -> bool {
         || contains_disallowed_media_content(content)
         || contains_unsupported_client_notice(content)
         || contains_group_membership_notice(content)
+        || message_noise::is_message_noise(Some(&message.msg_type), content, message.is_group)
         || is_call_record_message(message)
 }
 
@@ -97,6 +102,7 @@ pub(crate) fn clean_message_content_for_ai(msg_type: &str, content: &str) -> Opt
         || contains_disallowed_media_content(trimmed)
         || contains_unsupported_client_notice(trimmed)
         || contains_group_membership_notice(trimmed)
+        || message_noise::is_message_noise(Some(msg_type), trimmed, false)
         || is_call_record_text(msg_type, trimmed)
     {
         return None;
@@ -120,6 +126,7 @@ pub(crate) fn is_disallowed_dashboard_topic(title: &str, summary: &str) -> bool 
     is_call_record_text("text", &text)
         || contains_disallowed_media_content(&text)
         || contains_group_membership_notice(&text)
+        || message_noise::is_message_noise(Some("text"), &text, true)
 }
 
 pub(crate) fn is_disallowed_dashboard_keyword(text: &str) -> bool {
@@ -127,6 +134,7 @@ pub(crate) fn is_disallowed_dashboard_keyword(text: &str) -> bool {
     normalized.is_empty()
         || is_call_record_text("text", text)
         || contains_disallowed_media_content(text)
+        || message_noise::is_message_noise(Some("text"), text, true)
         || looks_like_noise_keyword(&normalized)
         || is_local_stopword(&normalized)
         || is_generic_single_term(text.trim())

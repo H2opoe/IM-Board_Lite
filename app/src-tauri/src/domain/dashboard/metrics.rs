@@ -60,7 +60,7 @@ fn count_daily(conn: &rusqlite::Connection, day: &str, profile_id: &str) -> anyh
 fn count_chats(conn: &rusqlite::Connection, day: &str, profile_id: &str) -> anyhow::Result<i64> {
     if is_aggregate(profile_id) {
         Ok(conn.query_row(
-            "select count(distinct chat_id) from daily_messages where day = ?1",
+            "select count(distinct profile_id || char(31) || chat_id) from daily_messages where day = ?1",
             params![day],
             |row| row.get(0),
         )?)
@@ -204,12 +204,34 @@ mod tests {
         chat_name: &str,
         timestamp: i64,
     ) {
+        insert_message_with_content(
+            conn,
+            id,
+            profile_id,
+            platform,
+            chat_id,
+            chat_name,
+            timestamp,
+            &format!("消息 {id}"),
+        );
+    }
+
+    fn insert_message_with_content(
+        conn: &rusqlite::Connection,
+        id: &str,
+        profile_id: &str,
+        platform: &str,
+        chat_id: &str,
+        chat_name: &str,
+        timestamp: i64,
+        content: &str,
+    ) {
         conn.execute(
             "insert into daily_messages(
                id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
                timestamp, time_text, msg_type, content, content_hash
              )
-             values(?1, '2026-05-06', ?2, ?3, ?4, ?5, 0, 'u-1', '用户', ?6, '10:00', 'text', ?7, ?8)",
+             values(?1, '2026-05-06', ?2, ?3, ?4, ?5, 1, 'u-1', '用户', ?6, '10:00', 'text', ?7, ?8)",
             rusqlite::params![
                 id,
                 profile_id,
@@ -217,7 +239,7 @@ mod tests {
                 chat_id,
                 chat_name,
                 timestamp,
-                format!("消息 {id}"),
+                content,
                 format!("hash-{id}")
             ],
         )
@@ -379,5 +401,74 @@ mod tests {
                 assert_eq!(source.profile_id, "wechat-work");
             }
         }
+    }
+
+    #[test]
+    fn metrics_keep_raw_message_and_chat_counts() {
+        let conn = setup_conn();
+        insert_message_with_content(
+            &conn,
+            "msg-join",
+            "wechat-work",
+            "wechat",
+            "mac-class",
+            "应用宝Mac版内测群-Mac云课堂",
+            1,
+            r#"[系统] "Mr.成"通过扫描"管家芽芽"分享的二维码加入群聊"#,
+        );
+        insert_message_with_content(
+            &conn,
+            "msg-welcome",
+            "wechat-work",
+            "wechat",
+            "mac-class",
+            "应用宝Mac版内测群-Mac云课堂",
+            2,
+            "🖥 欢迎 孙文康、皮蛋瘦肉周 加入应用宝Mac公测体验群！\n🔹 如何参与公测？",
+        );
+        insert_message_with_content(
+            &conn,
+            "msg-checkin",
+            "wechat-work",
+            "wechat",
+            "tang",
+            "13TANG-大良店 唐粉情报局🔍4",
+            3,
+            "签到",
+        );
+        insert_message_with_content(
+            &conn,
+            "msg-jielong",
+            "wechat-work",
+            "wechat",
+            "group-buy",
+            "保利特产团购群",
+            4,
+            "#接龙\n百香果团购\n1. 王霞 1箱\n2. 钟予馨2箱\n3. 昕彤1箱",
+        );
+        insert_message_with_content(
+            &conn,
+            "msg-real",
+            "wechat-work",
+            "wechat",
+            "mac-class",
+            "应用宝Mac版内测群-Mac云课堂",
+            5,
+            "softwareupdate --install-rosetta 在【终端】里执行下这个命令试试",
+        );
+
+        let metrics = load_metrics(&conn, "2026-05-06", "wechat-work", 0, 0).expect("metrics");
+
+        assert_eq!(metric_value(&metrics, "messages"), 5);
+        assert_eq!(metric_value(&metrics, "chats"), 3);
+        assert_eq!(
+            metrics
+                .iter()
+                .find(|metric| metric.key == "messages")
+                .expect("messages metric")
+                .sources[0]
+                .count,
+            5
+        );
     }
 }

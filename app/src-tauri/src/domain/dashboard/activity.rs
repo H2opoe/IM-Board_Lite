@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use rusqlite::params;
+use chrono::{Local, TimeZone};
 
 use crate::storage::models::SourceStat;
 
-use super::sources::{is_aggregate, source_stat};
+use super::sources::{load_effective_message_rows, source_stat};
 
 pub fn message_types(
     conn: &rusqlite::Connection,
@@ -22,35 +22,31 @@ pub fn hourly_activity(
     let mut hours = (0..24)
         .map(|hour| serde_json::json!({ "hour": format!("{hour:02}"), "count": 0, "sources": [] }))
         .collect::<Vec<_>>();
-    let mut sql = "select cast(strftime('%H', datetime(timestamp, 'unixepoch', 'localtime')) as integer) as hour,
-                          daily_messages.profile_id, daily_messages.platform,
-                          coalesce(json_extract(profiles.config_json, '$.remark'), ''),
-                          count(*)
-                   from daily_messages where day = ?1".to_owned();
-    sql = sql.replace(
-        "from daily_messages where",
-        "from daily_messages left join profiles on profiles.id = daily_messages.profile_id where",
-    );
-    if !is_aggregate(profile_id) {
-        sql.push_str(" and daily_messages.profile_id = ?2");
+    let mut grouped = HashMap::<(i64, String, String, String), i64>::new();
+    for message in load_effective_message_rows(conn, day, profile_id)? {
+        let Some(datetime) = Local.timestamp_opt(message.timestamp, 0).single() else {
+            continue;
+        };
+        let hour = datetime
+            .format("%H")
+            .to_string()
+            .parse::<i64>()
+            .unwrap_or(0);
+        *grouped
+            .entry((hour, message.profile_id, message.platform, message.remark))
+            .or_insert(0) += 1;
     }
-    sql.push_str(" group by hour, daily_messages.profile_id, daily_messages.platform");
-    let mut stmt = conn.prepare(&sql)?;
-    let mut grouped = HashMap::<i64, Vec<SourceStat>>::new();
-    if is_aggregate(profile_id) {
-        let rows = stmt.query_map(params![day], map_hour_source_row)?;
-        for row in rows {
-            let (hour, source) = row?;
-            grouped.entry(hour).or_default().push(source);
-        }
-    } else {
-        let rows = stmt.query_map(params![day, profile_id], map_hour_source_row)?;
-        for row in rows {
-            let (hour, source) = row?;
-            grouped.entry(hour).or_default().push(source);
-        }
+    let mut grouped_sources = HashMap::<i64, Vec<SourceStat>>::new();
+    for ((hour, row_profile_id, platform, remark), count) in grouped {
+        grouped_sources.entry(hour).or_default().push(source_stat(
+            row_profile_id,
+            platform,
+            remark,
+            count,
+            Vec::new(),
+        ));
     }
-    for (hour, mut sources) in grouped {
+    for (hour, mut sources) in grouped_sources {
         if let Some(slot) = hours.get_mut(hour as usize) {
             sources.sort_by(|left, right| {
                 right
@@ -65,18 +61,6 @@ pub fn hourly_activity(
     Ok(hours)
 }
 
-fn map_hour_source_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<(i64, SourceStat)> {
-    let hour: i64 = row.get(0)?;
-    let profile_id: String = row.get(1)?;
-    let platform: String = row.get(2)?;
-    let remark: String = row.get(3)?;
-    let count: i64 = row.get(4)?;
-    Ok((
-        hour,
-        source_stat(profile_id, platform, remark, count, Vec::new()),
-    ))
-}
-
 fn group_count(
     conn: &rusqlite::Connection,
     day: &str,
@@ -84,27 +68,25 @@ fn group_count(
     column: &str,
     label_key: &str,
 ) -> anyhow::Result<Vec<serde_json::Value>> {
-    let mut sql = format!(
-        "select {column}, daily_messages.profile_id, daily_messages.platform,
-                coalesce(json_extract(profiles.config_json, '$.remark'), ''), count(*)
-         from daily_messages
-         left join profiles on profiles.id = daily_messages.profile_id
-         where day = ?1"
-    );
-    if !is_aggregate(profile_id) {
-        sql.push_str(" and daily_messages.profile_id = ?2");
+    let mut counts = HashMap::<(String, String, String, String), i64>::new();
+    for message in load_effective_message_rows(conn, day, profile_id)? {
+        let label = match column {
+            "msg_type" => message.msg_type,
+            _ => message.msg_type,
+        };
+        *counts
+            .entry((label, message.profile_id, message.platform, message.remark))
+            .or_insert(0) += 1;
     }
-    sql.push_str(&format!(" group by {column}, daily_messages.profile_id, daily_messages.platform order by count(*) desc"));
-    let mut stmt = conn.prepare(&sql)?;
-    let rows = if is_aggregate(profile_id) {
-        stmt.query_map(params![day], map_group_source_row)?
-    } else {
-        stmt.query_map(params![day, profile_id], map_group_source_row)?
-    };
     let mut grouped = HashMap::<String, Vec<SourceStat>>::new();
-    for row in rows {
-        let (label, source) = row?;
-        grouped.entry(label).or_default().push(source);
+    for ((label, row_profile_id, platform, remark), count) in counts {
+        grouped.entry(label).or_default().push(source_stat(
+            row_profile_id,
+            platform,
+            remark,
+            count,
+            Vec::new(),
+        ));
     }
     let mut values = grouped
         .into_iter()
@@ -133,16 +115,4 @@ fn group_count(
     });
     values.truncate(10);
     Ok(values)
-}
-
-fn map_group_source_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<(String, SourceStat)> {
-    let label: String = row.get(0)?;
-    let profile_id: String = row.get(1)?;
-    let platform: String = row.get(2)?;
-    let remark: String = row.get(3)?;
-    let count: i64 = row.get(4)?;
-    Ok((
-        label,
-        source_stat(profile_id, platform, remark, count, Vec::new()),
-    ))
 }
