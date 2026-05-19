@@ -58,8 +58,8 @@ pub use prompts::{DEFAULT_ANALYSIS_PROMPT, DEFAULT_SUMMARY_PROMPT};
 #[cfg(test)]
 pub(crate) use request::merge_incremental_summary_topics;
 pub(crate) use request::{
-    analysis_system_prompt, describe_request_error, request_profile_analysis,
-    request_profile_summary,
+    analysis_system_prompt, describe_request_error, merge_duplicate_summary_topics,
+    request_profile_analysis, request_profile_summary,
 };
 #[cfg(test)]
 pub(crate) use stats_persistence::persist_local_keyword_stats;
