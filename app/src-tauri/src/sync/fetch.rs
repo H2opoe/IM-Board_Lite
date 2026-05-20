@@ -261,42 +261,43 @@ async fn sync_profile_messages(
     )
     .await?;
 
-    let mut session_args = HashMap::new();
-    session_args.insert("limit".to_owned(), "200".to_owned());
-    session_args.insert("start_time".to_owned(), day_start_text.to_owned());
-    session_args.insert("end_time".to_owned(), sync_end_text.to_owned());
-    let sessions = run_sync_bridge(
-        state,
-        BridgeRequest {
-            platform: profile.platform.clone(),
-            command: "list-chats".to_owned(),
-            profile: Some(profile.clone()),
-            args: session_args,
-            stdin_secret: None,
-        },
-        resource_dir.clone(),
-        cache_dir.clone(),
-    )
-    .await
-    .map_err(|err| err.to_string())?;
-
-    warnings.extend(sessions.warnings);
-    if !sessions.ok {
-        if let Some(error) = sessions.error {
-            if is_wechat_not_logged_in_error(&profile, &error.code) {
-                return Err(wechat_read_not_logged_in_message().to_owned());
-            }
-            warnings.push(format!("{}：{}", profile.label, error.message));
-        }
-        emit_profile_sync_done(app, &profile, inserted_messages);
-        return Ok(ProfileSyncOutcome {
-            inserted_messages,
-            warnings,
-        });
-    }
-
     let mut all_sessions = contact_sessions;
-    all_sessions.extend(value_array(&sessions.data).into_iter().cloned());
+    if (connector.should_run_session_list)() {
+        let mut session_args = HashMap::new();
+        session_args.insert("limit".to_owned(), "200".to_owned());
+        session_args.insert("start_time".to_owned(), day_start_text.to_owned());
+        session_args.insert("end_time".to_owned(), sync_end_text.to_owned());
+        let sessions = run_sync_bridge(
+            state,
+            BridgeRequest {
+                platform: profile.platform.clone(),
+                command: "list-chats".to_owned(),
+                profile: Some(profile.clone()),
+                args: session_args,
+                stdin_secret: None,
+            },
+            resource_dir.clone(),
+            cache_dir.clone(),
+        )
+        .await
+        .map_err(|err| err.to_string())?;
+
+        warnings.extend(sessions.warnings);
+        if !sessions.ok {
+            if let Some(error) = sessions.error {
+                if is_wechat_not_logged_in_error(&profile, &error.code) {
+                    return Err(wechat_read_not_logged_in_message().to_owned());
+                }
+                warnings.push(format!("{}：{}", profile.label, error.message));
+            }
+            emit_profile_sync_done(app, &profile, inserted_messages);
+            return Ok(ProfileSyncOutcome {
+                inserted_messages,
+                warnings,
+            });
+        }
+        all_sessions.extend(value_array(&sessions.data).into_iter().cloned());
+    }
     let all_sessions = dedupe_sessions(all_sessions);
     if is_wechat_empty_session_sync(&profile, all_sessions.len()) {
         return Err(wechat_read_not_logged_in_message().to_owned());

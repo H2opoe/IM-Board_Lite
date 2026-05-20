@@ -69,15 +69,11 @@ export function buildFeishuProfile(
       cacheDir,
       tmpDir: joinNativePath(cacheDir, "tmp"),
       cliCommands: {
-        listChats: "im chats list",
         fetchMessages: "im +chat-messages-list",
         searchMessages: "im +messages-search",
         authStatus: "auth status"
       },
       cliArgs: {
-        listChats: {
-          pageSize: "page-size"
-        },
         fetchMessages: {
           chat: "container_id",
           startTime: "start_time",

@@ -11,8 +11,7 @@ export async function testProfileRead(profile: ImProfile): Promise<string> {
     }
     if (profile.platform === "feishu") {
       const todaySessions = await runBridgeCommand(profile, "search-messages", todaySearchArgs("20"));
-      const groups = await runBridgeCommand(profile, "list-chats", { limit: "100" });
-      return formatReadSuccess(`今天会话${countArray(todaySessions.data)}个；群聊${countGroups(groups.data)}个`);
+      return formatReadSuccess(`今天会话${countArray(todaySessions.data)}个；群聊${countGroups(todaySessions.data)}个`);
     }
     if (profile.platform === "dingtalk") {
       const groups = await searchDingtalkTestGroups(profile);

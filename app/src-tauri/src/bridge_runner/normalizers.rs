@@ -28,33 +28,6 @@ pub(super) fn unwrap_wecom_cli_payload(raw: serde_json::Value) -> serde_json::Va
     serde_json::from_str(text).unwrap_or_else(|_| serde_json::json!({ "text": text }))
 }
 
-pub(super) fn normalize_feishu_chats(raw: &serde_json::Value) -> serde_json::Value {
-    let chats = first_json_array(raw, &["items", "chats", "data"]);
-    serde_json::Value::Array(
-        chats
-            .into_iter()
-            .filter_map(|chat| {
-                let chat_id = json_string(
-                    chat,
-                    &["chat_id", "chatId", "chat_id_v2", "id", "open_chat_id"],
-                )?;
-                let chat_name =
-                    json_string(chat, &["name", "chat_name", "chatName", "description"])
-                        .unwrap_or_else(|| chat_id.clone());
-                let chat_type =
-                    json_string(chat, &["chat_type", "chatType", "type"]).unwrap_or_default();
-                Some(serde_json::json!({
-                    "chatId": chat_id,
-                    "chatName": chat_name,
-                    "isGroup": !chat_type.eq_ignore_ascii_case("p2p"),
-                    "chatType": chat_type,
-                    "raw": chat
-                }))
-            })
-            .collect(),
-    )
-}
-
 pub(super) fn normalize_feishu_messages(
     raw: &serde_json::Value,
     args: &HashMap<String, String>,
