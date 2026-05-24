@@ -1,12 +1,20 @@
 {
   "name": "im-board",
   "private": true,
-  "version": "2.1.3-lite",
+  "version": "2.1.4-beta2-lite",
+  "release": {
+    "appVersion": "2.1.4",
+    "label": "2.1.4-beta2-lite",
+    "macosBundleVersion": "21402"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "prepare:macos-deps": "node scripts/prepare-macos-deps.mjs",
+    "repair:macos-app": "node scripts/repair-macos-app.mjs",
+    "package:macos": "node scripts/package-macos.mjs",
+    "verify:macos-app": "node scripts/verify-macos-app.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "tauri": "tauri",
     "tauri:dev:real": "/bin/zsh -lc '. \"$HOME/.cargo/env\" && npm run prepare:macos-deps && IM_BOARD_BRIDGE_ROOT=\"$PWD/bridges\" npm exec tauri -- dev'",

@@ -18,6 +18,13 @@ const authorInfo = {
   copyright: "Copyright © 2026 佛山市戴胜文化传媒有限公司"
 };
 
+function displayVersion(appVersion: string | null): string {
+  if (__IM_BOARD_RELEASE_LABEL__ && __IM_BOARD_RELEASE_LABEL__ !== appVersion) {
+    return __IM_BOARD_RELEASE_LABEL__;
+  }
+  return appVersion ?? "--";
+}
+
 export function AboutModal({ onClose }: Props) {
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
@@ -74,7 +81,7 @@ export function AboutModal({ onClose }: Props) {
               邮箱：
               <a href={`mailto:${authorInfo.contact}`}>{authorInfo.contact}</a>
             </p>
-            <p>{appVersion ? `Version ${appVersion}` : "Version --"}</p>
+            <p>Version {displayVersion(appVersion)}</p>
             <p>{authorInfo.copyright}</p>
           </div>
         </section>
