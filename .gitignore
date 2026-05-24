@@ -9,8 +9,3 @@ app/.env
 app/.env.local
 app/src-tauri/target/
 app/src-tauri/gen/
-# Release artifacts
-artifacts/
-app/artifacts/
-*.dmg
-*.zip

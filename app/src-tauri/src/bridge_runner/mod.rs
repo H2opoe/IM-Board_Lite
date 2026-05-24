@@ -384,12 +384,12 @@ token=***
     }
 
     #[test]
-    fn parses_feishu_json_with_page_progress() {
+    fn parses_feishu_message_search_json_with_page_progress() {
         let stdout =
-            "[page 1] fetching...\n{\"items\":[{\"chat_id\":\"oc_1\",\"name\":\"产品群\"}]}\n";
+            "[page 1] fetching...\n{\"items\":[{\"chat_id\":\"oc_1\",\"chat_name\":\"产品群\",\"chat_type\":\"group\",\"create_time\":\"1779250000000\"}]}\n";
 
         let raw = parse_feishu_cli_json(stdout).expect("json parsed");
-        let chats = normalize_feishu_chats(&raw);
+        let chats = normalize_feishu_message_sessions(&raw);
 
         assert_eq!(
             chats

@@ -20,7 +20,7 @@ pub fn list_actions(
                     where daily_messages.id in (
                         select value from json_each(action_items.source_message_ids)
                     )
-                ), last_updated_at) as source_message_at
+                ), datetime(first_detected_at), first_detected_at, last_updated_at) as source_message_at
          from action_items
          left join profiles on profiles.id = action_items.profile_id
          where type = ?1
@@ -39,7 +39,7 @@ pub fn list_actions(
                     where daily_messages.id in (
                         select value from json_each(action_items.source_message_ids)
                     )
-                ), last_updated_at) as source_message_at
+                ), datetime(first_detected_at), first_detected_at, last_updated_at) as source_message_at
          from action_items
          left join profiles on profiles.id = action_items.profile_id
          where type = ?1 and profile_id = ?2
@@ -110,7 +110,7 @@ mod tests {
              )
              values('act-1', 'task', 'open', 'medium', '历史待办一', '历史描述',
                     'profile-1', 'wechat', 'chat-1', '旧聊天一', '[\"msg-old-1\"]',
-                    '历史证据', 1, '2026-05-05 09:00:00', '2026-05-05 09:00:00'),
+                    '历史证据', 1, '2026-05-05 09:00:00', '2026-05-06 09:30:00'),
                    ('act-2', 'task', 'open', 'medium', '历史待办二', '历史描述',
                     'profile-1', 'wechat', 'chat-2', '旧聊天二', '[\"msg-old-2\"]',
                     '历史证据', 1, '2026-05-05 10:00:00', '2026-05-05 10:00:00'),
@@ -138,5 +138,6 @@ mod tests {
             visible,
             vec![("act-1", "open"), ("act-3", "open"), ("act-2", "done")]
         );
+        assert_eq!(tasks[0].source_message_at, "2026-05-05 09:00:00");
     }
 }

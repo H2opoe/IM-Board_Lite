@@ -249,6 +249,11 @@ fn is_known_default_analysis_prompt(value: &str) -> bool {
         && value.contains("批内去重与历史参考规则")
         && !value.contains("filehelper")
         && !value.contains("notification_messages");
+    let missing_single_chat_file_reply_rule = trimmed.starts_with("你是一个本地即时通讯工作助理。")
+        && value.contains("请返回严格 JSON")
+        && value.contains("待我回复")
+        && value.contains("批内去重与历史参考规则")
+        && !value.contains("单聊里对方发送文件");
     trimmed.is_empty()
         || trimmed == DEFAULT_ANALYSIS_PROMPT.trim()
         || is_old_default
@@ -256,6 +261,7 @@ fn is_known_default_analysis_prompt(value: &str) -> bool {
         || fixed_chinese_only_language_constraint
         || date_limited_default
         || missing_wechat_system_account_filter
+        || missing_single_chat_file_reply_rule
 }
 
 fn is_known_default_summary_prompt(value: &str) -> bool {

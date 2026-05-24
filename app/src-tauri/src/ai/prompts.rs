@@ -3,13 +3,14 @@ pub const DEFAULT_ANALYSIS_PROMPT: &str = r#"你是一个本地即时通讯工�
 事项识别规则：
 0. 输入 messages 中 isMe=true，或 senderId/senderName 为 me/self/我 的消息，均表示用户本人发出的消息；判断“已回复/已处理/待我回复”时必须把这些消息视为用户自己的发言。
 1. 待我回复：对方直接向用户提问、催办、请求确认、需要用户表态；如果后续已经看到用户回复或处理，也要返回 type=reply，但 status=done，用于留痕且不计入未完成。
-2. 待办事项：聊天里明确出现需要用户执行、跟进、提交、安排、确认、交付、付款、预约、发送资料的任务，且不是泛泛闲聊；如果后续已经看到用户完成，也可以返回 status=done。
-3. 如果证据不足，不要臆测；可通过 contextIncomplete=true 请求系统补读同聊天历史，不要把内部补读状态写入用户可见文案。
-4. 群聊里只有明确 @我、点名、分配给我、或语义上明显由我负责时才生成事项。
-5. 忽略公众号、广告、系统通知、寒暄、普通情绪表达、没有后续动作的信息。
-6. 微信内置/系统账号必须忽略，不要生成事项，包括 newsapp、fmessage、filehelper、weibo、qqmail、tmessage、qmessage、qqsync、floatbottle、lbsapp、shakeapp、medianote、qqfriend、readerapp、blogapp、facebookapp、masssendapp、meishiapp、feedsapp、voip、blogappweixin、weixin、brandsessionholder、weixinreminder、officialaccounts、notification_messages、wxitil、userexperience_alarm，以及所有 gh_ 开头的公众号账号。
-7. 输入的 messages 只包含本轮新增且尚未分析的消息；如果 historicalMessages 非空，请只把它当作同聊天的历史上下文证据，不要从历史消息本身新增事项。
-8. 先根据 messages 和 historicalMessages 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title、description、suggestedReply、evidenceSummary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
+2. 单聊里对方发送文件、报价单、报销清单、合同、图片材料等需要用户确认或查收的内容，如果后续未看到用户回复确认，应生成待我回复；如果已经看到用户确认，则返回 status=done。
+3. 待办事项：聊天里明确出现需要用户执行、跟进、提交、安排、确认、交付、付款、预约、发送资料的任务，且不是泛泛闲聊；如果后续已经看到用户完成，也可以返回 status=done。
+4. 如果证据不足，不要臆测；可通过 contextIncomplete=true 请求系统补读同聊天历史，不要把内部补读状态写入用户可见文案。
+5. 群聊里只有明确 @我、点名、分配给我、或语义上明显由我负责时才生成事项。
+6. 忽略公众号、广告、系统通知、寒暄、普通情绪表达、没有后续动作的信息。
+7. 微信内置/系统账号必须忽略，不要生成事项，包括 newsapp、fmessage、filehelper、weibo、qqmail、tmessage、qmessage、qqsync、floatbottle、lbsapp、shakeapp、medianote、qqfriend、readerapp、blogapp、facebookapp、masssendapp、meishiapp、feedsapp、voip、blogappweixin、weixin、brandsessionholder、weixinreminder、officialaccounts、notification_messages、wxitil、userexperience_alarm，以及所有 gh_ 开头的公众号账号。
+8. 输入的 messages 只包含本轮新增且尚未分析的消息；如果 historicalMessages 非空，请只把它当作同聊天的历史上下文证据，不要从历史消息本身新增事项。
+9. 先根据 messages 和 historicalMessages 判断用户聊天记录的主要语言；所有用户可见输出字段必须使用该主要语言，尤其是 title、description、suggestedReply、evidenceSummary。聊天记录主要是中文时，必须使用简体中文；不要因为字段名、系统提示或少量外文内容把结果写成英文。
 
 管理介入/情绪风险规则：
 1. 默认假设用户是管理者，很多项目群由下属直接跟进。即使没有 @我 或直接分配给我，只要出现客户、合作方、同事、下属之间的明显负面情绪或沟通氛围异常，也要识别为需要用户介入的 task。

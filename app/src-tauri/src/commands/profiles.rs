@@ -32,7 +32,11 @@ pub fn delete_profile(state: State<'_, AppState>, profile_id: String) -> Result<
     Ok(())
 }
 
-fn cleanup_profile_runtime_files(profile: &ImProfile, app_dir: &Path, cache_dir: &Path) -> Result<(), String> {
+fn cleanup_profile_runtime_files(
+    profile: &ImProfile,
+    app_dir: &Path,
+    cache_dir: &Path,
+) -> Result<(), String> {
     let mut targets = BTreeSet::new();
     let profile_root = app_dir.join("Profiles");
     for path in profile_runtime_path_candidates(profile, cache_dir) {
@@ -65,7 +69,11 @@ fn profile_runtime_path_candidates(profile: &ImProfile, cache_dir: &Path) -> Vec
         "cacheDir",
         "tmpDir",
     ] {
-        if let Some(path) = profile.config_json.get(key).and_then(|value| value.as_str()) {
+        if let Some(path) = profile
+            .config_json
+            .get(key)
+            .and_then(|value| value.as_str())
+        {
             candidates.push(expand_tilde_path(path));
         }
     }
@@ -89,9 +97,11 @@ fn expand_tilde_path(path: &str) -> PathBuf {
 
 fn managed_profile_root(managed_root: &Path, path: &Path) -> Option<PathBuf> {
     let relative = path.strip_prefix(managed_root).ok()?;
-    let first = relative.components().find_map(|component| match component {
-        Component::Normal(value) => Some(value),
-        _ => None,
-    })?;
+    let first = relative
+        .components()
+        .find_map(|component| match component {
+            Component::Normal(value) => Some(value),
+            _ => None,
+        })?;
     Some(managed_root.join(first))
 }

@@ -216,10 +216,10 @@ IM-Board Lite支持可选本地模型连接，适合更重视数据控制的用�
 
 ### 下载发布包
 
-最新版本：[`v2.1.3-lite`](https://github.com/H2opoe/IM-Board_Lite/releases/tag/v2.1.3-lite)
+请前往项目Release页面下载对应系统版本。
 
-- macOS：[IM-Board_2.1.3-lite_mac_universal.dmg](https://github.com/H2opoe/IM-Board_Lite/releases/download/v2.1.3-lite/IM-Board_2.1.3-lite_mac_universal.dmg)
-- Windows：[IM-Board_2.1.3-lite_windows_x64_portable.zip](https://github.com/H2opoe/IM-Board_Lite/releases/download/v2.1.3-lite/IM-Board_2.1.3-lite_windows_x64_portable.zip)
+- macOS：下载`.dmg`或`.app`
+- Windows：下载`.exe`或安装包
 
 ---
 

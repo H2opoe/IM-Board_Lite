@@ -7,6 +7,7 @@ use crate::analysis::local_keywords::{
     keyword_texts_from_message_content, local_keyword_candidates, ANALYSIS_RISK_TERMS,
     ANALYSIS_TASK_TERMS, ANALYSIS_URGENCY_TERMS,
 };
+use crate::analysis::message_noise;
 use crate::messages::wechat_accounts::is_wechat_system_account;
 
 use super::*;
@@ -75,6 +76,10 @@ fn load_summary_candidate_messages(
             let is_me = is_self_sender(&sender_id, &sender_name);
             let msg_type: String = row.get(10)?;
             let raw_content: String = row.get(11)?;
+            let is_group = row.get::<_, i64>(5)? == 1;
+            if message_noise::is_message_noise(Some(&msg_type), &raw_content, is_group) {
+                return Ok(None);
+            }
             let Some(content) = clean_message_content_for_ai(&msg_type, &raw_content) else {
                 return Ok(None);
             };
@@ -84,7 +89,7 @@ fn load_summary_candidate_messages(
                 platform: row.get(2)?,
                 chat_id,
                 chat_name: row.get(4)?,
-                is_group: row.get::<_, i64>(5)? == 1,
+                is_group,
                 timestamp: row.get(6)?,
                 sender_id,
                 sender_name,

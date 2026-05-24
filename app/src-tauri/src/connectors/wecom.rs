@@ -1,7 +1,8 @@
 use super::{
-    no_fallback_group_search_queries, no_prepare_profile_sync_access, no_silent_message_error,
-    official_cli_fetch_concurrency, platform_label, profile_remark, session_history_mode,
-    ConnectorAdapter, ConnectorKind, SessionDiscoveryStep,
+    default_should_run_session_list, no_fallback_group_search_queries,
+    no_prepare_profile_sync_access, no_silent_message_error, official_cli_fetch_concurrency,
+    platform_label, profile_remark, session_history_mode, ConnectorAdapter, ConnectorKind,
+    SessionDiscoveryStep,
 };
 use crate::storage::models::ImProfile;
 
@@ -13,6 +14,7 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
     is_available,
     sync_mode: session_history_mode,
     session_discovery_steps,
+    should_run_session_list: default_should_run_session_list,
     prepare_profile_sync_access: no_prepare_profile_sync_access,
     empty_session_warning,
     sessions_ready_message,

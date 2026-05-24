@@ -2,6 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use rusqlite::params;
 
+use crate::analysis::message_noise;
+
 use super::sources::{is_aggregate, source_label};
 
 pub fn chat_rank(
@@ -64,6 +66,7 @@ struct SenderRankRow {
     chat_id: String,
     chat_name: String,
     is_group: bool,
+    msg_type: String,
     content: String,
 }
 
@@ -76,7 +79,7 @@ fn sender_rank(
     let reciprocal_direct_chats = reciprocal_direct_chats(conn, day, profile_id)?;
     let mut sql = "select daily_messages.platform,
                           coalesce(json_extract(profiles.config_json, '$.remark'), ''),
-                          daily_messages.profile_id, sender_id, sender_name, chat_id, chat_name, is_group, content
+                          daily_messages.profile_id, sender_id, sender_name, chat_id, chat_name, is_group, msg_type, content
                    from daily_messages
                    left join profiles on profiles.id = daily_messages.profile_id
                    where day = ?1"
@@ -94,6 +97,9 @@ fn sender_rank(
     let mut counts = HashMap::<(String, String), i64>::new();
     for row in rows {
         let row = row?;
+        if message_noise::is_message_noise(Some(&row.msg_type), &row.content, row.is_group) {
+            continue;
+        }
         if !row.is_group
             && !reciprocal_direct_chats.contains(&(row.profile_id.clone(), row.chat_id.clone()))
         {
@@ -136,7 +142,8 @@ fn map_sender_rank_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<SenderRankRo
         chat_id: row.get(5)?,
         chat_name: row.get(6)?,
         is_group: row.get::<_, i64>(7)? == 1,
-        content: row.get(8)?,
+        msg_type: row.get(8)?,
+        content: row.get(9)?,
     })
 }
 

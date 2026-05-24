@@ -5,6 +5,7 @@ use rusqlite::params;
 use serde::Deserialize;
 
 use crate::analysis::local_keywords::{is_generic_single_term, should_skip_keyword_message};
+use crate::analysis::message_noise;
 
 use super::{
     clean_message_content_for_ai, current_keyword_version, truncate_text, upsert_keyword_meta,
@@ -182,6 +183,10 @@ fn load_keyword_refine_messages(
     let rows = stmt.query_map(params![day, profile_id], |row| {
         let msg_type: String = row.get(7)?;
         let raw_content: String = row.get(8)?;
+        let is_group = row.get::<_, i64>(4)? == 1;
+        if message_noise::is_message_noise(Some(&msg_type), &raw_content, is_group) {
+            return Ok(None);
+        }
         let Some(content) = clean_message_content_for_ai(&msg_type, &raw_content) else {
             return Ok(None);
         };
@@ -199,7 +204,7 @@ fn load_keyword_refine_messages(
             profile_id: row.get(1)?,
             chat_id: row.get(2)?,
             chat_name: row.get(3)?,
-            is_group: row.get::<_, i64>(4)? == 1,
+            is_group,
             sender_name: row.get(5)?,
             time_text: row.get(6)?,
             content,

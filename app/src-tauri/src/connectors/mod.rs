@@ -32,6 +32,7 @@ pub struct ConnectorAdapter {
     pub is_available: fn() -> bool,
     pub sync_mode: fn() -> ProfileSyncMode,
     pub session_discovery_steps: fn() -> &'static [SessionDiscoveryStep],
+    pub should_run_session_list: fn() -> bool,
     pub prepare_profile_sync_access: fn(&ImProfile),
     pub empty_session_warning: fn(&ImProfile) -> Option<String>,
     pub sessions_ready_message: fn(&ImProfile, i64) -> String,
@@ -46,17 +47,18 @@ impl ConnectorAdapter {
     }
 }
 
-const CONNECTOR_REGISTRY: &[ConnectorAdapter] = &[
-    wecom::ADAPTER,
-    feishu::ADAPTER,
-    dingtalk::ADAPTER,
-];
+const CONNECTOR_REGISTRY: &[ConnectorAdapter] =
+    &[wecom::ADAPTER, feishu::ADAPTER, dingtalk::ADAPTER];
 
 pub fn find(platform: &str) -> Option<ConnectorAdapter> {
     CONNECTOR_REGISTRY
         .iter()
         .copied()
         .find(|adapter| adapter.matches(platform))
+}
+
+pub fn default_should_run_session_list() -> bool {
+    true
 }
 
 pub fn no_prepare_profile_sync_access(_profile: &ImProfile) {}

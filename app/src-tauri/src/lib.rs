@@ -12,6 +12,7 @@ mod runtime;
 mod security;
 mod storage;
 mod sync;
+mod version;
 
 use storage::AppState;
 #[cfg(not(target_os = "macos"))]

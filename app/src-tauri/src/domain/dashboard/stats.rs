@@ -60,7 +60,7 @@ pub fn dashboard_stats(
 }
 
 fn merge_topics(values: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
-    values
+    let mut merged = values
         .into_iter()
         .filter(|value| {
             let title = value
@@ -73,8 +73,21 @@ fn merge_topics(values: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
                 .unwrap_or_default();
             !ai::is_disallowed_dashboard_topic(title, summary)
         })
-        .take(12)
-        .collect()
+        .collect::<Vec<_>>();
+    ai::merge_duplicate_summary_topics(&mut merged);
+    merged.sort_by(|left, right| {
+        let left_count = left
+            .get("count")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default();
+        let right_count = right
+            .get("count")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default();
+        right_count.cmp(&left_count)
+    });
+    merged.truncate(12);
+    merged
 }
 
 fn merge_keywords(values: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
@@ -232,6 +245,51 @@ fn keyword_aliases(keyword: &serde_json::Value) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn merge_topics_combines_duplicate_titles_and_summaries() {
+        let merged = merge_topics(vec![
+            serde_json::json!({
+                "id": "topic-a",
+                "title": "应用宝Mac安装位置及查找问题",
+                "summary": "用户讨论已安装软件的位置查找",
+                "count": 35,
+                "sourceMessageIds": ["msg-1", "msg-2"],
+                "sourceChats": [{ "chatName": "应用宝Mac公测体验群", "isGroup": true }]
+            }),
+            serde_json::json!({
+                "id": "topic-b",
+                "title": " 应用宝Mac安装位置及查找问题 ",
+                "summary": "用户讨论已安装软件的位置查找",
+                "count": 17,
+                "sourceMessageIds": ["msg-2", "msg-3"],
+                "sourceChats": [{ "chatName": "应用宝Mac公测体验群", "isGroup": true }]
+            }),
+            serde_json::json!({
+                "id": "topic-c",
+                "title": "手柄连接问题",
+                "summary": "用户讨论手柄连接和识别问题",
+                "count": 5,
+                "sourceMessageIds": ["msg-4"],
+            }),
+        ]);
+
+        assert_eq!(merged.len(), 2);
+        let merged_topic = merged
+            .iter()
+            .find(|topic| {
+                topic
+                    .get("title")
+                    .and_then(|value| value.as_str())
+                    .is_some_and(|title| title.contains("应用宝Mac安装位置"))
+            })
+            .expect("merged topic");
+        assert_eq!(merged_topic["count"], serde_json::json!(3));
+        assert_eq!(
+            merged_topic["sourceMessageIds"],
+            serde_json::json!(["msg-1", "msg-2", "msg-3"])
+        );
+    }
 
     #[test]
     fn merge_keywords_requires_minimum_keyword_cloud_count() {

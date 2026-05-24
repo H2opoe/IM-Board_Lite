@@ -46,7 +46,7 @@ export function demoDashboard(profileId = "aggregate"): DashboardData {
       { key: "messages", label: "今天消息数", value: messageTotal, sources: sourceList },
       { key: "replies", label: "待我回复", value: openReplies, sources: sourceList },
       { key: "tasks", label: "待办事项", value: openTasks, sources: sourceList },
-      { key: "chats", label: "对话/群聊数", value: profileId === "aggregate" ? 42 : 12, sources: sourceList }
+      { key: "chats", label: "单聊/群聊数", value: profileId === "aggregate" ? 42 : 12, sources: sourceList }
     ],
     replies: actions.filter((item) => item.itemType === "reply"),
     tasks: actions.filter((item) => item.itemType === "task"),

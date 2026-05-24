@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { getVersion } from "@tauri-apps/api/app";
+import { displayAppVersion, getAppVersion } from "../api/appVersion";
 import { THIRD_PARTY_NOTICES } from "../content/THIRD_PARTY_NOTICES";
 import { AppIcon } from "./shared/AppIcon";
 
@@ -33,12 +33,9 @@ export function AboutModal({ onClose }: Props) {
   useEffect(() => {
     let ignore = false;
 
-    getVersion()
+    getAppVersion()
       .then((version) => {
         if (!ignore) setAppVersion(version);
-      })
-      .catch(() => {
-        if (!ignore) setAppVersion(null);
       });
 
     return () => {
@@ -74,7 +71,7 @@ export function AboutModal({ onClose }: Props) {
               邮箱：
               <a href={`mailto:${authorInfo.contact}`}>{authorInfo.contact}</a>
             </p>
-            <p>{appVersion ? `Version ${appVersion}` : "Version --"}</p>
+            <p>Version {displayAppVersion(appVersion)}</p>
             <p>{authorInfo.copyright}</p>
           </div>
         </section>

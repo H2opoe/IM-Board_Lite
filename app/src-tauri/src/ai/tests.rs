@@ -323,12 +323,16 @@ fn clean_message_content_for_ai_keeps_only_allowed_message_types() {
         clean_message_content_for_ai("location", "上海市浦东新区世纪大道"),
         Some("上海市浦东新区世纪大道".to_owned())
     );
+    assert_eq!(
+        clean_message_content_for_ai("file", "[文件] 26）03.13—29凯乐石报销清单.xlsx"),
+        Some("文件：26）03.13—29凯乐石报销清单.xlsx".to_owned())
+    );
     for (msg_type, content) in [
         ("system", "[系统] 张三加入了群聊"),
         ("image", "客户发来的装修图片需要确认预算方案"),
         ("voice", "[语音]"),
         ("emoji", "[表情]"),
-        ("file", "报价单.pdf"),
+        ("file", "[文件]"),
         ("video", "[视频]"),
         ("voip", "[语音通话] 通话时长 00:12"),
     ] {
@@ -338,6 +342,57 @@ fn clean_message_content_for_ai_keeps_only_allowed_message_types() {
             "{msg_type} should not be sent to AI"
         );
     }
+}
+
+#[test]
+fn clean_message_content_for_ai_filters_group_noise_templates() {
+    for content in [
+        r#"[系统] "Mr.成"通过扫描"管家芽芽"分享的二维码加入群聊"#,
+        "🖥 欢迎 孙文康、皮蛋瘦肉周 加入应用宝Mac公测体验群！\n🔹 如何参与公测？",
+        "微信版本不支持展示内容，请升级至最新版本查看",
+        "当前版本不支持显示内容",
+        "请升级微信查看",
+        "张三拍了拍李四",
+        "@荣少\n今日第 58 个签到，加 5.0 积分 当前会员总积分：470.0 已连续签到5天",
+        "[系统] 群公告 已更新",
+        "[链接/文件] #接龙 🔥老温开团【周日5.24早上送货】",
+        "#接龙\n百香果团购\n1. 王霞 1箱\n2. 钟予馨2箱\n3. 昕彤1箱",
+    ] {
+        assert_eq!(
+            clean_message_content_for_ai("text", content),
+            None,
+            "group noise should not be sent to AI: {content}"
+        );
+    }
+
+    for content in [
+        "Steam官网被墙了，直接其他渠道找一个Steam的安装包，也一样的",
+        "softwareupdate --install-rosetta 在【终端】里执行下这个命令试试",
+        "早！不好意思，昨天有点事搞忘了，还在不，我一会过来拿",
+    ] {
+        assert_eq!(
+            clean_message_content_for_ai("text", content),
+            Some(content.to_owned())
+        );
+    }
+}
+
+#[test]
+fn filter_analysis_messages_filters_group_only_checkin_text() {
+    let mut checkin = test_message("msg-1".to_owned(), "chat-a");
+    checkin.is_group = true;
+    checkin.content = "签到".to_owned();
+
+    let mut business = test_message("msg-2".to_owned(), "chat-a");
+    business.is_group = true;
+    business.content = "需要今天处理Steam安装没反应的问题".to_owned();
+
+    let kept_ids = filter_analysis_messages(vec![checkin, business])
+        .into_iter()
+        .map(|message| message.id)
+        .collect::<Vec<_>>();
+
+    assert_eq!(kept_ids, vec!["msg-2"]);
 }
 
 #[test]
@@ -355,6 +410,64 @@ fn clean_link_or_app_message_text_keeps_title_and_description_without_urls_or_ip
     assert!(text.contains("审批节奏"));
     assert!(!text.contains("example.com"));
     assert!(!text.contains("192.168.1.9"));
+}
+
+#[test]
+fn filter_analysis_messages_keeps_soft_questions_and_inbound_files() {
+    let messages = vec![
+        analysis_message(
+            "msg-question",
+            "humanbeing",
+            "humanbeing",
+            "text",
+            "请问付费版的话是可以拿到源码吗！",
+            false,
+        ),
+        analysis_message(
+            "msg-file",
+            "化妆·白一玲（白白）",
+            "化妆·白一玲（白白）",
+            "file",
+            "文件：26）03.13—29凯乐石报销清单.xlsx",
+            false,
+        ),
+    ];
+
+    let kept_ids = filter_analysis_messages(messages)
+        .into_iter()
+        .map(|message| message.id)
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        kept_ids,
+        vec!["msg-question".to_owned(), "msg-file".to_owned()]
+    );
+}
+
+fn analysis_message(
+    id: &str,
+    chat_name: &str,
+    sender_name: &str,
+    msg_type: &str,
+    content: &str,
+    is_group: bool,
+) -> AnalysisMessage {
+    AnalysisMessage {
+        id: id.to_owned(),
+        profile_id: "profile-1".to_owned(),
+        platform: "wechat".to_owned(),
+        chat_id: chat_name.to_owned(),
+        chat_name: chat_name.to_owned(),
+        is_group,
+        timestamp: 1,
+        sender_id: sender_name.to_owned(),
+        sender_name: sender_name.to_owned(),
+        is_me: sender_name == "me",
+        time_text: "09:00".to_owned(),
+        msg_type: msg_type.to_owned(),
+        content: content.to_owned(),
+        partial: false,
+    }
 }
 
 #[test]
@@ -970,7 +1083,9 @@ fn normalize_config_preserves_frontend_prompt_text() {
 
     let normalized = normalize_config(frontend_prompt_config);
     assert!(normalized.analysis_prompt.contains("今天聊天消息识别"));
-    assert!(normalized.summary_prompt.contains("今天聊天消息生成看板话题"));
+    assert!(normalized
+        .summary_prompt
+        .contains("今天聊天消息生成看板话题"));
     assert!(!normalized.analysis_prompt_custom);
     assert!(!normalized.summary_prompt_custom);
 }
@@ -1311,6 +1426,68 @@ fn merge_incremental_summary_topics_extends_existing_count() {
     assert_eq!(
         summary.topics[0]["sourceMessageIds"],
         serde_json::json!(["new-1", "new-2", "old-1", "old-2"])
+    );
+}
+
+#[test]
+fn merge_incremental_summary_topics_combines_duplicate_ai_topics() {
+    let candidates = vec![
+        SummaryCandidate {
+            id: "candidate-1".to_owned(),
+            title_hint: "应用宝Mac公测体验群新成员邀请".to_owned(),
+            keywords: vec!["应用宝Mac".to_owned()],
+            count: 2,
+            source_chats: vec![SummarySourceChat {
+                chat_name: "应用宝Mac公测体验群".to_owned(),
+                is_group: true,
+            }],
+            source_message_ids: vec!["msg-1".to_owned(), "msg-2".to_owned()],
+            snippets: vec!["欢迎新成员加入应用宝Mac公测体验群".to_owned()],
+            risk: false,
+        },
+        SummaryCandidate {
+            id: "candidate-2".to_owned(),
+            title_hint: "应用宝Mac公测体验群新成员邀请".to_owned(),
+            keywords: vec!["应用宝Mac".to_owned()],
+            count: 2,
+            source_chats: vec![SummarySourceChat {
+                chat_name: "应用宝Mac公测体验群".to_owned(),
+                is_group: true,
+            }],
+            source_message_ids: vec!["msg-3".to_owned(), "msg-4".to_owned()],
+            snippets: vec!["邀请M芯片Mac用户成为首批原生体验用户".to_owned()],
+            risk: false,
+        },
+    ];
+    let mut summary = AiSummary {
+        topics: vec![
+            serde_json::json!({
+                "id": "topic-mac-a",
+                "title": "应用宝Mac公测体验群新成员邀请及参与方式",
+                "summary": "群内欢迎新成员加入应用宝Mac公测体验群",
+                "count": 35,
+                "sourceMessageIds": ["msg-1", "msg-2"],
+                "sourceChats": [{ "chatName": "应用宝Mac公测体验群", "isGroup": true }]
+            }),
+            serde_json::json!({
+                "id": "topic-mac-b",
+                "title": "应用宝Mac公测体验群新成员邀请及参与方式",
+                "summary": "群内欢迎新成员加入应用宝Mac公测体验群",
+                "count": 17,
+                "sourceMessageIds": ["msg-3", "msg-4"],
+                "sourceChats": [{ "chatName": "应用宝Mac公测体验群", "isGroup": true }]
+            }),
+        ],
+        keywords: Vec::new(),
+    };
+
+    merge_incremental_summary_topics(&mut summary, &[], &candidates);
+
+    assert_eq!(summary.topics.len(), 1);
+    assert_eq!(summary.topics[0]["count"], serde_json::json!(4));
+    assert_eq!(
+        summary.topics[0]["sourceMessageIds"],
+        serde_json::json!(["msg-1", "msg-2", "msg-3", "msg-4"])
     );
 }
 
