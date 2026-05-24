@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { getVersion } from "@tauri-apps/api/app";
+import { displayAppVersion, getAppVersion } from "../api/appVersion";
 import { THIRD_PARTY_NOTICES } from "../content/THIRD_PARTY_NOTICES";
 import { AppIcon } from "./shared/AppIcon";
 
@@ -18,13 +18,6 @@ const authorInfo = {
   copyright: "Copyright © 2026 佛山市戴胜文化传媒有限公司"
 };
 
-function displayVersion(appVersion: string | null): string {
-  if (__IM_BOARD_RELEASE_LABEL__ && __IM_BOARD_RELEASE_LABEL__ !== appVersion) {
-    return __IM_BOARD_RELEASE_LABEL__;
-  }
-  return appVersion ?? "--";
-}
-
 export function AboutModal({ onClose }: Props) {
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
@@ -40,12 +33,9 @@ export function AboutModal({ onClose }: Props) {
   useEffect(() => {
     let ignore = false;
 
-    getVersion()
+    getAppVersion()
       .then((version) => {
         if (!ignore) setAppVersion(version);
-      })
-      .catch(() => {
-        if (!ignore) setAppVersion(null);
       });
 
     return () => {
@@ -81,7 +71,7 @@ export function AboutModal({ onClose }: Props) {
               邮箱：
               <a href={`mailto:${authorInfo.contact}`}>{authorInfo.contact}</a>
             </p>
-            <p>Version {displayVersion(appVersion)}</p>
+            <p>Version {displayAppVersion(appVersion)}</p>
             <p>{authorInfo.copyright}</p>
           </div>
         </section>

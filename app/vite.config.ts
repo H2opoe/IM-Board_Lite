@@ -1,11 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import packageJson from "./package.json";
+import { releaseConfig } from "./scripts/release-config.mjs";
 
-const releaseLabel =
-  process.env.IM_BOARD_RELEASE_LABEL ||
-  packageJson.release?.label ||
-  packageJson.version;
+const releaseLabel = releaseConfig().releaseLabel;
 
 export default defineConfig({
   plugins: [react()],

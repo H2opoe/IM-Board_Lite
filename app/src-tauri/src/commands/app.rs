@@ -9,6 +9,7 @@ use zip::write::SimpleFileOptions;
 use crate::daily_cache;
 use crate::security::sanitize_log;
 use crate::storage::AppState;
+use crate::version::app_version;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -195,7 +196,7 @@ fn build_diagnostic_json(
 
 fn collect_app_info(state: &AppState) -> serde_json::Value {
     serde_json::json!({
-        "version": env!("CARGO_PKG_VERSION"),
+        "version": app_version(),
         "targetOs": std::env::consts::OS,
         "targetArch": std::env::consts::ARCH,
         "appDataDir": state.app_dir.display().to_string(),
