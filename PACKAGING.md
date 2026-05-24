@@ -2,9 +2,9 @@
 
 ## 版本号
 
-- Lite macOS 应用包版本号：`2.1.4-beta2-lite`
+- Lite macOS 应用包版本号：`2.1.4-lite`
 - Lite macOS 系统版本号：`2.1.4`
-- Lite macOS 发布展示版本号：`2.1.4-beta2-lite`
+- Lite macOS 发布展示版本号：`2.1.4-lite`
 - 打包脚本、验包脚本、关于窗口展示统一通过 `app/scripts/release-config.mjs` 的 `releaseConfig()` 读取版本配置。
 - npm、Cargo、Tauri 的静态清单仍必须保留版本字段：修改版本时必须同步 `app/package.json`、`app/package-lock.json`、`app/src-tauri/tauri.conf.json`、`app/src-tauri/Cargo.toml` 和 `app/src-tauri/Cargo.lock`。
 - 平台不单独写入应用版本号，只写入最终产物文件名。
@@ -12,10 +12,10 @@
 ## Lite macOS 版
 
 - 分支/目录：`codex/lite`，`/Volumes/SanDisk SSD Plus/Applications Data/Codex/IM-Board-lite`
-- 应用包版本号：`2.1.4-beta2-lite`
+- 应用包版本号：`2.1.4-lite`
 - 应用系统版本号：`2.1.4`
-- 发布展示版本号：`2.1.4-beta2-lite`
-- 产物命名：`IM-Board_2.1.4-beta2-lite_mac_universal.dmg`
+- 发布展示版本号：`2.1.4-lite`
+- 产物命名：`IM-Board_2.1.4-lite_mac_universal.dmg`
 - 打包目标：`universal-apple-darwin`
 - Lite 功能边界：不包含微信账号绑定和微信同步入口，历史微信账号只允许展示和删除，不允许启用、测试读取或同步。
 - CLI 内置边界：Lite macOS 版不包含微信功能；飞书、钉钉、企微 CLI 通过应用内后台热更新获取。

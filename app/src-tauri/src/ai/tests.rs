@@ -1083,7 +1083,9 @@ fn normalize_config_preserves_frontend_prompt_text() {
 
     let normalized = normalize_config(frontend_prompt_config);
     assert!(normalized.analysis_prompt.contains("今天聊天消息识别"));
-    assert!(normalized.summary_prompt.contains("今天聊天消息生成看板话题"));
+    assert!(normalized
+        .summary_prompt
+        .contains("今天聊天消息生成看板话题"));
     assert!(!normalized.analysis_prompt_custom);
     assert!(!normalized.summary_prompt_custom);
 }
