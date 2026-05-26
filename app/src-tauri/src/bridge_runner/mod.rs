@@ -400,4 +400,37 @@ token=***
             Some("产品群")
         );
     }
+
+    #[test]
+    fn normalizes_feishu_chat_list_json() {
+        let raw = serde_json::json!({
+            "items": [
+                {
+                    "chat_id": "oc_1",
+                    "name": "产品群",
+                    "chat_type": "group",
+                    "last_active_time": "2026-05-26T10:20:00+08:00"
+                }
+            ]
+        });
+
+        let chats = normalize_feishu_chats(&raw);
+
+        assert_eq!(
+            chats
+                .as_array()
+                .and_then(|items| items.first())
+                .and_then(|item| item.get("chatId"))
+                .and_then(|value| value.as_str()),
+            Some("oc_1")
+        );
+        assert_eq!(
+            chats
+                .as_array()
+                .and_then(|items| items.first())
+                .and_then(|item| item.get("chatName"))
+                .and_then(|value| value.as_str()),
+            Some("产品群")
+        );
+    }
 }

@@ -31,8 +31,8 @@ fn session_discovery_steps() -> &'static [SessionDiscoveryStep] {
 }
 
 fn should_run_session_list() -> bool {
-    // 飞书官方 CLI 1.0.x 没有可用的 im chats list 群列表命令；
-    // 今天会话只能通过消息检索结果发现，再逐会话读取历史。
+    // 飞书同步仍优先通过消息检索发现当天活跃会话，避免群列表缺少活跃时间时扩大读取范围。
+    // 手动读测需要列群时由 bridge_runner 调用官方新版 `im +chat-list`。
     false
 }
 

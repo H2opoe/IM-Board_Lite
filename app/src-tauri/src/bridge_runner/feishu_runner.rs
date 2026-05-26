@@ -8,7 +8,8 @@ use super::errors::{
     validate_feishu_auth_status,
 };
 use super::normalizers::{
-    feishu_time_arg, normalize_feishu_message_sessions, normalize_feishu_messages,
+    feishu_time_arg, normalize_feishu_chats, normalize_feishu_message_sessions,
+    normalize_feishu_messages,
 };
 use super::paths::{expand_home, resolve_official_cli_for_runtime};
 use super::{
@@ -65,14 +66,26 @@ pub(super) async fn run_official_feishu_cli(
     command.arg("--profile").arg(profile_name);
     match request.command.as_str() {
         "list-chats" => {
-            return Ok(bridge_error_for(
-                "feishu",
-                "https://github.com/larksuite/cli",
-                "FEISHU_LIST_CHATS_UNAVAILABLE",
-                "当前飞书官方CLI不提供可用的群列表读取命令，请改用消息检索发现会话。",
-                true,
-                started_at,
-            ));
+            let page_size = request
+                .args
+                .get("limit")
+                .and_then(|value| value.parse::<u16>().ok())
+                .unwrap_or(100)
+                .clamp(1, 100)
+                .to_string();
+            // 官方 CLI 新版群列表入口是 `im +chat-list`；旧的 `im chats` 只是子命令分组，
+            // 不能接收 `--as`，会直接触发 unknown flag。
+            command
+                .arg("im")
+                .arg("+chat-list")
+                .arg("--as")
+                .arg("user")
+                .arg("--sort-type")
+                .arg("ByActiveTimeDesc")
+                .arg("--page-size")
+                .arg(page_size)
+                .arg("--format")
+                .arg("json");
         }
         "fetch-messages" => {
             let chat_id = request.args.get("chat").cloned().unwrap_or_default();
@@ -247,6 +260,7 @@ pub(super) async fn run_official_feishu_cli(
         });
     }
     let data = match request.command.as_str() {
+        "list-chats" => normalize_feishu_chats(&raw),
         "fetch-messages" => normalize_feishu_messages(&raw, &request.args),
         "search-messages" => normalize_feishu_message_sessions(&raw),
         "auth-status" => serde_json::json!({ "authenticated": true, "raw": raw }),

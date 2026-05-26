@@ -111,6 +111,33 @@ pub(super) fn normalize_feishu_message_sessions(raw: &serde_json::Value) -> serd
     serde_json::Value::Array(latest_by_chat.into_values().collect())
 }
 
+pub(super) fn normalize_feishu_chats(raw: &serde_json::Value) -> serde_json::Value {
+    let chats = first_json_array(raw, &["items", "chats", "groups", "data", "list"]);
+    serde_json::Value::Array(
+        chats
+            .into_iter()
+            .filter_map(|chat| {
+                let chat_id = json_string(
+                    chat,
+                    &["chat_id", "chatId", "open_chat_id", "openChatId", "id"],
+                )?;
+                let chat_name = json_string(chat, &["name", "chat_name", "chatName", "title"])
+                    .unwrap_or_else(|| chat_id.clone());
+                let chat_type = json_string(chat, &["chat_type", "chatType"]).unwrap_or_default();
+                Some(serde_json::json!({
+                    "chatId": chat_id,
+                    "chatName": chat_name,
+                    "isGroup": !chat_type.eq_ignore_ascii_case("p2p"),
+                    "chatType": chat_type,
+                    "lastMessageTimestamp": feishu_chat_active_timestamp(chat).unwrap_or(0),
+                    "source": "chat_list",
+                    "raw": chat
+                }))
+            })
+            .collect(),
+    )
+}
+
 pub(super) fn normalize_dingtalk_chats(raw: &serde_json::Value) -> serde_json::Value {
     let chats = first_json_array(
         raw,
@@ -285,6 +312,25 @@ pub(super) fn feishu_message_chat_name(message: &serde_json::Value) -> Option<St
                 .get("context")
                 .and_then(|context| json_string(context, &["chat_name", "chatName", "name"]))
         })
+}
+
+fn feishu_chat_active_timestamp(chat: &serde_json::Value) -> Option<i64> {
+    json_string(
+        chat,
+        &[
+            "last_message_time",
+            "lastMessageTime",
+            "last_active_time",
+            "lastActiveTime",
+            "active_time",
+            "activeTime",
+            "update_time",
+            "updateTime",
+            "create_time",
+            "createTime",
+        ],
+    )
+    .and_then(|value| parse_feishu_timestamp(&value))
 }
 
 pub(super) fn first_json_array<'a>(
