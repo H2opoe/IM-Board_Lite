@@ -137,10 +137,15 @@ pub(super) fn classify_feishu_cli_error(stdout: &str, stderr: &str) -> Option<Br
             recoverable: true,
         });
     }
-    if reason == "not_authenticated"
-        || error_message == "not configured"
+    if reason == "not_authenticated" || detail.contains("not_authenticated") {
+        return Some(BridgeError {
+            code: "FEISHU_NOT_AUTHENTICATED".to_owned(),
+            message: feishu_user_auth_incomplete_message(),
+            recoverable: true,
+        });
+    }
+    if error_message == "not configured"
         || error_type == "config"
-        || detail.contains("not_authenticated")
         || detail.contains("not configured")
         || detail.contains("not logged in")
         || detail.contains("未登录")

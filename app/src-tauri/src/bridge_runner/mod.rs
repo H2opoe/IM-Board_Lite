@@ -287,6 +287,22 @@ mod tests {
     }
 
     #[test]
+    fn classifies_feishu_search_not_authenticated_as_user_auth_incomplete() {
+        let stdout = r#"{
+          "ok": false,
+          "error": {
+            "reason": "not_authenticated",
+            "message": "not_authenticated"
+          }
+        }"#;
+
+        let error = classify_feishu_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "FEISHU_NOT_AUTHENTICATED");
+        assert!(error.message.contains("授权不完整"));
+        assert!(!error.message.contains("请复制飞书绑定命令"));
+    }
+
+    #[test]
     fn classifies_dingtalk_developer_settings_permission_error() {
         let stdout = r#"{
           "error": {
