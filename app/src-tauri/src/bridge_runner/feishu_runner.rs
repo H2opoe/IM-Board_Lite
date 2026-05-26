@@ -4,8 +4,8 @@ use std::sync::Mutex;
 use std::time::Instant;
 
 use super::errors::{
-    bridge_error_for, classify_feishu_cli_error, parse_feishu_cli_json, sanitize_feishu_cli_output,
-    validate_feishu_auth_status,
+    bridge_error_for, classify_feishu_cli_error, classify_feishu_cli_structured_error,
+    parse_feishu_cli_json, sanitize_feishu_cli_output, validate_feishu_auth_status,
 };
 use super::normalizers::{
     feishu_time_arg, normalize_feishu_chats, normalize_feishu_message_sessions,
@@ -246,7 +246,7 @@ pub(super) async fn run_official_feishu_cli(
                 }),
             });
         }
-    } else if let Some(error) = classify_feishu_cli_error(&sanitized_stdout, &stderr) {
+    } else if let Some(error) = classify_feishu_cli_structured_error(&raw, &stderr) {
         return Ok(BridgeEnvelope {
             ok: false,
             data: raw.clone(),

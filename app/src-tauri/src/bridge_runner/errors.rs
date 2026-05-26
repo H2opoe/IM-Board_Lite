@@ -97,22 +97,59 @@ pub(super) fn classify_feishu_cli_error(stdout: &str, stderr: &str) -> Option<Br
         .collect::<Vec<_>>()
         .join("\n");
     let raw = serde_json::from_str::<serde_json::Value>(stdout).ok();
-    let reason = raw
+    if let Some(error) = raw
         .as_ref()
-        .and_then(|value| value.get("error"))
-        .and_then(|value| value.get("reason"))
+        .and_then(|value| classify_feishu_cli_structured_error(value, stderr))
+    {
+        return Some(error);
+    }
+    let normalized_detail = detail.to_ascii_lowercase();
+    if normalized_detail.contains("b2c app not support")
+        || normalized_detail.contains("app type is not supported")
+    {
+        return Some(BridgeError {
+            code: "FEISHU_B2C_APP_UNSUPPORTED".to_owned(),
+            message: "该会话是飞书应用/机器人会话，飞书官方接口返回231204（b2c app not support），当前CLI不能用用户身份读取这类会话历史；已跳过，不影响其他会话同步。".to_owned(),
+            recoverable: true,
+        });
+    }
+    if normalized_detail.contains("not_authenticated") {
+        return Some(BridgeError {
+            code: "FEISHU_NOT_AUTHENTICATED".to_owned(),
+            message: feishu_user_auth_incomplete_message(),
+            recoverable: true,
+        });
+    }
+    if normalized_detail.contains("not configured")
+        || normalized_detail.contains("not logged in")
+        || detail.contains("未登录")
+    {
+        return Some(BridgeError {
+            code: "FEISHU_NOT_AUTHENTICATED".to_owned(),
+            message: feishu_app_config_incomplete_message(),
+            recoverable: true,
+        });
+    }
+    None
+}
+
+pub(super) fn classify_feishu_cli_structured_error(
+    raw: &serde_json::Value,
+    stderr: &str,
+) -> Option<BridgeError> {
+    let Some(error) = raw.get("error") else {
+        return None;
+    };
+    let reason = error
+        .get("reason")
         .and_then(|value| value.as_str())
         .unwrap_or_default();
-    let error_type = raw
-        .as_ref()
-        .and_then(|value| value.get("error"))
-        .and_then(|value| value.get("type"))
+    let error_type = error
+        .get("type")
         .and_then(|value| value.as_str())
         .unwrap_or_default();
-    let error_code = raw
-        .as_ref()
-        .and_then(|value| value.get("error"))
-        .and_then(|value| value.get("code"))
+    let error_code = error
+        .get("code")
         .and_then(|value| {
             value
                 .as_i64()
@@ -120,13 +157,11 @@ pub(super) fn classify_feishu_cli_error(stdout: &str, stderr: &str) -> Option<Br
                 .or_else(|| value.as_str().map(str::to_owned))
         })
         .unwrap_or_default();
-    let error_message = raw
-        .as_ref()
-        .and_then(|value| value.get("error"))
-        .and_then(|value| value.get("message"))
+    let error_message = error
+        .get("message")
         .and_then(|value| value.as_str())
         .unwrap_or_default();
-    let normalized_detail = format!("{detail}\n{error_message}").to_ascii_lowercase();
+    let normalized_detail = format!("{error_message}\n{stderr}").to_ascii_lowercase();
     if error_code == "231204"
         || normalized_detail.contains("b2c app not support")
         || normalized_detail.contains("app type is not supported")
@@ -137,7 +172,7 @@ pub(super) fn classify_feishu_cli_error(stdout: &str, stderr: &str) -> Option<Br
             recoverable: true,
         });
     }
-    if reason == "not_authenticated" || detail.contains("not_authenticated") {
+    if reason == "not_authenticated" || normalized_detail.contains("not_authenticated") {
         return Some(BridgeError {
             code: "FEISHU_NOT_AUTHENTICATED".to_owned(),
             message: feishu_user_auth_incomplete_message(),
@@ -146,9 +181,9 @@ pub(super) fn classify_feishu_cli_error(stdout: &str, stderr: &str) -> Option<Br
     }
     if error_message == "not configured"
         || error_type == "config"
-        || detail.contains("not configured")
-        || detail.contains("not logged in")
-        || detail.contains("未登录")
+        || normalized_detail.contains("not configured")
+        || normalized_detail.contains("not logged in")
+        || normalized_detail.contains("未登录")
     {
         return Some(BridgeError {
             code: "FEISHU_NOT_AUTHENTICATED".to_owned(),

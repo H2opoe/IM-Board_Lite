@@ -303,6 +303,20 @@ mod tests {
     }
 
     #[test]
+    fn ignores_feishu_auth_words_inside_successful_message_payload() {
+        let raw = serde_json::json!({
+            "items": [
+                {
+                    "message_id": "om_xxx",
+                    "content": "今天排查过 not_authenticated、not configured 和未登录，但这只是聊天正文。"
+                }
+            ]
+        });
+
+        assert!(classify_feishu_cli_structured_error(&raw, "").is_none());
+    }
+
+    #[test]
     fn classifies_dingtalk_developer_settings_permission_error() {
         let stdout = r#"{
           "error": {
