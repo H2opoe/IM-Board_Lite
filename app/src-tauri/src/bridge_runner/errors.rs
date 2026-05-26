@@ -53,10 +53,13 @@ pub(super) fn validate_feishu_auth_status(raw: &serde_json::Value) -> Option<Bri
         .get("verified")
         .and_then(|value| value.as_bool())
         .unwrap_or(false);
+    // lark-cli 1.0.40 的 `auth status --verify` 已通过退出码和 verified 表达令牌可用性，
+    // 不再返回旧版 tokenStatus 字段；字段缺失时不能反向判定为未授权。
     let token_valid = raw
         .get("tokenStatus")
         .and_then(|value| value.as_str())
-        .is_some_and(|value| value == "valid");
+        .map(|value| value == "valid")
+        .unwrap_or(true);
     let scope = raw
         .get("scope")
         .and_then(|value| value.as_str())

@@ -268,6 +268,25 @@ mod tests {
     }
 
     #[test]
+    fn accepts_verified_feishu_auth_status_without_token_status() {
+        let raw = serde_json::json!({
+            "appId": "cli_xxx",
+            "brand": "feishu",
+            "verified": true,
+            "scope": "auth:user.id:read contact:user.base:readonly contact:user.basic_profile:readonly im:chat:read im:message.group_msg:get_as_user im:message.p2p_msg:get_as_user im:message:readonly search:message offline_access",
+            "identities": {
+                "user": {
+                    "status": "ready",
+                    "available": true,
+                    "verified": true
+                }
+            }
+        });
+
+        assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
     fn classifies_dingtalk_developer_settings_permission_error() {
         let stdout = r#"{
           "error": {

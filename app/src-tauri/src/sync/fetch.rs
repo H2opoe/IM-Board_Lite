@@ -248,6 +248,7 @@ async fn sync_profile_messages(
         });
     }
 
+    let warning_count_before_discovery = warnings.len();
     let contact_sessions = collect_session_discovery_steps(
         app,
         state,
@@ -260,6 +261,7 @@ async fn sync_profile_messages(
         &mut warnings,
     )
     .await?;
+    let discovery_reported_warning = warnings.len() > warning_count_before_discovery;
 
     let mut all_sessions = contact_sessions;
     if (connector.should_run_session_list)() {
@@ -302,7 +304,7 @@ async fn sync_profile_messages(
     if is_wechat_empty_session_sync(&profile, all_sessions.len()) {
         return Err(wechat_read_not_logged_in_message().to_owned());
     }
-    if all_sessions.is_empty() {
+    if all_sessions.is_empty() && !discovery_reported_warning {
         if let Some(warning) = (connector.empty_session_warning)(&profile) {
             warnings.push(warning);
         }
