@@ -1,6 +1,6 @@
 [package]
 name = "im-board"
-version = "2.1.5-lite"
+version = "2.1.6-lite"
 description = "Local-first IM intelligent dashboard"
 authors = ["Codex"]
 edition = "2021"
