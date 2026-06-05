@@ -13,6 +13,7 @@ pub fn default_bind_command(platform: &str, cli_path: &Path, config_dir: &Path) 
                 "search:message",
                 "im:chat:read",
                 "im:message:readonly",
+                "im:message.reactions:read",
                 "im:message.p2p_msg:get_as_user",
                 "im:message.group_msg:get_as_user",
                 "contact:user.base:readonly",
@@ -25,7 +26,7 @@ pub fn default_bind_command(platform: &str, cli_path: &Path, config_dir: &Path) 
                 .and_then(|value| value.to_str())
                 .unwrap_or("im-board-feishu");
             format!(
-                "LARKSUITE_CLI_CONFIG_DIR='{}' '{}' config init --new --brand feishu --name '{}' && LARKSUITE_CLI_CONFIG_DIR='{}' '{}' --profile '{}' auth login --scope '{}' && LARKSUITE_CLI_CONFIG_DIR='{}' '{}' --profile '{}' auth status --verify",
+                "LARKSUITE_CLI_CONFIG_DIR='{}' '{}' config init --new --brand feishu --name '{}' && LARKSUITE_CLI_CONFIG_DIR='{}' '{}' --profile '{}' auth login --scope '{}' && LARKSUITE_CLI_CONFIG_DIR='{}' '{}' --profile '{}' auth status",
                 shell_single_quote(&lark_config_dir),
                 shell_single_quote(cli_path),
                 shell_single_quote_text(profile_name),

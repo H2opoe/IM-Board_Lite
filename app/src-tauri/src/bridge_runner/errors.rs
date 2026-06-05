@@ -41,33 +41,22 @@ pub(super) fn feishu_user_auth_incomplete_message() -> String {
 }
 
 pub(super) fn validate_feishu_auth_status(raw: &serde_json::Value) -> Option<BridgeError> {
-    let app_configured = raw
-        .get("appId")
-        .and_then(|value| value.as_str())
-        .is_some_and(|value| !value.trim().is_empty())
-        || raw
-            .get("brand")
-            .and_then(|value| value.as_str())
-            .is_some_and(|value| !value.trim().is_empty());
-    let verified = raw
-        .get("verified")
-        .and_then(|value| value.as_bool())
-        .unwrap_or(false);
-    // lark-cli 1.0.40 的 `auth status --verify` 已通过退出码和 verified 表达令牌可用性，
-    // 不再返回旧版 tokenStatus 字段；字段缺失时不能反向判定为未授权。
-    let token_valid = raw
-        .get("tokenStatus")
-        .and_then(|value| value.as_str())
-        .map(|value| value == "valid")
-        .unwrap_or(true);
-    let scope = raw
-        .get("scope")
-        .and_then(|value| value.as_str())
-        .unwrap_or_default();
+    let app_configured = has_non_empty_string_field(raw, &["appId", "app_id", "brand"]);
+    let verified = has_true_bool_field(raw, &["verified"]) || has_ready_user_identity(raw);
+    // lark-cli 的 auth status 输出结构会随版本变化；新版可能把 tokenStatus/scope
+    // 放进 result/data/identities 等嵌套对象里。这里只把明确失效的 tokenStatus 判为失败，
+    // 字段缺失时仍以 auth status 的退出码和 verified/identity 状态为准。
+    let token_statuses = string_values_for_keys(raw, &["tokenStatus", "token_status"]);
+    let token_valid = token_statuses.is_empty()
+        || token_statuses
+            .iter()
+            .any(|value| value.eq_ignore_ascii_case("valid"));
+    let granted_scopes = feishu_scope_values(raw);
     let required_scopes = [
         "search:message",
         "im:chat:read",
         "im:message:readonly",
+        "im:message.reactions:read",
         "im:message.p2p_msg:get_as_user",
         "im:message.group_msg:get_as_user",
         "contact:user.base:readonly",
@@ -75,7 +64,7 @@ pub(super) fn validate_feishu_auth_status(raw: &serde_json::Value) -> Option<Bri
     ];
     let has_required_scopes = required_scopes
         .iter()
-        .all(|required| scope.split_whitespace().any(|granted| granted == *required));
+        .all(|required| granted_scopes.iter().any(|granted| granted == *required));
     if verified && token_valid && has_required_scopes {
         return None;
     }
@@ -88,6 +77,136 @@ pub(super) fn validate_feishu_auth_status(raw: &serde_json::Value) -> Option<Bri
         },
         recoverable: true,
     })
+}
+
+fn string_values_for_keys(raw: &serde_json::Value, keys: &[&str]) -> Vec<String> {
+    let mut values = Vec::new();
+    collect_string_values_for_keys(raw, keys, &mut values);
+    values
+}
+
+fn collect_string_values_for_keys(
+    raw: &serde_json::Value,
+    keys: &[&str],
+    values: &mut Vec<String>,
+) {
+    match raw {
+        serde_json::Value::Object(map) => {
+            for (key, value) in map {
+                if keys.iter().any(|candidate| key == candidate) {
+                    if let Some(text) = value
+                        .as_str()
+                        .map(str::trim)
+                        .filter(|text| !text.is_empty())
+                    {
+                        values.push(text.to_owned());
+                    }
+                }
+                collect_string_values_for_keys(value, keys, values);
+            }
+        }
+        serde_json::Value::Array(items) => {
+            for item in items {
+                collect_string_values_for_keys(item, keys, values);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn has_non_empty_string_field(raw: &serde_json::Value, keys: &[&str]) -> bool {
+    !string_values_for_keys(raw, keys).is_empty()
+}
+
+fn has_true_bool_field(raw: &serde_json::Value, keys: &[&str]) -> bool {
+    match raw {
+        serde_json::Value::Object(map) => map.iter().any(|(key, value)| {
+            (keys.iter().any(|candidate| key == candidate) && value.as_bool() == Some(true))
+                || has_true_bool_field(value, keys)
+        }),
+        serde_json::Value::Array(items) => items.iter().any(|item| has_true_bool_field(item, keys)),
+        _ => false,
+    }
+}
+
+fn has_ready_user_identity(raw: &serde_json::Value) -> bool {
+    match raw {
+        serde_json::Value::Object(map) => {
+            if let Some(user) = map
+                .get("identities")
+                .and_then(|value| value.get("user"))
+                .and_then(|value| value.as_object())
+            {
+                let status = user
+                    .get("status")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or_default();
+                let available = user.get("available").and_then(|value| value.as_bool());
+                if status == "ready" || available == Some(true) {
+                    return true;
+                }
+            }
+            let identity = map
+                .get("identity")
+                .and_then(|value| value.as_str())
+                .unwrap_or_default();
+            let status = map
+                .get("status")
+                .and_then(|value| value.as_str())
+                .unwrap_or_default();
+            let available = map.get("available").and_then(|value| value.as_bool());
+            if identity == "user" && (status == "ready" || available == Some(true)) {
+                return true;
+            }
+            map.values().any(has_ready_user_identity)
+        }
+        serde_json::Value::Array(items) => items.iter().any(has_ready_user_identity),
+        _ => false,
+    }
+}
+
+fn feishu_scope_values(raw: &serde_json::Value) -> Vec<String> {
+    let mut scopes = Vec::new();
+    collect_feishu_scope_values(raw, &mut scopes);
+    scopes.sort();
+    scopes.dedup();
+    scopes
+}
+
+fn collect_feishu_scope_values(raw: &serde_json::Value, scopes: &mut Vec<String>) {
+    match raw {
+        serde_json::Value::Object(map) => {
+            for (key, value) in map {
+                if key == "scope" || key == "scopes" {
+                    collect_scope_value(value, scopes);
+                }
+                collect_feishu_scope_values(value, scopes);
+            }
+        }
+        serde_json::Value::Array(items) => {
+            for item in items {
+                collect_feishu_scope_values(item, scopes);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn collect_scope_value(raw: &serde_json::Value, scopes: &mut Vec<String>) {
+    match raw {
+        serde_json::Value::String(text) => scopes.extend(
+            text.split_whitespace()
+                .map(str::trim)
+                .filter(|scope| !scope.is_empty())
+                .map(str::to_owned),
+        ),
+        serde_json::Value::Array(items) => {
+            for item in items {
+                collect_scope_value(item, scopes);
+            }
+        }
+        _ => {}
+    }
 }
 
 pub(super) fn classify_feishu_cli_error(stdout: &str, stderr: &str) -> Option<BridgeError> {
@@ -161,7 +280,38 @@ pub(super) fn classify_feishu_cli_structured_error(
         .get("message")
         .and_then(|value| value.as_str())
         .unwrap_or_default();
+    let missing_scopes = error
+        .get("missing_scopes")
+        .and_then(|value| value.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.as_str())
+                .filter(|item| !item.trim().is_empty())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
     let normalized_detail = format!("{error_message}\n{stderr}").to_ascii_lowercase();
+    if error
+        .get("subtype")
+        .and_then(|value| value.as_str())
+        .is_some_and(|value| value == "missing_scope")
+        || !missing_scopes.is_empty()
+        || normalized_detail.contains("missing required scope")
+    {
+        let scope_text = if missing_scopes.is_empty() {
+            "飞书消息读取所需权限".to_owned()
+        } else {
+            missing_scopes.join("、")
+        };
+        return Some(BridgeError {
+            code: "FEISHU_MISSING_SCOPE".to_owned(),
+            message: format!(
+                "飞书缺少授权权限：{scope_text}。请在平台管理中重新复制并运行飞书绑定命令，按提示补充授权后再同步。"
+            ),
+            recoverable: true,
+        });
+    }
     if error_code == "231204"
         || normalized_detail.contains("b2c app not support")
         || normalized_detail.contains("app type is not supported")

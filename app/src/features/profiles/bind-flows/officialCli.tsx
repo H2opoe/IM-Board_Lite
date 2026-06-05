@@ -67,7 +67,7 @@ const OFFICIAL_CLI_BIND_FLOW_CONFIGS: Record<OfficialCliBindPlatform, OfficialCl
     detailLabel: "绑定命令",
     verifyAuthorizationBeforeSave: true,
     identityMode: "required",
-    missingIdentityMessage: "未能读取飞书当前授权身份，请确认绑定命令最后的auth status --verify返回了用户信息。",
+    missingIdentityMessage: "未能读取飞书当前授权身份，请确认绑定命令最后的auth status返回了用户信息。",
     buildProfile: buildFeishuProfile
   },
   dingtalk: {

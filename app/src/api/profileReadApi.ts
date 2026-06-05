@@ -107,6 +107,14 @@ function recordObject(value: unknown) {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
+function firstObjectField(record: Record<string, unknown>, keys: string[]): Record<string, unknown> {
+  for (const key of keys) {
+    const value = record[key];
+    if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
+  }
+  return {};
+}
+
 function parseDingtalkIdentity(data: unknown): DingtalkIdentity {
   const records = Array.isArray(data)
     ? data
@@ -126,29 +134,49 @@ function parseDingtalkIdentity(data: unknown): DingtalkIdentity {
 function parseFeishuIdentity(data: unknown): AccountIdentity | null {
   const records = flattenRecords(data);
   for (const record of records) {
-    const userId = recordString(record, [
-      "userId",
-      "user_id",
-      "userOpenId",
-      "user_open_id",
-      "openId",
-      "open_id",
-      "unionId",
-      "union_id",
-      "employeeId",
-      "employee_id",
-      "email"
-    ]);
+    const identityRecord = feishuIdentityRecord(record);
+    const userId = feishuUserId(identityRecord);
     if (!userId) continue;
     return {
       platform: "feishu",
-      tenantId: recordString(record, ["tenantKey", "tenant_key", "tenantId", "tenant_id", "appId", "app_id"]),
-      tenantName: recordString(record, ["tenantName", "tenant_name", "enterpriseName", "enterprise_name", "appName", "app_name"]),
+      tenantId: recordString(identityRecord, ["tenantKey", "tenant_key", "tenantId", "tenant_id", "appId", "app_id"]),
+      tenantName: recordString(identityRecord, ["tenantName", "tenant_name", "enterpriseName", "enterprise_name", "appName", "app_name", "brand"]),
       userId,
-      userName: recordString(record, ["userName", "user_name", "name", "displayName", "display_name", "email"])
+      userName: recordString(identityRecord, ["userName", "user_name", "name", "displayName", "display_name", "email"])
     };
   }
   return null;
+}
+
+function feishuIdentityRecord(record: Record<string, unknown>): Record<string, unknown> {
+  const user = firstObjectField(record, ["user", "userInfo", "user_info", "account", "accountInfo", "account_info"]);
+  const tenant = firstObjectField(record, ["tenant", "tenantInfo", "tenant_info", "enterprise", "app", "appInfo", "app_info"]);
+  // 新版 lark-cli 可能把授权主体和租户信息拆到嵌套对象里；读取身份时合并同一层上下文，
+  // 但仍让 user 字段覆盖父级，避免把 appId/name 误当成用户信息。
+  return {
+    ...record,
+    ...tenant,
+    ...user
+  };
+}
+
+function feishuUserId(record: Record<string, unknown>): string {
+  return recordString(record, [
+    "userId",
+    "user_id",
+    "userOpenId",
+    "user_open_id",
+    "openId",
+    "open_id",
+    "unionId",
+    "union_id",
+    "employeeId",
+    "employee_id",
+    "accountId",
+    "account_id",
+    "uid",
+    "email"
+  ]);
 }
 
 function parseWecomIdentity(data: unknown): AccountIdentity | null {

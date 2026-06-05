@@ -273,7 +273,7 @@ mod tests {
             "appId": "cli_xxx",
             "brand": "feishu",
             "verified": true,
-            "scope": "auth:user.id:read contact:user.base:readonly contact:user.basic_profile:readonly im:chat:read im:message.group_msg:get_as_user im:message.p2p_msg:get_as_user im:message:readonly search:message offline_access",
+            "scope": "auth:user.id:read contact:user.base:readonly contact:user.basic_profile:readonly im:chat:read im:message.group_msg:get_as_user im:message.p2p_msg:get_as_user im:message.reactions:read im:message:readonly search:message offline_access",
             "identities": {
                 "user": {
                     "status": "ready",
@@ -284,6 +284,80 @@ mod tests {
         });
 
         assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
+    fn accepts_nested_feishu_auth_status_fields() {
+        let raw = serde_json::json!({
+            "ok": true,
+            "data": {
+                "app": {
+                    "app_id": "cli_xxx",
+                    "brand": "feishu"
+                },
+                "auth": {
+                    "verified": true,
+                    "token_status": "valid",
+                    "scopes": [
+                        "search:message",
+                        "im:chat:read",
+                        "im:message:readonly",
+                        "im:message.reactions:read",
+                        "im:message.p2p_msg:get_as_user",
+                        "im:message.group_msg:get_as_user",
+                        "contact:user.base:readonly",
+                        "contact:user.basic_profile:readonly"
+                    ]
+                }
+            }
+        });
+
+        assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
+    fn accepts_feishu_auth_status_with_named_user_identity() {
+        let raw = serde_json::json!({
+            "appId": "cli_xxx",
+            "brand": "feishu",
+            "defaultAs": "auto",
+            "identities": {
+                "bot": {
+                    "status": "ready",
+                    "available": true
+                },
+                "user": {
+                    "status": "ready",
+                    "available": true,
+                    "openId": "ou_xxx",
+                    "userName": "Chase",
+                    "tokenStatus": "valid",
+                    "scope": "auth:user.id:read contact:user.base:readonly contact:user.basic_profile:readonly im:chat:read im:message.group_msg:get_as_user im:message.p2p_msg:get_as_user im:message.reactions:read im:message:readonly search:message offline_access"
+                }
+            },
+            "identity": "user"
+        });
+
+        assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
+    fn classifies_feishu_missing_scope_as_reauth_hint() {
+        let stdout = r#"{
+          "ok": false,
+          "identity": "user",
+          "error": {
+            "subtype": "missing_scope",
+            "message": "missing required scope(s): im:message.reactions:read",
+            "missing_scopes": ["im:message.reactions:read"],
+            "identity": "user"
+          }
+        }"#;
+
+        let error = classify_feishu_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "FEISHU_MISSING_SCOPE");
+        assert!(error.message.contains("im:message.reactions:read"));
+        assert!(error.message.contains("重新复制并运行飞书绑定命令"));
     }
 
     #[test]

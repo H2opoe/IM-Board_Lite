@@ -152,7 +152,7 @@ pub(super) async fn run_official_feishu_cli(
             }
         }
         "auth-status" => {
-            command.arg("auth").arg("status").arg("--verify");
+            command.arg("auth").arg("status");
         }
         other => {
             return Ok(bridge_error_for(
