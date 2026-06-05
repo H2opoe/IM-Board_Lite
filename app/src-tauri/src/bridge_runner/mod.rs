@@ -342,6 +342,34 @@ mod tests {
     }
 
     #[test]
+    fn accepts_feishu_auth_status_that_needs_refresh() {
+        let raw = serde_json::json!({
+            "appId": "cli_xxx",
+            "brand": "feishu",
+            "defaultAs": "auto",
+            "identities": {
+                "bot": {
+                    "status": "ready",
+                    "available": true
+                },
+                "user": {
+                    "status": "needs_refresh",
+                    "available": true,
+                    "message": "User identity: needs refresh (will auto-refresh on next user API call)",
+                    "openId": "ou_xxx",
+                    "userName": "Chase",
+                    "tokenStatus": "needs_refresh",
+                    "scope": "auth:user.id:read contact:user.base:readonly contact:user.basic_profile:readonly im:chat:read im:message.group_msg:get_as_user im:message.p2p_msg:get_as_user im:message.reactions:read im:message:readonly search:message offline_access"
+                }
+            },
+            "identity": "user",
+            "note": "User identity needs refresh and will be refreshed automatically on the next user API call."
+        });
+
+        assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
     fn classifies_feishu_missing_scope_as_reauth_hint() {
         let stdout = r#"{
           "ok": false,

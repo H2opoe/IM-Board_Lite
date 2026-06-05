@@ -48,9 +48,11 @@ pub(super) fn validate_feishu_auth_status(raw: &serde_json::Value) -> Option<Bri
     // 字段缺失时仍以 auth status 的退出码和 verified/identity 状态为准。
     let token_statuses = string_values_for_keys(raw, &["tokenStatus", "token_status"]);
     let token_valid = token_statuses.is_empty()
-        || token_statuses
-            .iter()
-            .any(|value| value.eq_ignore_ascii_case("valid"));
+        || token_statuses.iter().any(|value| {
+            // 新版 lark-cli 会在 access token 到期但 refresh token 仍有效时返回 needs_refresh，
+            // 并说明下一次 user API 调用会自动刷新；这不是授权失效，不能提示用户重新授权。
+            value.eq_ignore_ascii_case("valid") || value.eq_ignore_ascii_case("needs_refresh")
+        });
     let granted_scopes = feishu_scope_values(raw);
     let required_scopes = [
         "search:message",
