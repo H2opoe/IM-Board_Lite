@@ -1,6 +1,9 @@
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{atomic::AtomicBool, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, AtomicU64},
+    Mutex,
+};
 
 use rusqlite::Connection;
 
@@ -12,7 +15,9 @@ pub struct AppState {
     pub app_dir: PathBuf,
     pub cache_dir: PathBuf,
     pub sync_cancel_requested: AtomicBool,
+    pub sync_job_running: AtomicBool,
     pub sync_bridge_pids: Mutex<Vec<u32>>,
+    pub auto_sync_frequency_minutes: AtomicU64,
     pub local_model_server_pid: Mutex<Option<u32>>,
     pub local_model_download_progress: Mutex<Option<LocalModelDownloadProgress>>,
     pub local_model_download_cancel_requested: AtomicBool,
@@ -42,7 +47,9 @@ impl AppState {
             app_dir,
             cache_dir,
             sync_cancel_requested: AtomicBool::new(false),
+            sync_job_running: AtomicBool::new(false),
             sync_bridge_pids: Mutex::new(Vec::new()),
+            auto_sync_frequency_minutes: AtomicU64::new(15),
             local_model_server_pid: Mutex::new(None),
             local_model_download_progress: Mutex::new(None),
             local_model_download_cancel_requested: AtomicBool::new(false),

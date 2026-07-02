@@ -1,7 +1,9 @@
 use std::process::Command;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{Manager, State};
 
 use crate::storage::AppState;
 
@@ -103,4 +105,46 @@ fn terminate_process(pid: u32) {
         .arg("-TERM")
         .arg(pid.to_string())
         .status();
+}
+
+pub fn spawn_auto_sync_task(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        loop {
+            let minutes = app
+                .state::<AppState>()
+                .auto_sync_frequency_minutes
+                .load(Ordering::SeqCst)
+                .max(1);
+            tokio::time::sleep(Duration::from_secs(minutes.saturating_mul(60))).await;
+
+            let state = app.state::<AppState>();
+            if state.sync_job_running.load(Ordering::SeqCst) {
+                continue;
+            }
+
+            let result = crate::sync::orchestrator::run_sync_job(
+                app.clone(),
+                state,
+                "aggregate".to_owned(),
+                SyncJobMode::Incremental,
+            )
+            .await;
+            if let Err(error) = result {
+                crate::diagnostics::record_error_event(
+                    &app.state::<AppState>(),
+                    crate::diagnostics::DiagnosticErrorEvent {
+                        source: "sync",
+                        category: "background_auto_sync",
+                        severity: "warning",
+                        profile_id: None,
+                        platform: None,
+                        operation: "background_auto_sync".to_owned(),
+                        user_message: "后台自动同步失败，已等待下一轮自动同步。".to_owned(),
+                        raw_detail: serde_json::json!({ "error": error }),
+                        context: serde_json::json!({ "profileId": "aggregate" }),
+                    },
+                );
+            }
+        }
+    });
 }

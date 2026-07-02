@@ -41,6 +41,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new().expect("初始化应用状态失败"))
         .setup(|_app| {
+            sync::job::spawn_auto_sync_task(_app.handle().clone());
+
             #[cfg(not(target_os = "macos"))]
             {
                 let show_item =
@@ -110,6 +112,7 @@ pub fn run() {
             commands::ai::save_ai_config,
             commands::ai::test_ai_connection,
             commands::sync::cancel_sync,
+            commands::sync::set_auto_sync_frequency_minutes,
             commands::sync::run_sync_job
         ])
         .build(tauri::generate_context!())

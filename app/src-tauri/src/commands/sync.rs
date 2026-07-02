@@ -13,6 +13,18 @@ pub fn cancel_sync(state: State<'_, AppState>) -> Result<bool, String> {
 }
 
 #[tauri::command]
+pub fn set_auto_sync_frequency_minutes(
+    state: State<'_, AppState>,
+    minutes: u64,
+) -> Result<u64, String> {
+    let normalized_minutes = minutes.max(1);
+    state
+        .auto_sync_frequency_minutes
+        .store(normalized_minutes, Ordering::SeqCst);
+    Ok(normalized_minutes)
+}
+
+#[tauri::command]
 pub async fn run_sync_job(
     app: tauri::AppHandle,
     state: State<'_, AppState>,

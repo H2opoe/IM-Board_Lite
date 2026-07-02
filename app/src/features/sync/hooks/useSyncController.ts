@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getDashboard } from "../../dashboard/api/dashboardApi";
+import { isTauri } from "../../../api/tauri";
 import type { DashboardSetter } from "../../dashboard/hooks/useDashboardStore";
 import type { DashboardData } from "../../dashboard/model/types";
 import type { ImProfile } from "../../profiles/model/types";
-import { cancelSync, runSyncJob, watchSyncProgress } from "../api/syncApi";
+import { cancelSync, runSyncJob, setAutoSyncFrequencyMinutes, watchSyncProgress } from "../api/syncApi";
 import type { SyncJobMode, SyncProgress, SyncResult } from "../model/types";
 import {
   SYNC_CANCEL_CONFIRM_MESSAGES,
@@ -103,7 +104,11 @@ export function useSyncController({ activeProfileId, demoMode, profiles, setDash
 
   useEffect(() => {
     window.localStorage.setItem(SYNC_FREQUENCY_STORAGE_KEY, String(syncFrequencyMinutes));
-  }, [syncFrequencyMinutes]);
+    if (demoMode || !isTauri) return;
+    void setAutoSyncFrequencyMinutes(syncFrequencyMinutes).catch((error) => {
+      logRecoverableError("更新后台同步频率失败，已保留当前前端设置", error);
+    });
+  }, [demoMode, syncFrequencyMinutes]);
 
   function updateSyncProgressNotice(progress: SyncProgress) {
     const noticeId = progress.profileId || progress.phase;
@@ -373,6 +378,7 @@ export function useSyncController({ activeProfileId, demoMode, profiles, setDash
 
   useEffect(() => {
     if (demoMode) return undefined;
+    if (isTauri) return undefined;
     const interval = window.setInterval(() => {
       void executeSyncJob("incremental", "aggregate");
     }, syncFrequencyMinutes * 60 * 1000);

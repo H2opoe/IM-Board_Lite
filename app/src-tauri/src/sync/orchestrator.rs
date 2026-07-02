@@ -22,10 +22,31 @@ pub async fn run_sync_job(
     profile_id: String,
     mode: SyncJobMode,
 ) -> Result<SyncResult, String> {
+    let _guard = SyncJobRunGuard::acquire(state.clone())?;
     match mode {
         SyncJobMode::Incremental => run_manual_sync_inner(app, state, profile_id, true).await,
         SyncJobMode::FullResync => run_full_resync(app, state, profile_id).await,
         SyncJobMode::RetryAnalysis => retry_ai_analysis(app, state, profile_id).await,
+    }
+}
+
+struct SyncJobRunGuard<'a> {
+    state: State<'a, AppState>,
+}
+
+impl<'a> SyncJobRunGuard<'a> {
+    fn acquire(state: State<'a, AppState>) -> Result<Self, String> {
+        state
+            .sync_job_running
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .map_err(|_| "已有同步任务正在运行，请稍后再试。".to_owned())?;
+        Ok(Self { state })
+    }
+}
+
+impl Drop for SyncJobRunGuard<'_> {
+    fn drop(&mut self) {
+        self.state.sync_job_running.store(false, Ordering::SeqCst);
     }
 }
 

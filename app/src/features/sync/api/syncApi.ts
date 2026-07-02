@@ -30,6 +30,12 @@ export async function cancelSync(): Promise<boolean> {
   return requireTauri("终止同步");
 }
 
+export async function setAutoSyncFrequencyMinutes(minutes: number): Promise<number> {
+  if (isDemoMode()) return minutes;
+  if (isTauri) return invoke("set_auto_sync_frequency_minutes", { minutes });
+  return requireTauri("设置后台同步频率");
+}
+
 export async function watchSyncProgress(handler: (progress: SyncProgress) => void): Promise<() => void> {
   if (isTauri) return listen<SyncProgress>(SYNC_PROGRESS_EVENT, (event) => handler(event.payload));
   void handler;
