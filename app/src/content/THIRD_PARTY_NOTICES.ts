@@ -19,12 +19,6 @@ IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整�
 - Source: https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli
 - Distribution: hot-updated into the application support directory when needed; not bundled in the base installer.
 
-### @canghe_ai/wechat-cli
-
-- License: Apache-2.0
-- Source: https://github.com/huohuoer/wechat-cli
-- Distribution: app-managed resources for WeChat integration; the built-in macOS bridge is adapted from the same wechat-cli codebase.
-
 ## Optional Hot-Updated AI Models
 
 ### DeepSeek-R1-Distill-Qwen-7B GGUF

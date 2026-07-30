@@ -17,10 +17,10 @@
 - 发布展示版本号：`2.2.2-lite`
 - 产物命名：`IM-Board_2.2.2-lite_mac_universal.dmg`
 - 打包目标：`universal-apple-darwin`
-- Lite 功能边界：不包含微信账号绑定和微信同步入口，历史微信账号只允许展示和删除，不允许启用、测试读取或同步。
-- CLI 内置边界：Lite macOS 版不包含微信功能；飞书、钉钉、企微 CLI 通过应用内后台热更新获取。
+- Lite 功能边界：不包含微信账号绑定、微信同步入口、微信 bridge 源码或微信专用运行时。
+- CLI 内置边界：Lite macOS 版不得包含微信 CLI、独立 Python 运行时或 `third_party/wechat_bridge`；飞书、钉钉、企微 CLI 通过应用内后台热更新获取。
 - 运行时边界：非 macOS 自带的运行时依赖需要随 App 打包，不能依赖用户手动安装。
-- 验证重点：确认 DMG 内不包含用户 profile/账号状态，确认没有微信 bridge、微信 CLI 或超出 Lite 边界的 CLI 资源。
+- 验证重点：确认 DMG 内不包含用户 profile/账号状态，并由打包脚本逐项扫描，确认没有微信 bridge、微信 CLI、微信专用 Python 运行时或超出 Lite 边界的 CLI 资源。
 - Lite Windows 版打包要求以 `/Volumes/SanDisk SSD Plus/Applications Data/Codex/IM-Board-lite-win/PACKAGING.md` 为准，避免 macOS Lite 目录误承接 Windows 产物。
 - App 身份要求：`CFBundleIdentifier`、codesign Identifier 必须稳定为 `com.local.im-board`，`CFBundleName`/`CFBundleDisplayName` 必须为 `IM-Board`，`CFBundleShortVersionString` 必须使用不带 beta 后缀的系统版本号，`CFBundleVersion` 必须使用递增数字构建号。
 - Beta 版规则：beta 字符串只允许出现在 `package.json` 的 `release.label`、关于窗口、更新日志和安装包文件名中，不能写入 macOS `.app` 的 Bundle ID、codesign Identifier、`CFBundleShortVersionString`。
