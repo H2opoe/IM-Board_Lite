@@ -294,6 +294,29 @@ pub(super) fn classify_feishu_cli_structured_error(
         })
         .unwrap_or_default();
     let normalized_detail = format!("{error_message}\n{stderr}").to_ascii_lowercase();
+    if error_type == "network"
+        || error
+            .get("subtype")
+            .and_then(|value| value.as_str())
+            .is_some_and(|value| value == "transport")
+    {
+        let mut hints = vec![
+            "飞书官方 CLI 当前网络传输失败，授权本身不一定失效。请检查网络或代理后重试。"
+                .to_owned(),
+            "如果账号绑定页提示飞书 CLI 可更新，请先更新 CLI 后再同步。".to_owned(),
+        ];
+        if let Some(update_message) = feishu_cli_update_notice(raw) {
+            hints.push(update_message);
+        }
+        if !error_message.trim().is_empty() {
+            hints.push(format!("底层返回：{}", error_message.trim()));
+        }
+        return Some(BridgeError {
+            code: "FEISHU_NETWORK_TRANSPORT".to_owned(),
+            message: hints.join("\n"),
+            recoverable: true,
+        });
+    }
     if error
         .get("subtype")
         .and_then(|value| value.as_str())
@@ -344,6 +367,24 @@ pub(super) fn classify_feishu_cli_structured_error(
         });
     }
     None
+}
+
+fn feishu_cli_update_notice(raw: &serde_json::Value) -> Option<String> {
+    let update = raw.get("_notice")?.get("update")?;
+    let current = update
+        .get("current")
+        .and_then(|value| value.as_str())
+        .unwrap_or_default();
+    let latest = update
+        .get("latest")
+        .and_then(|value| value.as_str())
+        .unwrap_or_default();
+    if current.is_empty() || latest.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "检测到飞书 CLI 可更新：当前 {current}，最新 {latest}。"
+    ))
 }
 
 pub(super) fn parse_feishu_cli_json(stdout: &str) -> Option<serde_json::Value> {

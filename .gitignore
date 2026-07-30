@@ -3,9 +3,14 @@ node_modules/
 target/
 dist/
 *.log
+*.pyc
+__pycache__/
 .env
 .env.local
 app/.env
 app/.env.local
 app/src-tauri/target/
 app/src-tauri/gen/
+
+# Generated release packages belong in GitHub Releases.
+/artifacts/

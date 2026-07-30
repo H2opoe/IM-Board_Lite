@@ -59,6 +59,7 @@ pub(super) async fn run_official_feishu_cli(
 
     let mut command = official_cli_command(&cli_path);
     apply_official_cli_env(&mut command);
+    apply_feishu_cli_env(&mut command);
     if let Some(lark_config_dir) = feishu_lark_config_dir(&profile.config_json) {
         std::fs::create_dir_all(&lark_config_dir)?;
         command.env("LARKSUITE_CLI_CONFIG_DIR", lark_config_dir);
@@ -305,4 +306,10 @@ fn feishu_lark_config_dir(config: &serde_json::Value) -> Option<PathBuf> {
         .and_then(|value| value.as_str())
         .filter(|value| !value.trim().is_empty())
         .map(|value| expand_home(value).join(".lark-cli"))
+}
+
+fn apply_feishu_cli_env(command: &mut tokio::process::Command) {
+    // lark-cli 在部分本机网络环境会自动走到不稳定代理链路，消息检索表现为
+    // network/transport EOF。显式禁用代理探测后仍保留系统直连网络，避免误判为授权失效。
+    command.env("LARK_CLI_NO_PROXY", "1");
 }

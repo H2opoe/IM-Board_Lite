@@ -31,8 +31,9 @@ IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整�
 - License: MIT, inherited from the upstream DeepSeek-R1distilled model where applicable.
 - Source: https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
 - GGUF distribution: https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF
+- Mainland download source: https://modelscope.cn/models/unsloth/DeepSeek-R1-Distill-Qwen-7B-GGUF
 - Download mirror: https://hf-mirror.com/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF
-- Distribution: downloaded on demand into the local IMBoard model directory; not bundled in the base installer. Mainland China downloads prefer the mirror and fall back to Hugging Face.
+- Distribution: downloaded on demand into the local IMBoard model directory; not bundled in the base installer. Mainland China downloads prefer ModelScope, then HF-Mirror, and finally fall back to Hugging Face.
 
 ### llama.cpp
 - License: MIT.

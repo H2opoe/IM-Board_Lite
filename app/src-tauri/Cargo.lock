@@ -1665,7 +1665,7 @@ dependencies = [
 
 [[package]]
 name = "im-board"
-version = "2.1.6-lite"
+version = "2.2.2-lite"
 dependencies = [
  "anyhow",
  "chrono",

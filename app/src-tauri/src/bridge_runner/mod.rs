@@ -389,6 +389,32 @@ mod tests {
     }
 
     #[test]
+    fn classifies_feishu_network_transport_as_retryable_cli_issue() {
+        let stdout = r#"{
+          "ok": false,
+          "identity": "user",
+          "error": {
+            "type": "network",
+            "subtype": "transport",
+            "message": "request failed"
+          },
+          "_notice": {
+            "update": {
+              "current": "1.0.47",
+              "latest": "1.0.48"
+            }
+          }
+        }"#;
+
+        let error = classify_feishu_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "FEISHU_NETWORK_TRANSPORT");
+        assert!(error.recoverable);
+        assert!(error.message.contains("网络传输失败"));
+        assert!(error.message.contains("当前 1.0.47，最新 1.0.48"));
+        assert!(!error.message.contains("授权不完整"));
+    }
+
+    #[test]
     fn classifies_feishu_search_not_authenticated_as_user_auth_incomplete() {
         let stdout = r#"{
           "ok": false,

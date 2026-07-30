@@ -139,6 +139,7 @@ function bridgeErrorCodeLabel(code?: string) {
     FEISHU_UNSUPPORTED_COMMAND: "飞书命令不支持",
     FEISHU_CLI_MISSING: "飞书CLI不可用",
     FEISHU_CLI_FAILED: "飞书CLI执行失败",
+    FEISHU_NETWORK_TRANSPORT: "飞书网络传输失败",
     FEISHU_NOT_AUTHENTICATED: "飞书尚未登录",
     FEISHU_B2C_APP_UNSUPPORTED: "飞书应用会话不支持读取",
     DINGTALK_PROFILE_NOT_FOUND: "缺少钉钉账号配置",

@@ -78,17 +78,45 @@ include!("ai_local_download.rs");
 
 include!("ai_local_runtime.rs");
 
+struct LocalDeepseekDownloadResponse {
+    response: reqwest::Response,
+    resumed_bytes: i64,
+}
+
 async fn request_local_deepseek_download(
     client: &reqwest::Client,
-) -> Result<reqwest::Response, String> {
+    resume_from_bytes: i64,
+) -> Result<LocalDeepseekDownloadResponse, String> {
     let sources = [
         LOCAL_DEEPSEEK_SOURCE_URL,
+        LOCAL_DEEPSEEK_HF_MIRROR_SOURCE_URL,
         LOCAL_DEEPSEEK_FALLBACK_SOURCE_URL,
     ];
     let mut errors = Vec::new();
     for source_url in sources {
-        match client.get(source_url).send().await {
-            Ok(response) if response.status().is_success() => return Ok(response),
+        let request = client.get(source_url);
+        let request = if resume_from_bytes > 0 {
+            request.header(reqwest::header::RANGE, format!("bytes={resume_from_bytes}-"))
+        } else {
+            request
+        };
+        match request.send().await {
+            Ok(response) if response.status().is_success() => {
+                let status = response.status();
+                if resume_from_bytes > 0 && status == reqwest::StatusCode::PARTIAL_CONTENT {
+                    return Ok(LocalDeepseekDownloadResponse {
+                        response,
+                        resumed_bytes: resume_from_bytes,
+                    });
+                }
+                if resume_from_bytes > 0 && status == reqwest::StatusCode::OK {
+                    errors.push(format!("{source_url} 不支持断点续传，已改为重新完整下载"));
+                }
+                return Ok(LocalDeepseekDownloadResponse {
+                    response,
+                    resumed_bytes: 0,
+                });
+            }
             Ok(response) => {
                 let status = response.status();
                 let body = response.text().await.unwrap_or_default();
@@ -104,7 +132,7 @@ async fn request_local_deepseek_download(
         }
     }
     Err(format!(
-        "本地DeepSeek模型下载请求失败，已尝试镜像源和官方源：{}",
+        "本地DeepSeek模型下载请求失败，已尝试魔搭、HF-Mirror和官方源：{}",
         errors.join("；")
     ))
 }

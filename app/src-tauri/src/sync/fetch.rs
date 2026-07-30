@@ -189,14 +189,6 @@ fn is_wechat_empty_session_sync(profile: &ImProfile, session_count: usize) -> bo
     profile.platform == "wechat" && session_count == 0
 }
 
-fn is_wechat_zero_message_sync(
-    profile: &ImProfile,
-    fetched_messages: usize,
-    inserted_messages: i64,
-) -> bool {
-    profile.platform == "wechat" && fetched_messages == 0 && inserted_messages == 0
-}
-
 async fn sync_profile_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -330,7 +322,7 @@ async fn sync_profile_messages(
         total,
     );
 
-    let (profile_fetched_messages, profile_inserted_messages) = fetch_recent_session_messages(
+    let (_, profile_inserted_messages) = fetch_recent_session_messages(
         app,
         state,
         &profile,
@@ -344,13 +336,6 @@ async fn sync_profile_messages(
         &mut warnings,
     )
     .await?;
-    if is_wechat_zero_message_sync(
-        &profile,
-        profile_fetched_messages,
-        profile_inserted_messages,
-    ) {
-        return Err(wechat_read_not_logged_in_message().to_owned());
-    }
     inserted_messages += profile_inserted_messages;
     emit_profile_sync_done(app, &profile, inserted_messages);
 
@@ -455,15 +440,19 @@ fn emit_profile_sync_done(app: &tauri::AppHandle, profile: &ImProfile, inserted_
         app,
         profile,
         "profile_sync_done",
-        format!(
-            "已同步【{} · {}】，读取{}条新消息。",
-            platform_label(&profile.platform),
-            profile_remark(profile),
-            inserted_messages
-        ),
+        profile_sync_done_message(profile, inserted_messages),
         inserted_messages,
         inserted_messages,
     );
+}
+
+fn profile_sync_done_message(profile: &ImProfile, inserted_messages: i64) -> String {
+    format!(
+        "已同步【{} · {}】，读取{}条新消息。",
+        platform_label(&profile.platform),
+        profile_remark(profile),
+        inserted_messages
+    )
 }
 
 include!("fetch_dingtalk.rs");
@@ -563,7 +552,7 @@ mod tests {
     }
 
     #[test]
-    fn zero_wechat_messages_require_login_check() {
+    fn zero_wechat_messages_are_valid_sync_result() {
         let wechat = ImProfile {
             id: "wechat-1".to_owned(),
             platform: "wechat".to_owned(),
@@ -575,14 +564,13 @@ mod tests {
             created_at: "2026-05-07T00:00:00+08:00".to_owned(),
             updated_at: "2026-05-07T00:00:00+08:00".to_owned(),
         };
-        let feishu = ImProfile {
-            platform: "feishu".to_owned(),
-            ..wechat.clone()
-        };
-
-        assert!(is_wechat_zero_message_sync(&wechat, 0, 0));
-        assert!(!is_wechat_zero_message_sync(&wechat, 1, 0));
-        assert!(!is_wechat_zero_message_sync(&wechat, 0, 1));
-        assert!(!is_wechat_zero_message_sync(&feishu, 0, 0));
+        assert_eq!(
+            profile_sync_failure_message(&wechat, wechat_read_not_logged_in_message()),
+            "【微信 · 工作号】同步失败：微信读取不到消息，请确认电脑微信是否已登录后重试。"
+        );
+        assert_eq!(
+            profile_sync_done_message(&wechat, 0),
+            "已同步【微信 · 工作号】，读取0条新消息。"
+        );
     }
 }

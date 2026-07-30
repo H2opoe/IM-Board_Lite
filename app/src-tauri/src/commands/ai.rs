@@ -1,3 +1,4 @@
+use std::fs::OpenOptions;
 use std::io::Write;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
@@ -15,7 +16,8 @@ use crate::storage::models::{AiConfig, LocalModelDownloadProgress, LocalModelSta
 use crate::storage::AppState;
 
 const LOCAL_DEEPSEEK_FILE_NAME: &str = "DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf";
-const LOCAL_DEEPSEEK_SOURCE_URL: &str = "https://hf-mirror.com/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf";
+const LOCAL_DEEPSEEK_SOURCE_URL: &str = "https://modelscope.cn/models/unsloth/DeepSeek-R1-Distill-Qwen-7B-GGUF/resolve/master/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf";
+const LOCAL_DEEPSEEK_HF_MIRROR_SOURCE_URL: &str = "https://hf-mirror.com/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf";
 const LOCAL_DEEPSEEK_FALLBACK_SOURCE_URL: &str = "https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf";
 const LOCAL_DEEPSEEK_EXPECTED_SIZE_BYTES: i64 = 4_683_073_504;
 const LOCAL_DEEPSEEK_BASE_URL: &str = "http://127.0.0.1:11434/v1";
