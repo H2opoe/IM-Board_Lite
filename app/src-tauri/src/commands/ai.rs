@@ -37,6 +37,22 @@ pub fn save_ai_config(state: State<'_, AppState>, config: AiConfig) -> Result<Ai
     ai::save_config(&conn, config).map_err(|err| err.to_string())
 }
 
+pub(crate) async fn ensure_runtime_for_analysis(
+    app: &AppHandle,
+    state: &AppState,
+    config: &AiConfig,
+) -> Result<(), String> {
+    if !is_managed_local_deepseek_config(config) {
+        return Ok(());
+    }
+    ensure_local_deepseek_runtime(app, state)
+        .await
+        .map_err(|err| {
+            record_local_ai_error(state, "ensure_runtime_for_analysis", &err);
+            err
+        })
+}
+
 #[tauri::command]
 pub async fn test_ai_connection(
     app: AppHandle,

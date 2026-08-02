@@ -273,7 +273,7 @@ pub(crate) fn ai_error_event(
 ) -> DiagnosticErrorEvent {
     let operation = operation.into();
     let category = ai_error_category(error, diagnostic.as_ref());
-    let user_message = ai_user_message(category);
+    let user_message = ai_user_message_for_error(category, error, diagnostic.as_ref());
     DiagnosticErrorEvent {
         source: "ai",
         category,
@@ -294,7 +294,16 @@ pub(crate) fn classify_ai_user_message(
     error: &str,
     diagnostic: Option<&serde_json::Value>,
 ) -> String {
-    ai_user_message(ai_error_category(error, diagnostic))
+    let category = ai_error_category(error, diagnostic);
+    ai_user_message_for_error(category, error, diagnostic)
+}
+
+pub(crate) fn is_local_ai_connection_failure(
+    error: &str,
+    diagnostic: Option<&serde_json::Value>,
+) -> bool {
+    ai_error_category(error, diagnostic) == "network_connect"
+        && references_local_ai_endpoint(error, diagnostic)
 }
 
 pub(crate) fn local_ai_error_event(
@@ -397,12 +406,43 @@ fn ai_user_message(category: &str) -> String {
     .to_owned()
 }
 
+fn ai_user_message_for_error(
+    category: &str,
+    error: &str,
+    diagnostic: Option<&serde_json::Value>,
+) -> String {
+    if category == "network_connect" && references_local_ai_endpoint(error, diagnostic) {
+        return "本地DeepSeek推理服务已断开；系统已尝试自动恢复，如仍失败请检查可用内存并导出诊断包。"
+            .to_owned();
+    }
+    ai_user_message(category)
+}
+
+fn references_local_ai_endpoint(error: &str, diagnostic: Option<&serde_json::Value>) -> bool {
+    let error = error.to_ascii_lowercase();
+    if error.contains("127.0.0.1:11434") || error.contains("localhost:11434") {
+        return true;
+    }
+    diagnostic.is_some_and(|diagnostic| {
+        diagnostic
+            .get("endpoint")
+            .and_then(|value| value.as_str())
+            .is_some_and(|endpoint| {
+                let endpoint = endpoint.to_ascii_lowercase();
+                endpoint.contains("127.0.0.1:11434") || endpoint.contains("localhost:11434")
+            })
+    })
+}
+
 fn local_ai_user_message(error: &str) -> String {
     if error.contains("下载") {
         return "本地DeepSeek模型下载失败，真实下载错误已写入诊断包。".to_owned();
     }
     if error.contains("启动") {
         return "本地DeepSeek推理服务启动失败，真实启动错误已写入诊断包。".to_owned();
+    }
+    if error.contains("退出") || error.contains("崩溃") {
+        return "本地DeepSeek推理服务异常退出，退出状态和运行日志已写入诊断包。".to_owned();
     }
     "本地推理运行时不可用，请重新准备运行时后再测试。".to_owned()
 }
@@ -561,6 +601,26 @@ mod tests {
                 Some(&diagnostic)
             ),
             "当前模型不可用，请检查模型名称或账号是否有调用权限。"
+        );
+    }
+
+    #[test]
+    fn classifies_local_ai_connection_failure_without_network_advice() {
+        let error = "待回复和待办事项识别请求未发出：error sending request for url (http://127.0.0.1:11434/v1/chat/completions)：原因：client error (Connect)";
+        assert!(is_local_ai_connection_failure(error, None));
+        assert_eq!(
+            classify_ai_user_message(error, None),
+            "本地DeepSeek推理服务已断开；系统已尝试自动恢复，如仍失败请检查可用内存并导出诊断包。"
+        );
+    }
+
+    #[test]
+    fn keeps_remote_ai_connection_failure_network_advice() {
+        let error = "API请求未发出：error sending request for url (https://api.example.com/v1/chat/completions)：原因：client error (Connect)";
+        assert!(!is_local_ai_connection_failure(error, None));
+        assert_eq!(
+            classify_ai_user_message(error, None),
+            "AI服务连接失败，请检查DNS、代理/VPN、防火墙或公司网络策略。"
         );
     }
 

@@ -31,6 +31,52 @@ where
     }
 }
 
+async fn await_ai_call_with_runtime_recovery<T, F, Fut>(
+    app: &tauri::AppHandle,
+    state: &State<'_, AppState>,
+    config: &crate::storage::models::AiConfig,
+    mut build_call: F,
+) -> Result<T, AiCallFailure>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = anyhow::Result<T>>,
+{
+    ai_commands::ensure_runtime_for_analysis(app, state, config)
+        .await
+        .map_err(|message| AiCallFailure {
+            message,
+            diagnostic: None,
+        })?;
+
+    let first_result = await_ai_call_or_cancel(state, build_call()).await;
+    let should_recover = first_result.as_ref().err().is_some_and(|failure| {
+        crate::diagnostics::is_local_ai_connection_failure(
+            &failure.message,
+            failure.diagnostic.as_ref(),
+        )
+    });
+    if !should_recover {
+        return first_result;
+    }
+
+    ai_commands::ensure_runtime_for_analysis(app, state, config)
+        .await
+        .map_err(|restart_error| {
+            let first_error = first_result
+                .as_ref()
+                .err()
+                .map(|failure| failure.message.as_str())
+                .unwrap_or_default();
+            AiCallFailure {
+                message: format!(
+                    "本地DeepSeek推理服务断开，自动重启失败：{restart_error}；首次请求错误：{first_error}"
+                ),
+                diagnostic: None,
+            }
+        })?;
+    await_ai_call_or_cancel(state, build_call()).await
+}
+
 fn start_ai_analysis_run(
     state: &State<'_, AppState>,
     day: &str,

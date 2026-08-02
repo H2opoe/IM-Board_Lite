@@ -142,16 +142,9 @@ pub(crate) async fn analyze_pending_messages(
             estimated_message_tokens,
             overlap_message_count,
         );
-        let analysis_result = await_ai_call_or_cancel(
-            state,
-            ai::request_profile_analysis(
-                &ai_config,
-                day,
-                &analysis_profile_id,
-                &messages,
-                &context,
-            ),
-        )
+        let analysis_result = await_ai_call_with_runtime_recovery(app, state, &ai_config, || {
+            ai::request_profile_analysis(&ai_config, day, &analysis_profile_id, &messages, &context)
+        })
         .await;
         match analysis_result {
             Ok(analysis_result) => {
@@ -210,15 +203,19 @@ pub(crate) async fn analyze_pending_messages(
                                 estimated_message_tokens,
                                 overlap_message_count,
                             );
-                            match await_ai_call_or_cancel(
+                            match await_ai_call_with_runtime_recovery(
+                                app,
                                 state,
-                                ai::request_profile_analysis(
-                                    &ai_config,
-                                    day,
-                                    &analysis_profile_id,
-                                    &messages,
-                                    &context,
-                                ),
+                                &ai_config,
+                                || {
+                                    ai::request_profile_analysis(
+                                        &ai_config,
+                                        day,
+                                        &analysis_profile_id,
+                                        &messages,
+                                        &context,
+                                    )
+                                },
                             )
                             .await
                             {
@@ -448,56 +445,56 @@ pub(crate) async fn analyze_pending_messages(
                     0,
                     0,
                 );
-                let summary = match await_ai_call_or_cancel(
-                    state,
-                    ai::request_profile_summary(
-                        &ai_config,
-                        day,
-                        &summary_profile_id,
-                        &rolling_topics,
-                        &summary_batch,
-                        keyword_refine_for_batch.map(|plan| &plan.payload),
-                    ),
-                )
-                .await
-                {
-                    Ok(result) => {
-                        finish_ai_analysis_run(
-                            state,
-                            summary_run_id,
-                            "done",
-                            None,
-                            serde_json::to_value(&result.diagnostics).ok(),
-                        );
-                        result.summary
-                    }
-                    Err(err) => {
-                        let user_message = crate::diagnostics::classify_ai_user_message(
-                            &err.message,
-                            err.diagnostic.as_ref(),
-                        );
-                        if let Some(plan) = keyword_refine_for_batch {
-                            if let Ok(conn) = state.db.lock() {
-                                let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
-                            }
+                let summary =
+                    match await_ai_call_with_runtime_recovery(app, state, &ai_config, || {
+                        ai::request_profile_summary(
+                            &ai_config,
+                            day,
+                            &summary_profile_id,
+                            &rolling_topics,
+                            &summary_batch,
+                            keyword_refine_for_batch.map(|plan| &plan.payload),
+                        )
+                    })
+                    .await
+                    {
+                        Ok(result) => {
+                            finish_ai_analysis_run(
+                                state,
+                                summary_run_id,
+                                "done",
+                                None,
+                                serde_json::to_value(&result.diagnostics).ok(),
+                            );
+                            result.summary
                         }
-                        finish_ai_analysis_run(
-                            state,
-                            summary_run_id,
-                            "failed",
-                            Some(&err.message),
-                            err.diagnostic,
-                        );
-                        warnings.push(format!(
-                            "{}热门话题和关键词识别失败（第{}/{}批）：{}",
-                            analysis_scope_label,
-                            summary_batch_index + 1,
-                            total_summary_batches,
-                            user_message
-                        ));
-                        return Ok((ai_status, analyzed_messages));
-                    }
-                };
+                        Err(err) => {
+                            let user_message = crate::diagnostics::classify_ai_user_message(
+                                &err.message,
+                                err.diagnostic.as_ref(),
+                            );
+                            if let Some(plan) = keyword_refine_for_batch {
+                                if let Ok(conn) = state.db.lock() {
+                                    let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
+                                }
+                            }
+                            finish_ai_analysis_run(
+                                state,
+                                summary_run_id,
+                                "failed",
+                                Some(&err.message),
+                                err.diagnostic,
+                            );
+                            warnings.push(format!(
+                                "{}热门话题和关键词识别失败（第{}/{}批）：{}",
+                                analysis_scope_label,
+                                summary_batch_index + 1,
+                                total_summary_batches,
+                                user_message
+                            ));
+                            return Ok((ai_status, analyzed_messages));
+                        }
+                    };
                 // 每批汇总结果都会作为下一批 existingTopics，确保跨批话题继续在 AI 层合并而不是各算各的。
                 rolling_topics = ai::summary_topic_contexts_from_summary(&summary);
 

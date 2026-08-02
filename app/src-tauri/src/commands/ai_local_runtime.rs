@@ -249,6 +249,14 @@ fn start_llama_server_process(
     let working_dir = server_path
         .parent()
         .ok_or_else(|| "本地推理运行时路径异常。".to_owned())?;
+    let runtime_log_path = local_deepseek_runtime_log_path(app, working_dir);
+    let stderr = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(&runtime_log_path)
+        .map(Stdio::from)
+        .unwrap_or_else(|_| Stdio::null());
     let mut child = std::process::Command::new(server_path)
         .current_dir(working_dir)
         .args([
@@ -266,18 +274,83 @@ fn start_llama_server_process(
             "99",
         ])
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(stderr)
         .spawn()
         .map_err(|err| format!("启动本地DeepSeek推理服务失败：{err}"))?;
+    let child_pid = child.id();
     if let Some(state) = app.try_state::<AppState>() {
         if let Ok(mut pid) = state.local_model_server_pid.lock() {
-            *pid = Some(child.id());
+            *pid = Some(child_pid);
         }
     }
+    let app_for_wait = app.clone();
     std::thread::spawn(move || {
-        let _ = child.wait();
+        let exit_result = child.wait();
+        let Some(state) = app_for_wait.try_state::<AppState>() else {
+            return;
+        };
+        let was_active_server = state
+            .local_model_server_pid
+            .lock()
+            .map(|mut tracked_pid| {
+                if *tracked_pid == Some(child_pid) {
+                    *tracked_pid = None;
+                    true
+                } else {
+                    false
+                }
+            })
+            .unwrap_or(false);
+        if !was_active_server {
+            return;
+        }
+        let (message, exit_status) = match exit_result {
+            Ok(status) if status.success() => return,
+            Ok(status) => (
+                format!("本地DeepSeek推理服务异常退出：{status}"),
+                status.to_string(),
+            ),
+            Err(err) => (
+                format!("等待本地DeepSeek推理服务退出失败：{err}"),
+                "wait_failed".to_owned(),
+            ),
+        };
+        crate::diagnostics::record_error_event(
+            &state,
+            crate::diagnostics::local_ai_error_event(
+                "llama_server_exit",
+                &message,
+                serde_json::json!({
+                    "provider": "本地DeepSeek",
+                    "pid": child_pid,
+                    "exitStatus": exit_status,
+                    "runtimeLogPath": runtime_log_path.to_string_lossy(),
+                    "runtimeLogTail": local_deepseek_runtime_log_tail(&runtime_log_path, 2_000),
+                }),
+            ),
+        );
     });
     Ok(())
+}
+
+fn local_deepseek_runtime_log_path(app: &AppHandle, working_dir: &Path) -> PathBuf {
+    app.try_state::<AppState>()
+        .map(|state| state.cache_dir.join("local-deepseek-runtime.log"))
+        .unwrap_or_else(|| working_dir.join("local-deepseek-runtime.log"))
+}
+
+fn local_deepseek_runtime_log_tail(path: &Path, max_chars: usize) -> String {
+    let Ok(content) = std::fs::read_to_string(path) else {
+        return String::new();
+    };
+    let char_count = content.chars().count();
+    if char_count <= max_chars {
+        return content;
+    }
+    content
+        .chars()
+        .skip(char_count.saturating_sub(max_chars))
+        .collect()
 }
 
 async fn is_llama_server_ready() -> bool {
