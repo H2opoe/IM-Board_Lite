@@ -1,11 +1,11 @@
 {
   "name": "im-board",
   "private": true,
-  "version": "2.2.3-lite",
+  "version": "2.2.4-lite",
   "release": {
-    "appVersion": "2.2.3",
-    "label": "2.2.3-lite",
-    "macosBundleVersion": "22300"
+    "appVersion": "2.2.4",
+    "label": "2.2.4-lite",
+    "macosBundleVersion": "22400"
   },
   "type": "module",
   "scripts": {
