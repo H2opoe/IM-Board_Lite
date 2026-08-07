@@ -1,0 +1,37 @@
+{
+  "name": "im-board",
+  "private": true,
+  "version": "3.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run verify:lite-boundary && npm run verify:release-config && npm run verify:runtime-manifest && tsc && vite build",
+    "verify:lite-boundary": "node scripts/verify-lite-boundary.mjs",
+    "verify:lite-history": "node scripts/verify-lite-boundary.mjs --history",
+    "verify:release-config": "node scripts/verify-release-config.mjs",
+    "verify:runtime-manifest": "node scripts/verify-runtime-manifest.mjs",
+    "prepare:windows-deps": "node scripts/prepare-windows-deps.mjs",
+    "package:windows:portable": "node scripts/package-windows-portable.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "tauri": "tauri",
+    "tauri:build:windows:xwin": "npm run prepare:windows-deps && npm run build && node scripts/build-windows-xwin.mjs",
+    "tauri:dev:windows": "npm run prepare:windows-deps && node scripts/run-windows-dev-env.mjs node_modules/.bin/tauri.cmd dev",
+    "tauri:build:windows": "npm run prepare:windows-deps && npm run build && node scripts/run-windows-dev-env.mjs node_modules/.bin/tauri.cmd build --target x86_64-pc-windows-msvc --no-bundle"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.10.1",
+    "@tauri-apps/plugin-dialog": "2.7.0",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.4",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "edition": "lite",
+  "target": "windows",
+  "components": [
+    {
+      "id": "llama.cpp",
+      "version": "b8987",
+      "platform": "win-cpu-x64",
+      "path": "llama.cpp/b8987/win-cpu-x64",
+      "fileCount": 42,
+      "sizeBytes": 48326712,
+      "treeSha256": "ba455719148268f7bf235df04fcbeaa8f2c9022ed267a347e672213dcb3fd6f2"
+    }
+  ]
+}

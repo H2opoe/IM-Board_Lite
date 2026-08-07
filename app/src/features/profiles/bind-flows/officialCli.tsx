@@ -1,0 +1,173 @@
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
+import type { PlatformCliDeploymentProgress, PlatformCliVersionStatus, PlatformDeployment } from "../../../api/bridgeApi";
+import { OFFICIAL_CLI_MESSAGES } from "../../../constants/messages";
+import type { ImProfile, Platform } from "../model/types";
+import { buildDingtalkProfile, buildFeishuProfile, buildWecomProfile } from "../model/profileBuilders";
+import { OfficialCliBindModal } from "./OfficialCliBindModal";
+
+export type OfficialCliBindPlatform = Extract<Platform, "wecom" | "feishu" | "dingtalk">;
+export type OfficialCliIdentityMode = "none" | "optional" | "required";
+
+export interface OfficialCliBindState {
+  platform: OfficialCliBindPlatform | null;
+  profile: ImProfile | null;
+  deployment: PlatformDeployment | null;
+  remark: string;
+  cliPath: string;
+  isDeployingBridge: boolean;
+  isCheckingVersion: boolean;
+  versionStatus: PlatformCliVersionStatus | null;
+}
+
+export interface OfficialCliBindFlowConfig {
+  platform: OfficialCliBindPlatform;
+  title: string;
+  closeAriaLabel: string;
+  defaultCliPath: string;
+  openSourceText: string;
+  saveFailedMessage: string;
+  detailLabel?: string;
+  verifyAuthorizationBeforeSave: boolean;
+  identityMode: OfficialCliIdentityMode;
+  missingIdentityMessage?: string;
+  buildProfile: (profile: ImProfile, sortOrder: number, remark: string, cliPath: string, deployment: PlatformDeployment) => ImProfile;
+}
+
+export const initialOfficialCliBindState: OfficialCliBindState = {
+  platform: null,
+  profile: null,
+  deployment: null,
+  remark: "",
+  cliPath: "",
+  isDeployingBridge: false,
+  isCheckingVersion: false,
+  versionStatus: null
+};
+
+const OFFICIAL_CLI_BIND_FLOW_CONFIGS: Record<OfficialCliBindPlatform, OfficialCliBindFlowConfig> = {
+  wecom: {
+    platform: "wecom",
+    title: "企业微信账号绑定",
+    closeAriaLabel: "关闭企业微信绑定",
+    defaultCliPath: "wecom-cli",
+    openSourceText: "本功能使用绑定时热更新的@wecom/cli（MIT）。",
+    saveFailedMessage: "企业微信账号配置保存失败。",
+    verifyAuthorizationBeforeSave: true,
+    identityMode: "required",
+    missingIdentityMessage: "未能读取企业微信机器人身份，请确认绑定命令已完成并生成有效配置。",
+    buildProfile: buildWecomProfile
+  },
+  feishu: {
+    platform: "feishu",
+    title: "飞书账号绑定",
+    closeAriaLabel: "关闭飞书绑定",
+    defaultCliPath: "lark-cli",
+    openSourceText: "本功能使用绑定时热更新的@larksuite/cli。",
+    saveFailedMessage: "飞书账号配置保存失败。",
+    detailLabel: "绑定命令",
+    verifyAuthorizationBeforeSave: true,
+    identityMode: "required",
+    missingIdentityMessage: "未能读取飞书当前授权身份，请确认绑定命令最后的auth status返回了用户信息。",
+    buildProfile: buildFeishuProfile
+  },
+  dingtalk: {
+    platform: "dingtalk",
+    title: "钉钉账号绑定",
+    closeAriaLabel: "关闭钉钉绑定",
+    defaultCliPath: "dws",
+    openSourceText: "本功能使用绑定时热更新的@DingTalk-Real-AI/dingtalk-workspace-cli（Apache-2.0）。",
+    saveFailedMessage: "钉钉账号配置保存失败。",
+    verifyAuthorizationBeforeSave: false,
+    identityMode: "required",
+    missingIdentityMessage: "未能读取钉钉当前授权身份，请确认绑定命令最后的get-self返回了用户信息。",
+    buildProfile: buildDingtalkProfile
+  }
+};
+
+interface OfficialCliBindFlowModalProps {
+  state: OfficialCliBindState;
+  updatingCliPlatform: Platform | null;
+  cliDeploymentProgress: PlatformCliDeploymentProgress[];
+  isCopied: boolean;
+  formMessage: ReactNode;
+  onUpdateCli: (platform: Platform) => void;
+  onCopy: () => void;
+  onRemarkChange: (value: string) => void;
+  onOpenAbout: () => void;
+  onClose: () => void;
+  onSave: () => void;
+  isSaving: boolean;
+  onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => void;
+  onCompositionStart: () => void;
+  onCompositionEnd: () => void;
+}
+
+export function isOfficialCliBindPlatform(platform: Platform): platform is OfficialCliBindPlatform {
+  return platform === "wecom" || platform === "feishu" || platform === "dingtalk";
+}
+
+export function officialCliBindFlowConfig(platform: OfficialCliBindPlatform): OfficialCliBindFlowConfig {
+  return OFFICIAL_CLI_BIND_FLOW_CONFIGS[platform];
+}
+
+export function buildOfficialCliProfileForFlow(
+  platform: OfficialCliBindPlatform,
+  profile: ImProfile,
+  sortOrder: number,
+  remark: string,
+  cliPath: string,
+  deployment: PlatformDeployment
+): ImProfile {
+  return officialCliBindFlowConfig(platform).buildProfile(profile, sortOrder, remark, cliPath, deployment);
+}
+
+export function OfficialCliBindFlowModal({
+  state,
+  updatingCliPlatform,
+  cliDeploymentProgress,
+  isCopied,
+  formMessage,
+  onUpdateCli,
+  onCopy,
+  onRemarkChange,
+  onOpenAbout,
+  onClose,
+  onSave,
+  isSaving,
+  onKeyDown,
+  onCompositionStart,
+  onCompositionEnd
+}: OfficialCliBindFlowModalProps) {
+  if (!state.platform || !state.profile) return null;
+  const config = officialCliBindFlowConfig(state.platform);
+  return (
+    <OfficialCliBindModal
+      platform={state.platform}
+      title={config.title}
+      closeAriaLabel={config.closeAriaLabel}
+      deployment={state.deployment}
+      versionStatus={state.versionStatus}
+      isCheckingVersion={state.isCheckingVersion}
+      isDeployingBridge={state.isDeployingBridge}
+      updatingCliPlatform={updatingCliPlatform}
+      cliDeploymentProgress={cliDeploymentProgress}
+      onUpdateCli={onUpdateCli}
+      placeholder={OFFICIAL_CLI_MESSAGES.placeholder(state.platform)}
+      detailLabel={config.detailLabel}
+      isCopied={isCopied}
+      onCopy={onCopy}
+      remark={state.remark}
+      onRemarkChange={onRemarkChange}
+      openSourceText={config.openSourceText}
+      onOpenAbout={onOpenAbout}
+      onClose={onClose}
+      onSave={onSave}
+      isSaving={isSaving}
+      saveDisabled={!state.deployment}
+      formMessage={formMessage}
+      onKeyDown={onKeyDown}
+      onCompositionStart={onCompositionStart}
+      onCompositionEnd={onCompositionEnd}
+    />
+  );
+}
