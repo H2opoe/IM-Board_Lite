@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "edition": "lite",
+  "target": "macos",
+  "components": [
+    {
+      "id": "llama.cpp",
+      "version": "b8987",
+      "platform": "darwin-arm64",
+      "path": "llama.cpp/b8987/darwin-arm64",
+      "fileCount": 52,
+      "sizeBytes": 27105665,
+      "treeSha256": "767cf2cbfcd0267060443db23217102e9062ebb4da4f83298f97debcc9258d21"
+    },
+    {
+      "id": "llama.cpp",
+      "version": "b8987",
+      "platform": "darwin-x64",
+      "path": "llama.cpp/b8987/darwin-x64",
+      "fileCount": 49,
+      "sizeBytes": 26417618,
+      "treeSha256": "413d8c4ce005d04d57a22c516dfd8e54b5bcebbc544a824d8d491adb2de1ea2e"
+    }
+  ]
+}

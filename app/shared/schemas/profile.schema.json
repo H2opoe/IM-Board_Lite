@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IMProfile",
+  "type": "object",
+  "required": ["id", "platform", "label", "enabled", "authType", "configPath", "cacheDir"],
+  "properties": {
+    "id": { "type": "string" },
+    "platform": { "enum": ["wecom", "feishu", "dingtalk"] },
+    "label": { "type": "string" },
+    "enabled": { "type": "boolean" },
+    "appPath": { "type": "string" },
+    "bundleId": { "type": "string" },
+    "pid": { "type": "integer" },
+    "dataDir": { "type": "string" },
+    "dbDir": { "type": "string" },
+    "configPath": { "type": "string" },
+    "keysPath": { "type": "string" },
+    "cacheDir": { "type": "string" },
+    "authType": { "enum": ["local_db", "oauth", "api_token", "cli_session"] }
+  }
+}

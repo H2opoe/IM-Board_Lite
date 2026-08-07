@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Message",
+  "type": "object",
+  "required": ["id", "platform", "profileId", "chatId", "senderId", "timestamp", "msgType", "content"],
+  "properties": {
+    "id": { "type": "string" },
+    "platform": { "enum": ["wecom", "feishu", "dingtalk"] },
+    "profileId": { "type": "string" },
+    "profileLabel": { "type": "string" },
+    "chatId": { "type": "string" },
+    "chatName": { "type": "string" },
+    "isGroup": { "type": "boolean" },
+    "senderId": { "type": "string" },
+    "senderName": { "type": "string" },
+    "timestamp": { "type": "integer" },
+    "time": { "type": "string" },
+    "msgType": {
+      "enum": ["text", "image", "file", "link", "voice", "video", "system", "emoji", "location", "calendar", "todo", "unknown"]
+    },
+    "content": { "type": "string" },
+    "partial": { "type": "boolean" }
+  }
+}

@@ -1,0 +1,629 @@
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::process::Stdio;
+use std::sync::Mutex;
+#[cfg(test)]
+use std::time::Duration;
+use std::time::Instant;
+
+use serde::{Deserialize, Serialize};
+use tokio::io::AsyncWriteExt;
+use tokio::process::Command;
+
+use crate::connectors::{self, ConnectorKind};
+use crate::security::sanitize_log;
+use crate::storage::models::ImProfile;
+
+mod dingtalk_runner;
+mod errors;
+mod feishu_runner;
+mod normalizers;
+mod paths;
+mod process;
+mod wecom_runner;
+use dingtalk_runner::run_official_dingtalk_cli;
+#[cfg(test)]
+use errors::*;
+use feishu_runner::run_official_feishu_cli;
+#[cfg(test)]
+use normalizers::*;
+use paths::resolve_bridge_executable;
+use process::{bridge_process_spec, bridge_spawn_error};
+use wecom_runner::run_official_wecom_cli;
+
+pub(super) const APP_DATA_DIR_NAME: &str = "IMBoard";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BridgeRequest {
+    pub platform: String,
+    pub command: String,
+    pub profile: Option<ImProfile>,
+    pub args: HashMap<String, String>,
+    #[serde(default)]
+    pub stdin_secret: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BridgeEnvelope {
+    pub ok: bool,
+    pub data: serde_json::Value,
+    pub warnings: Vec<String>,
+    pub error: Option<BridgeError>,
+    pub meta: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BridgeError {
+    pub code: String,
+    pub message: String,
+    pub recoverable: bool,
+}
+
+pub async fn run_bridge(
+    request: BridgeRequest,
+    resource_dir: PathBuf,
+    cache_dir: PathBuf,
+) -> anyhow::Result<BridgeEnvelope> {
+    run_bridge_tracked(request, resource_dir, cache_dir, None).await
+}
+
+pub async fn run_bridge_tracked(
+    request: BridgeRequest,
+    resource_dir: PathBuf,
+    cache_dir: PathBuf,
+    active_pids: Option<&Mutex<Vec<u32>>>,
+) -> anyhow::Result<BridgeEnvelope> {
+    let started_at = Instant::now();
+    if let Some(adapter) = connectors::find(&request.platform) {
+        match adapter.kind {
+            ConnectorKind::Wecom => {
+                return run_official_wecom_cli(
+                    request,
+                    resource_dir,
+                    cache_dir,
+                    active_pids,
+                    started_at,
+                )
+                .await;
+            }
+            ConnectorKind::Feishu => {
+                return run_official_feishu_cli(
+                    request,
+                    resource_dir,
+                    cache_dir,
+                    active_pids,
+                    started_at,
+                )
+                .await;
+            }
+            ConnectorKind::Dingtalk => {
+                return run_official_dingtalk_cli(
+                    request,
+                    resource_dir,
+                    cache_dir,
+                    active_pids,
+                    started_at,
+                )
+                .await;
+            }
+        }
+    }
+    let executable = resolve_bridge_executable(&resource_dir, &request);
+    let process = bridge_process_spec(&request.platform, executable, &resource_dir);
+    let mut command = Command::new(&process.executable);
+    command.args(&process.prefix_args);
+
+    command.arg(&request.command).arg("--format").arg("json");
+
+    if let Some(profile) = &request.profile {
+        command.arg("--profile-id").arg(&profile.id);
+        if let Some(config_path) = profile
+            .config_json
+            .get("configPath")
+            .and_then(|v| v.as_str())
+        {
+            command.arg("--config").arg(config_path);
+        }
+        if let Some(keys_path) = profile.config_json.get("keysPath").and_then(|v| v.as_str()) {
+            command.arg("--keys-file").arg(keys_path);
+        }
+        command.env("IMD_PROFILE_CONFIG_JSON", profile.config_json.to_string());
+        let profile_cache = cache_dir.join(&profile.id);
+        let tmp_dir = profile_cache.join("tmp");
+        std::fs::create_dir_all(&tmp_dir)?;
+        command.env("TMPDIR", tmp_dir);
+    }
+
+    for (key, value) in request.args {
+        command
+            .arg(format!("--{}", key.replace('_', "-")))
+            .arg(value);
+    }
+
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let output = if let Some(stdin_secret) = request.stdin_secret {
+        command.stdin(Stdio::piped());
+        let mut child = match command.spawn() {
+            Ok(child) => child,
+            Err(err) => {
+                return Ok(bridge_spawn_error(
+                    &request.platform,
+                    &process,
+                    err,
+                    started_at.elapsed().as_millis(),
+                ));
+            }
+        };
+        let child_id = child.id();
+        register_pid(active_pids, child_id);
+        if let Some(mut stdin) = child.stdin.take() {
+            stdin.write_all(stdin_secret.as_bytes()).await?;
+            stdin.write_all(b"\n").await?;
+        }
+        let output = child.wait_with_output().await?;
+        unregister_pid(active_pids, child_id);
+        output
+    } else {
+        let child = match command.spawn() {
+            Ok(child) => child,
+            Err(err) => {
+                return Ok(bridge_spawn_error(
+                    &request.platform,
+                    &process,
+                    err,
+                    started_at.elapsed().as_millis(),
+                ));
+            }
+        };
+        let child_id = child.id();
+        register_pid(active_pids, child_id);
+        let output = child.wait_with_output().await?;
+        unregister_pid(active_pids, child_id);
+        output
+    };
+    let stderr = sanitize_log(&String::from_utf8_lossy(&output.stderr));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if let Ok(mut envelope) = serde_json::from_str::<BridgeEnvelope>(&stdout) {
+        envelope.meta = merge_meta(
+            envelope.meta,
+            serde_json::json!({ "duration_ms": started_at.elapsed().as_millis() }),
+        );
+        if !stderr.is_empty() {
+            envelope.warnings.push(stderr);
+        }
+        return Ok(envelope);
+    }
+
+    if !output.status.success() {
+        let stdout_detail = sanitize_log(stdout.trim());
+        let warnings = [stderr.as_str(), stdout_detail.as_str()]
+            .into_iter()
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+            .collect();
+        return Ok(BridgeEnvelope {
+            ok: false,
+            data: serde_json::Value::Null,
+            warnings,
+            error: Some(BridgeError {
+                code: "BRIDGE_CRASHED".to_owned(),
+                message: "Bridge进程执行失败".to_owned(),
+                recoverable: true,
+            }),
+            meta: serde_json::json!({
+                "platform": request.platform,
+                "executable": process.executable.to_string_lossy(),
+                "script": process.script_path.map(|path| path.to_string_lossy().to_string()),
+                "duration_ms": started_at.elapsed().as_millis()
+            }),
+        });
+    }
+
+    let mut envelope: BridgeEnvelope = serde_json::from_str(&stdout)?;
+    envelope.meta = merge_meta(
+        envelope.meta,
+        serde_json::json!({ "duration_ms": started_at.elapsed().as_millis() }),
+    );
+    if !stderr.is_empty() {
+        envelope.warnings.push(stderr);
+    }
+    Ok(envelope)
+}
+
+include!("command.rs");
+fn merge_meta(mut left: serde_json::Value, right: serde_json::Value) -> serde_json::Value {
+    if let (Some(left_map), Some(right_map)) = (left.as_object_mut(), right.as_object()) {
+        for (key, value) in right_map {
+            left_map.insert(key.clone(), value.clone());
+        }
+    }
+    left
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn official_cli_timeout_unregisters_and_stops_waiting() {
+        let active_pids = Mutex::new(Vec::new());
+        let mut command = Command::new("sh");
+        command.arg("-c").arg("sleep 2").kill_on_drop(true);
+        let child = command.spawn().expect("spawn timeout fixture");
+
+        let error =
+            wait_for_official_cli_output(child, Some(&active_pids), Duration::from_millis(20))
+                .await
+                .expect_err("command should time out");
+
+        assert!(error.to_string().contains("已终止无响应进程"));
+        assert!(active_pids.lock().expect("active pids").is_empty());
+    }
+
+    #[test]
+    fn classifies_feishu_b2c_app_history_error() {
+        let stdout = r#"{
+          "ok": false,
+          "identity": "user",
+          "error": {
+            "type": "api_error",
+            "code": 231204,
+            "message": "HTTP 400: The app type is not supported, ext=b2c app not support",
+            "detail": null
+          }
+        }"#;
+
+        let error = classify_feishu_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "FEISHU_B2C_APP_UNSUPPORTED");
+        assert!(error.recoverable);
+        assert!(error.message.contains("已跳过"));
+    }
+
+    #[test]
+    fn accepts_verified_feishu_auth_status_without_token_status() {
+        let raw = serde_json::json!({
+            "appId": "cli_xxx",
+            "brand": "feishu",
+            "verified": true,
+            "scope": "auth:user.id:read contact:user.base:readonly contact:user.basic_profile:readonly im:chat:read im:message.group_msg:get_as_user im:message.p2p_msg:get_as_user im:message.reactions:read im:message:readonly search:message offline_access",
+            "identities": {
+                "user": {
+                    "status": "ready",
+                    "available": true,
+                    "verified": true
+                }
+            }
+        });
+
+        assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
+    fn accepts_nested_feishu_auth_status_fields() {
+        let raw = serde_json::json!({
+            "ok": true,
+            "data": {
+                "app": {
+                    "app_id": "cli_xxx",
+                    "brand": "feishu"
+                },
+                "auth": {
+                    "verified": true,
+                    "token_status": "valid",
+                    "scopes": [
+                        "search:message",
+                        "im:chat:read",
+                        "im:message:readonly",
+                        "im:message.reactions:read",
+                        "im:message.p2p_msg:get_as_user",
+                        "im:message.group_msg:get_as_user",
+                        "contact:user.base:readonly",
+                        "contact:user.basic_profile:readonly"
+                    ]
+                }
+            }
+        });
+
+        assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
+    fn accepts_feishu_auth_status_with_named_user_identity() {
+        let raw = serde_json::json!({
+            "appId": "cli_xxx",
+            "brand": "feishu",
+            "defaultAs": "auto",
+            "identities": {
+                "bot": {
+                    "status": "ready",
+                    "available": true
+                },
+                "user": {
+                    "status": "ready",
+                    "available": true,
+                    "openId": "ou_xxx",
+                    "userName": "Chase",
+                    "tokenStatus": "valid",
+                    "scope": "auth:user.id:read contact:user.base:readonly contact:user.basic_profile:readonly im:chat:read im:message.group_msg:get_as_user im:message.p2p_msg:get_as_user im:message.reactions:read im:message:readonly search:message offline_access"
+                }
+            },
+            "identity": "user"
+        });
+
+        assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
+    fn accepts_feishu_auth_status_that_needs_refresh() {
+        let raw = serde_json::json!({
+            "appId": "cli_xxx",
+            "brand": "feishu",
+            "defaultAs": "auto",
+            "identities": {
+                "bot": {
+                    "status": "ready",
+                    "available": true
+                },
+                "user": {
+                    "status": "needs_refresh",
+                    "available": true,
+                    "message": "User identity: needs refresh (will auto-refresh on next user API call)",
+                    "openId": "ou_xxx",
+                    "userName": "Chase",
+                    "tokenStatus": "needs_refresh",
+                    "scope": "auth:user.id:read contact:user.base:readonly contact:user.basic_profile:readonly im:chat:read im:message.group_msg:get_as_user im:message.p2p_msg:get_as_user im:message.reactions:read im:message:readonly search:message offline_access"
+                }
+            },
+            "identity": "user",
+            "note": "User identity needs refresh and will be refreshed automatically on the next user API call."
+        });
+
+        assert!(validate_feishu_auth_status(&raw).is_none());
+    }
+
+    #[test]
+    fn classifies_feishu_missing_scope_as_reauth_hint() {
+        let stdout = r#"{
+          "ok": false,
+          "identity": "user",
+          "error": {
+            "subtype": "missing_scope",
+            "message": "missing required scope(s): im:message.reactions:read",
+            "missing_scopes": ["im:message.reactions:read"],
+            "identity": "user"
+          }
+        }"#;
+
+        let error = classify_feishu_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "FEISHU_MISSING_SCOPE");
+        assert!(error.message.contains("im:message.reactions:read"));
+        assert!(error.message.contains("重新复制并运行飞书绑定命令"));
+    }
+
+    #[test]
+    fn classifies_feishu_network_transport_as_retryable_cli_issue() {
+        let stdout = r#"{
+          "ok": false,
+          "identity": "user",
+          "error": {
+            "type": "network",
+            "subtype": "transport",
+            "message": "request failed"
+          },
+          "_notice": {
+            "update": {
+              "current": "1.0.47",
+              "latest": "1.0.48"
+            }
+          }
+        }"#;
+
+        let error = classify_feishu_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "FEISHU_NETWORK_TRANSPORT");
+        assert!(error.recoverable);
+        assert!(error.message.contains("网络传输失败"));
+        assert!(error.message.contains("当前 1.0.47，最新 1.0.48"));
+        assert!(!error.message.contains("授权不完整"));
+    }
+
+    #[test]
+    fn classifies_feishu_search_not_authenticated_as_user_auth_incomplete() {
+        let stdout = r#"{
+          "ok": false,
+          "error": {
+            "reason": "not_authenticated",
+            "message": "not_authenticated"
+          }
+        }"#;
+
+        let error = classify_feishu_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "FEISHU_NOT_AUTHENTICATED");
+        assert!(error.message.contains("授权不完整"));
+        assert!(!error.message.contains("请复制飞书绑定命令"));
+    }
+
+    #[test]
+    fn ignores_feishu_auth_words_inside_successful_message_payload() {
+        let raw = serde_json::json!({
+            "items": [
+                {
+                    "message_id": "om_xxx",
+                    "content": "今天排查过 not_authenticated、not configured 和未登录，但这只是聊天正文。"
+                }
+            ]
+        });
+
+        assert!(classify_feishu_cli_structured_error(&raw, "").is_none());
+    }
+
+    #[test]
+    fn classifies_dingtalk_developer_settings_permission_error() {
+        let stdout = r#"{
+          "error": {
+            "action_url": "https://open-dev.dingtalk.com/fe/old#/developerSettings",
+            "category": "api",
+            "code": 1,
+            "friendly_hint": "该组织尚未开启 CLI数据访问权限，请联系组织主管理员开启。",
+            "message": "business error: success=false",
+            "reason": "business_error",
+            "server_error_code": "TOKEN_VERIFIED_FAILED",
+            "server_key": "group-chat"
+          }
+        }"#;
+
+        let error = classify_dingtalk_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "DINGTALK_MESSAGE_PERMISSION_MISSING");
+        assert!(error.recoverable);
+        assert!(error.message.contains("CLI数据访问权限"));
+    }
+
+    #[test]
+    fn classifies_sanitized_dingtalk_permission_error() {
+        let stdout = r#"{
+          "error": {
+            "action_url": "https://open-dev.dingtalk.com/fe/old#/developerSettings",
+            "category": "api",
+            "code": 1,
+            "friendly_hint": "该组织尚未开启 CLI数据访问权限，请联系组织主管理员开启。",
+            "message": "business error: success=false",
+token=***
+            "reason": "business_error",
+            "server_key": "group-chat"
+          }
+        }"#;
+
+        let error = classify_dingtalk_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "DINGTALK_MESSAGE_PERMISSION_MISSING");
+        assert!(error.recoverable);
+        assert!(error.message.contains("CLI数据访问权限"));
+    }
+
+    #[test]
+    fn classifies_sanitized_dingtalk_permission_error_with_spaced_hint() {
+        let stdout = r#"{
+          "error": {
+            "action_url": "https://open-dev.dingtalk.com/fe/old#/developerSettings",
+            "category": "api",
+            "code": 1,
+            "friendly_hint": "该组织尚未开启 CLI 数据访问权限，请联系组织主管理员开启。",
+            "hint": "The API returned a business-level error. Check required parameters and values.",
+            "message": "business error: success=false",
+token=***
+            "operation": "tools/call",
+            "reason": "business_error",
+            "server_key": "group-chat",
+token=***
+            "trace_id": "0bab027317781704908111717e096e"
+          }
+        }"#;
+
+        let error = classify_dingtalk_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "DINGTALK_MESSAGE_PERMISSION_MISSING");
+        assert!(error.recoverable);
+        assert!(error.message.contains("CLI数据访问权限"));
+    }
+
+    #[test]
+    fn classifies_dingtalk_pat_permission_error() {
+        let stdout = r#"{
+          "code": "PAT_MEDIUM_RISK_NO_PERMISSION",
+          "data": {
+            "requiredScopes": [
+              {
+                "scope": "chat.message:list"
+              }
+            ]
+          },
+          "success": false
+        }"#;
+
+        let error = classify_dingtalk_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "DINGTALK_MESSAGE_PERMISSION_MISSING");
+        assert!(error.recoverable);
+        assert!(error.message.contains("消息读取权限"));
+    }
+
+    #[test]
+    fn classifies_dingtalk_group_chat_forbidden_error() {
+        let stdout = r#"{
+          "error": {
+            "category": "api",
+            "code": 1,
+            "hint": "The API returned a business-level error. Check required parameters and values.",
+            "message": "forbidden request",
+            "operation": "tools/call",
+            "reason": "business_error",
+            "server_error_code": "1001",
+            "server_key": "group-chat",
+            "trace_id": "21030ead17780641308991861e0a34"
+          }
+        }"#;
+
+        let error = classify_dingtalk_cli_error(stdout, "").expect("classified");
+        assert_eq!(error.code, "DINGTALK_MESSAGE_PERMISSION_MISSING");
+        assert!(error.recoverable);
+        assert!(error.message.contains("消息读取权限"));
+    }
+
+    #[test]
+    fn filters_feishu_cli_page_progress() {
+        let output = "[page 1] fetching...\n[page 1] fetched 50 items\n真实警告";
+
+        assert_eq!(sanitize_feishu_cli_output(output), "真实警告");
+    }
+
+    #[test]
+    fn parses_feishu_message_search_json_with_page_progress() {
+        let stdout =
+            "[page 1] fetching...\n{\"items\":[{\"chat_id\":\"oc_1\",\"chat_name\":\"产品群\",\"chat_type\":\"group\",\"create_time\":\"1779250000000\"}]}\n";
+
+        let raw = parse_feishu_cli_json(stdout).expect("json parsed");
+        let chats = normalize_feishu_message_sessions(&raw);
+
+        assert_eq!(
+            chats
+                .as_array()
+                .and_then(|items| items.first())
+                .and_then(|item| item.get("chatName"))
+                .and_then(|value| value.as_str()),
+            Some("产品群")
+        );
+    }
+
+    #[test]
+    fn normalizes_feishu_chat_list_json() {
+        let raw = serde_json::json!({
+            "items": [
+                {
+                    "chat_id": "oc_1",
+                    "name": "产品群",
+                    "chat_type": "group",
+                    "last_active_time": "2026-05-26T10:20:00+08:00"
+                }
+            ]
+        });
+
+        let chats = normalize_feishu_chats(&raw);
+
+        assert_eq!(
+            chats
+                .as_array()
+                .and_then(|items| items.first())
+                .and_then(|item| item.get("chatId"))
+                .and_then(|value| value.as_str()),
+            Some("oc_1")
+        );
+        assert_eq!(
+            chats
+                .as_array()
+                .and_then(|items| items.first())
+                .and_then(|item| item.get("chatName"))
+                .and_then(|value| value.as_str()),
+            Some("产品群")
+        );
+    }
+}

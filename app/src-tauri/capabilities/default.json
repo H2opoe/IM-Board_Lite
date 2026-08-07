@@ -1,0 +1,6 @@
+{
+  "identifier": "default",
+  "description": "Allow the main dashboard window to use app commands and core events.",
+  "windows": ["main"],
+  "permissions": ["core:default", "core:window:allow-start-dragging", "dialog:allow-save"]
+}
