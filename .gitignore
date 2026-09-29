@@ -17,3 +17,4 @@ app/node_modules.broken-*/
 # Generated release packages belong in GitHub Releases.
 /artifacts/
 artifacts/tmp/node-compile-cache/
+/app/src-tauri/UNC/
