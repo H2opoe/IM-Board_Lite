@@ -16,8 +16,8 @@
         "title": "IM-Board 聊天汇总看板",
         "width": 1320,
         "height": 860,
-        "minWidth": 1100,
-        "minHeight": 720,
+        "minWidth": 760,
+        "minHeight": 600,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true
       }

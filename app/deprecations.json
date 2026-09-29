@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "legacy-plaintext-ai-api-key",
+      "purpose": "把旧数据库中的明文 AI 密钥安全迁入系统凭据库，迁移成功前不得删除旧值。",
+      "introducedIn": "3.0.0",
+      "removeAfter": "4.0.0",
+      "owner": "security",
+      "replacement": "macOS Keychain 或 Windows Credential Manager",
+      "verification": "security::credentials::tests::legacy_key_is_cleared_only_after_secure_storage_succeeds"
+    },
+    {
+      "id": "legacy-local-ai-model-default",
+      "purpose": "把 1.5B 旧本地模型设置升级为 7B 当前默认值，并保留用户自定义配置。",
+      "introducedIn": "3.0.0",
+      "removeAfter": "4.0.0",
+      "owner": "local-ai",
+      "replacement": "当前本地 DeepSeek 模型配置",
+      "verification": "前端设置回归测试"
+    },
+    {
+      "id": "legacy-sync-frequency-local-storage",
+      "purpose": "首次升级时把浏览器本地保存的同步频率写入后端数据库，之后由后台任务统一调度。",
+      "introducedIn": "3.0.0",
+      "removeAfter": "4.0.0",
+      "owner": "sync",
+      "replacement": "数据库中的 auto_sync_frequency_minutes",
+      "verification": "storage::tests::initializes_auto_sync_frequency_from_legacy_value_once"
+    },
+    {
+      "id": "legacy-feishu-cli-directory",
+      "purpose": "升级期间继续识别旧版飞书 CLI 的授权目录，避免用户被无故要求重新授权。",
+      "introducedIn": "3.0.0",
+      "removeAfter": "4.0.0",
+      "owner": "feishu-connector",
+      "replacement": "当前飞书官方 CLI 配置目录",
+      "verification": "飞书授权状态端到端检查"
+    }
+  ]
+}

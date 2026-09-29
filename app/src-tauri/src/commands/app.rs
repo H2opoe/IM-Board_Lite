@@ -204,7 +204,7 @@ fn collect_ai_config(conn: &Connection) -> anyhow::Result<Option<serde_json::Val
 }
 
 fn collect_sync_state(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>> {
-    let mut stmt = conn.prepare("select profile_id, day, last_sync_at, last_analysis_at, cursor_json, updated_at from sync_state order by updated_at desc limit 40")?;
+    let mut stmt = conn.prepare("select profile_id, day, last_sync_at, last_analysis_at, cursor_json, updated_at, last_attempt_at, last_success_at, last_error from sync_state order by updated_at desc limit 40")?;
     let rows = stmt.query_map([], |row| {
         let cursor_json: String = row.get(4)?;
         let cursor = serde_json::from_str::<serde_json::Value>(&cursor_json)
@@ -216,6 +216,9 @@ fn collect_sync_state(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value
             "lastAnalysisAt": row.get::<_, Option<String>>(3)?,
             "cursor": redact_json_value(cursor),
             "updatedAt": row.get::<_, String>(5)?,
+            "lastAttemptAt": row.get::<_, Option<String>>(6)?,
+            "lastSuccessAt": row.get::<_, Option<String>>(7)?,
+            "lastError": row.get::<_, Option<String>>(8)?.map(|value| sanitize_log(&value)),
         }))
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)

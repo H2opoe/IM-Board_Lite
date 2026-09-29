@@ -141,6 +141,39 @@ pub(crate) fn clear_dashboard_cache_conn(
     Ok(())
 }
 
+pub(crate) fn clear_profile_dashboard_cache(
+    state: &State<'_, AppState>,
+    day: &daily_cache::DashboardDay,
+    profiles: &[ImProfile],
+) -> anyhow::Result<()> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    let tx = conn.unchecked_transaction()?;
+    tx.execute(
+        "delete from daily_stats where profile_id = 'aggregate' and metric in ('topics', 'keywords')",
+        [],
+    )?;
+    for profile in profiles {
+        delete_regenerable_action_items_for_profile(&tx, &profile.id, day)?;
+        for table in [
+            "daily_messages",
+            "daily_stats",
+            "daily_topics",
+            "ai_analysis_runs",
+            "sync_state",
+        ] {
+            tx.execute(
+                &format!("delete from {table} where profile_id = ?1"),
+                params![profile.id],
+            )?;
+        }
+    }
+    tx.commit()?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -46,9 +46,15 @@ pub(super) fn official_cli_command(path: &Path) -> Command {
     } else {
         Command::new(path)
     };
-    command.kill_on_drop(true);
+    configure_process_supervision(&mut command);
     hide_windows_console(&mut command);
     command
+}
+
+pub(super) fn configure_process_supervision(command: &mut Command) {
+    command.kill_on_drop(true);
+    #[cfg(unix)]
+    command.process_group(0);
 }
 
 pub(super) async fn wait_for_official_cli_output(

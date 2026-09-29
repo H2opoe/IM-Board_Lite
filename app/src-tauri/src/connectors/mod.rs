@@ -51,6 +51,11 @@ pub struct ConnectorCapabilities {
     pub permissions: &'static [&'static str],
     pub commands: &'static [&'static str],
     pub health_check: &'static str,
+    pub editions: &'static [&'static str],
+    pub operating_systems: &'static [&'static str],
+    pub architectures: &'static [&'static str],
+    pub compatible_runtime_version: &'static str,
+    pub max_parallel_reads: usize,
 }
 
 #[derive(Clone, Serialize)]
@@ -63,6 +68,11 @@ pub struct ConnectorCapabilityDescriptor {
     pub permissions: &'static [&'static str],
     pub commands: &'static [&'static str],
     pub health_check: &'static str,
+    pub editions: &'static [&'static str],
+    pub operating_systems: &'static [&'static str],
+    pub architectures: &'static [&'static str],
+    pub compatible_runtime_version: &'static str,
+    pub max_parallel_reads: usize,
 }
 
 impl ConnectorAdapter {
@@ -95,6 +105,11 @@ pub fn capability_descriptors() -> Vec<ConnectorCapabilityDescriptor> {
             permissions: adapter.capabilities.permissions,
             commands: adapter.capabilities.commands,
             health_check: adapter.capabilities.health_check,
+            editions: adapter.capabilities.editions,
+            operating_systems: adapter.capabilities.operating_systems,
+            architectures: adapter.capabilities.architectures,
+            compatible_runtime_version: adapter.capabilities.compatible_runtime_version,
+            max_parallel_reads: adapter.capabilities.max_parallel_reads,
         })
         .collect()
 }

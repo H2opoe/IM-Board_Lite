@@ -14,11 +14,9 @@ use archives::{download_first_available, extract_zip_bytes, find_file_named, mak
 pub use bind_commands::{
     command_shell_name, default_bind_command, platform_cli_label, platform_label,
 };
-pub use npm_registry::npm_latest_version;
 pub use resolver::{
     cli_spec, official_cli_version, resolve_official_cli, writable_cli_install_root,
 };
-pub use versioning::version_is_newer;
 
 #[derive(Clone, Copy)]
 pub struct PlatformCliSpec {
@@ -26,6 +24,7 @@ pub struct PlatformCliSpec {
     pub package: &'static str,
     pub bin: &'static str,
     pub source: &'static str,
+    pub compatible_version: &'static str,
 }
 
 pub const OFFICIAL_CLIS: &[PlatformCliSpec] = &[
@@ -34,18 +33,21 @@ pub const OFFICIAL_CLIS: &[PlatformCliSpec] = &[
         package: "@wecom/cli",
         bin: "wecom-cli",
         source: "https://github.com/WecomTeam/wecom-cli",
+        compatible_version: "0.1.9",
     },
     PlatformCliSpec {
         platform: "feishu",
         package: "@larksuite/cli",
         bin: "lark-cli",
         source: "https://github.com/larksuite/cli",
+        compatible_version: "1.0.65",
     },
     PlatformCliSpec {
         platform: "dingtalk",
         package: "dingtalk-workspace-cli",
         bin: "dws",
         source: "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
+        compatible_version: "1.0.47",
     },
 ];
 
@@ -179,38 +181,15 @@ pub async fn ensure_platform_cli_ready(
     let current_version = existing
         .as_ref()
         .and_then(|path| official_cli_version(path, spec));
-    let latest_version = match npm_latest_version(spec.package, progress).await {
-        Ok(version) => version,
-        Err(err) => {
-            if let Some(path) = existing {
-                if let Some(progress) = progress {
-                    emit_platform_cli_progress(
-                        progress,
-                        "local_ready",
-                        format!(
-                            "远程版本核查失败，继续使用已准备好的{}。",
-                            platform_cli_label(spec.platform)
-                        ),
-                        5,
-                        5,
-                        None,
-                        Some(spec.package),
-                        current_version.as_deref(),
-                    );
-                }
-                return Ok(path);
-            }
-            return Err(err);
-        }
-    };
+    let compatible_version = spec.compatible_version.to_owned();
     if let (Some(path), Some(current)) = (&existing, &current_version) {
-        if !version_is_newer(&latest_version, current) {
+        if current == &compatible_version {
             if let Some(progress) = progress {
                 emit_platform_cli_progress(
                     progress,
                     "local_ready",
                     format!(
-                        "已找到最新版{} v{}。",
+                        "已找到兼容的{} v{}。",
                         platform_cli_label(spec.platform),
                         current
                     ),
@@ -229,7 +208,7 @@ pub async fn ensure_platform_cli_ready(
     install_package(
         &install_root,
         spec.package,
-        &latest_version,
+        &compatible_version,
         resource_dir,
         progress,
     )
@@ -243,7 +222,7 @@ pub async fn ensure_platform_cli_ready(
             5,
             None,
             Some(spec.package),
-            Some(&latest_version),
+            Some(&compatible_version),
         );
     }
     let path = resolve_official_cli(resource_dir, app_dir, spec).ok_or_else(|| {
@@ -261,7 +240,7 @@ pub async fn ensure_platform_cli_ready(
             5,
             None,
             Some(spec.package),
-            Some(&latest_version),
+            Some(&compatible_version),
         );
     }
     Ok(path)
@@ -324,7 +303,7 @@ mod tests {
         ));
         fs::create_dir_all(&root).unwrap();
         for spec in OFFICIAL_CLIS {
-            let version = npm_latest_version(spec.package, None).await.unwrap();
+            let version = spec.compatible_version.to_owned();
             let install_root = root.join("OfficialCli").join(spec.platform);
             install_package(
                 &install_root,

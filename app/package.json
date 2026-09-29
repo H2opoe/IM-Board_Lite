@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "npm run verify:lite-boundary && npm run verify:release-config && npm run verify:runtime-manifest && tsc && vite build",
+    "build": "npm run verify:lite-boundary && npm run verify:release-config && npm run verify:runtime-manifest && npm run verify:deprecations && tsc && vite build",
+    "test": "vitest run",
     "verify:lite-boundary": "node scripts/verify-lite-boundary.mjs",
     "verify:lite-history": "node scripts/verify-lite-boundary.mjs --history",
     "verify:release-config": "node scripts/verify-release-config.mjs",
     "verify:runtime-manifest": "node scripts/verify-runtime-manifest.mjs",
+    "verify:deprecations": "node scripts/verify-deprecations.mjs",
     "prepare:windows-deps": "node scripts/prepare-windows-deps.mjs",
     "package:windows:portable": "node scripts/package-windows-portable.mjs",
     "preview": "vite preview --host 127.0.0.1",
@@ -32,6 +34,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "vite": "^6.4.3",
+    "vitest": "4.1.11"
   }
 }

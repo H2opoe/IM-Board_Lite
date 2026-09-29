@@ -6,9 +6,9 @@ async fn ensure_local_deepseek_runtime(
     let _startup_guard = state.local_model_runtime.startup_guard().await;
     if !force_restart
         && state
-        .local_model_runtime
-        .is_owned_runtime_ready(ai::LOCAL_DEEPSEEK_MODEL)
-        .await
+            .local_model_runtime
+            .is_owned_runtime_ready(ai::LOCAL_DEEPSEEK_MODEL)
+            .await
     {
         return Ok(state.local_model_runtime.base_url());
     }
@@ -16,6 +16,7 @@ async fn ensure_local_deepseek_runtime(
         let _ = state.local_model_runtime.stop();
     }
 
+    SystemCapabilities::detect(&state.app_dir).ensure_local_model_disk_space()?;
     let model_path = state.app_dir.join("Models").join(LOCAL_DEEPSEEK_FILE_NAME);
     if let Err(error) = verify_local_deepseek_model(&model_path).await {
         if model_path.exists() {
@@ -25,16 +26,27 @@ async fn ensure_local_deepseek_runtime(
     }
     write_local_deepseek_verification_marker(&state.app_dir)?;
     let server_path = ensure_llama_server_binary(app, &state.app_dir).await?;
-    state.local_model_runtime.renew_endpoint()?;
-    start_llama_server_process(app, &server_path, &model_path, state.local_model_runtime.port())?;
-    if state
-        .local_model_runtime
-        .wait_until_ready(ai::LOCAL_DEEPSEEK_MODEL, Duration::from_secs(90))
-        .await
-    {
-        return Ok(state.local_model_runtime.base_url());
+    for attempt in 0..3 {
+        state.local_model_runtime.renew_endpoint()?;
+        start_llama_server_process(
+            app,
+            &server_path,
+            &model_path,
+            state.local_model_runtime.port(),
+        )?;
+        if state
+            .local_model_runtime
+            .wait_until_ready(ai::LOCAL_DEEPSEEK_MODEL, Duration::from_secs(90))
+            .await
+        {
+            return Ok(state.local_model_runtime.base_url());
+        }
+        let exited_early = !state.local_model_runtime.has_owned_process();
+        let _ = state.local_model_runtime.stop();
+        if !exited_early || attempt == 2 {
+            break;
+        }
     }
-    let _ = state.local_model_runtime.stop();
     Err("本地DeepSeek推理服务启动超时。请确认机器内存足够，或稍后再次点击“启用”。".to_owned())
 }
 
@@ -64,21 +76,10 @@ async fn ensure_llama_server_binary(app: &AppHandle, app_dir: &Path) -> Result<P
         mark_executable(&server_path)?;
         return Ok(server_path);
     }
-    std::fs::create_dir_all(&runtime_dir)
-        .map_err(|err| format!("创建本地推理运行时目录失败：{err}"))?;
-    let archive_name = llama_cpp_archive_name()?;
-    let archive_path = runtime_dir.join(&archive_name);
-    download_llama_cpp_runtime(&archive_name, &archive_path).await?;
-    extract_llama_cpp_runtime(&archive_path, &runtime_dir).await?;
-    if !server_path.exists() {
-        return Err(format!(
-            "本地推理运行时缺少 {}：{}",
-            llama_server_binary_name(),
-            server_path.to_string_lossy()
-        ));
-    }
-    mark_executable(&server_path)?;
-    Ok(server_path)
+    Err(format!(
+        "安装包缺少经过校验的本地推理运行时（{}）。请使用完整安装包重新安装；应用不会从未锁定的镜像临时下载可执行程序。",
+        llama_server_binary_name()
+    ))
 }
 
 fn bundled_llama_runtime_arch() -> Result<&'static str, String> {
@@ -164,129 +165,6 @@ fn llama_server_binary_name() -> &'static str {
     }
 }
 
-fn llama_cpp_archive_name() -> Result<String, String> {
-    let os = std::env::consts::OS;
-    let arch = std::env::consts::ARCH;
-    match (os, arch) {
-        ("macos", "aarch64") => Ok(format!(
-            "llama-{LOCAL_LLAMA_CPP_VERSION}-bin-macos-arm64.tar.gz"
-        )),
-        ("macos", "x86_64") => Ok(format!(
-            "llama-{LOCAL_LLAMA_CPP_VERSION}-bin-macos-x64.tar.gz"
-        )),
-        ("windows", "x86_64") => Ok(format!(
-            "llama-{LOCAL_LLAMA_CPP_VERSION}-bin-win-cpu-x64.zip"
-        )),
-        ("windows", "aarch64") => Ok(format!(
-            "llama-{LOCAL_LLAMA_CPP_VERSION}-bin-win-cpu-arm64.zip"
-        )),
-        _ => Err(format!(
-            "当前系统暂不支持自动下载本地推理运行时：{os}/{arch}"
-        )),
-    }
-}
-
-async fn extract_llama_cpp_runtime(archive_path: &Path, runtime_dir: &Path) -> Result<(), String> {
-    if std::env::consts::OS == "windows" {
-        return extract_zip_archive(archive_path, runtime_dir);
-    }
-    let archive = archive_path.to_string_lossy();
-    let destination = runtime_dir.to_string_lossy();
-    let output = Command::new("tar")
-        .args(["-xzf", archive.as_ref(), "-C", destination.as_ref()])
-        .output()
-        .await
-        .map_err(|err| format!("解压本地推理运行时失败：{err}"))?;
-    if output.status.success() {
-        return Ok(());
-    }
-    Err(format!(
-        "解压本地推理运行时失败：{}",
-        String::from_utf8_lossy(&output.stderr)
-            .chars()
-            .take(500)
-            .collect::<String>()
-    ))
-}
-
-fn extract_zip_archive(archive_path: &Path, destination: &Path) -> Result<(), String> {
-    let file = std::fs::File::open(archive_path)
-        .map_err(|err| format!("打开本地推理运行时压缩包失败：{err}"))?;
-    let mut archive =
-        zip::ZipArchive::new(file).map_err(|err| format!("读取本地推理运行时压缩包失败：{err}"))?;
-    std::fs::create_dir_all(destination)
-        .map_err(|err| format!("创建本地推理运行时目录失败：{err}"))?;
-    for index in 0..archive.len() {
-        let mut file = archive
-            .by_index(index)
-            .map_err(|err| format!("读取本地推理运行时压缩包条目失败：{err}"))?;
-        let Some(relative_path) = file.enclosed_name().map(|path| path.to_owned()) else {
-            continue;
-        };
-        let output_path = destination.join(relative_path);
-        if file.is_dir() {
-            std::fs::create_dir_all(&output_path)
-                .map_err(|err| format!("创建本地推理运行时目录失败：{err}"))?;
-            continue;
-        }
-        if let Some(parent) = output_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|err| format!("创建本地推理运行时目录失败：{err}"))?;
-        }
-        let mut output = std::fs::File::create(&output_path)
-            .map_err(|err| format!("写入本地推理运行时文件失败：{err}"))?;
-        std::io::copy(&mut file, &mut output)
-            .map_err(|err| format!("写入本地推理运行时文件失败：{err}"))?;
-    }
-    Ok(())
-}
-
-async fn download_llama_cpp_runtime(archive_name: &str, archive_path: &Path) -> Result<(), String> {
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(600))
-        .build()
-        .map_err(|err| format!("构建本地推理运行时下载客户端失败：{err}"))?;
-    let official_url = format!(
-        "https://github.com/ggml-org/llama.cpp/releases/download/{LOCAL_LLAMA_CPP_VERSION}/{archive_name}"
-    );
-    let sources = [
-        format!("https://gh-proxy.com/{official_url}"),
-        format!("https://gh.llkk.cc/{official_url}"),
-        official_url,
-    ];
-    let mut errors = Vec::new();
-    for source_url in sources {
-        match client.get(&source_url).send().await {
-            Ok(response) if response.status().is_success() => {
-                let mut file = std::fs::File::create(archive_path)
-                    .map_err(|err| format!("写入本地推理运行时失败：{err}"))?;
-                let mut stream = response.bytes_stream();
-                while let Some(chunk) = stream.next().await {
-                    let chunk = chunk
-                        .map_err(|err| ai::describe_request_error("下载本地推理运行时中断", err))?;
-                    file.write_all(&chunk)
-                        .map_err(|err| format!("写入本地推理运行时失败：{err}"))?;
-                }
-                file.flush()
-                    .map_err(|err| format!("写入本地推理运行时失败：{err}"))?;
-                return Ok(());
-            }
-            Ok(response) => {
-                let status = response.status();
-                errors.push(format!("{source_url} 返回 {status}"));
-            }
-            Err(err) => errors.push(ai::describe_request_error(
-                &format!("{source_url} 请求未发出"),
-                err,
-            )),
-        }
-    }
-    Err(format!(
-        "下载本地推理运行时失败，已尝试GitHub镜像和官方源：{}",
-        errors.join("；")
-    ))
-}
-
 fn mark_executable(_path: &Path) -> Result<(), String> {
     #[cfg(unix)]
     {
@@ -318,6 +196,10 @@ fn start_llama_server_process(
         .map(Stdio::from)
         .unwrap_or_else(|_| Stdio::null());
     let mut command = std::process::Command::new(server_path);
+    let state = app
+        .try_state::<AppState>()
+        .ok_or_else(|| "本地推理运行时状态不可用。".to_owned())?;
+    let tuning = SystemCapabilities::detect(&state.app_dir);
     command
         .current_dir(working_dir)
         .arg("--host")
@@ -329,11 +211,15 @@ fn start_llama_server_process(
         .arg("--alias")
         .arg(ai::LOCAL_DEEPSEEK_MODEL)
         .arg("--ctx-size")
-        .arg("4096")
+        .arg(tuning.local_model_context_size.to_string())
         .arg("--n-gpu-layers")
-        .arg("99")
+        .arg(tuning.local_model_gpu_layers.to_string())
+        .arg("--threads")
+        .arg(tuning.local_model_threads.to_string())
         .stdout(Stdio::null())
         .stderr(stderr);
+    #[cfg(unix)]
+    command.process_group(0);
     let mut child = command
         .spawn()
         .map_err(|err| format!("启动本地DeepSeek推理服务失败：{err}"))?;

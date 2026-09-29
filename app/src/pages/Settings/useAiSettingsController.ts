@@ -39,6 +39,8 @@ export function useAiSettingsController() {
   const copyPathTimer = useRef<number | null>(null);
   const clearModelConfirmTimer = useRef<number | null>(null);
   const clearModelDoneTimer = useRef<number | null>(null);
+  const refreshGeneration = useRef(0);
+  const completeEnableInFlight = useRef(false);
   const [localDeepseek, setLocalDeepseek] = useState<LocalModelStatus | null>(null);
   const [systemCapabilities, setSystemCapabilities] = useState<SystemCapabilities | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<LocalModelDownloadProgress | null>(null);
@@ -93,35 +95,42 @@ export function useAiSettingsController() {
   }, [setNotice]);
 
   const completeLocalDeepseekEnable = useCallback(async () => {
-    const installed = await getLocalDeepseekStatus().catch(() => null);
-    if (!installed) return;
-    setLocalDeepseek(installed);
-    if (!installed.installed) return;
-    // 下载进度事件可能在用户离开页面后完成；只有带有待启用标记时才自动切换配置，避免覆盖用户后续手动选择的云端模型。
-    if (window.localStorage.getItem(localDeepseekEnablePendingKey) !== "1") {
+    if (completeEnableInFlight.current) return;
+    completeEnableInFlight.current = true;
+    try {
+      const installed = await getLocalDeepseekStatus().catch(() => null);
+      if (!installed) return;
+      setLocalDeepseek(installed);
+      if (!installed.installed) return;
+      // 下载进度事件可能在用户离开页面后完成；只有带有待启用标记时才自动切换配置，避免覆盖用户后续手动选择的云端模型。
+      if (window.localStorage.getItem(localDeepseekEnablePendingKey) !== "1") {
+        setStatus("saved");
+        pushNotice(AI_SETTINGS_MESSAGES.modelDownloaded, "success");
+        return;
+      }
+      const currentConfig = normalizeConfig(await getAiConfig().catch(() => configRef.current));
+      const next = {
+        ...currentConfig,
+        provider: installed.provider,
+        apiKey: "",
+        baseUrl: providerDefaults[installed.provider]?.baseUrl || "http://127.0.0.1:11434/v1",
+        model: installed.model,
+        analysisBatchSize: localDeepseekDefaultBatchSize,
+        enabled: true,
+        testStatus: "untested"
+      };
+      const saved = await saveAiConfig(next);
+      applySavedConfig(normalizeConfig(saved));
       setStatus("saved");
-      pushNotice(AI_SETTINGS_MESSAGES.modelDownloaded, "success");
-      return;
+      pushNotice(AI_SETTINGS_MESSAGES.downloadedAndEnabled, "success");
+      window.localStorage.removeItem(localDeepseekEnablePendingKey);
+    } finally {
+      completeEnableInFlight.current = false;
     }
-    const currentConfig = normalizeConfig(await getAiConfig().catch(() => configRef.current));
-    const next = {
-      ...currentConfig,
-      provider: installed.provider,
-      apiKey: "",
-      baseUrl: providerDefaults[installed.provider]?.baseUrl || "http://127.0.0.1:11434/v1",
-      model: installed.model,
-      analysisBatchSize: localDeepseekDefaultBatchSize,
-      enabled: true,
-      testStatus: "untested"
-    };
-    const saved = await saveAiConfig(next);
-    applySavedConfig(normalizeConfig(saved));
-    setStatus("saved");
-    pushNotice(AI_SETTINGS_MESSAGES.downloadedAndEnabled, "success");
-    window.localStorage.removeItem(localDeepseekEnablePendingKey);
   }, [applySavedConfig, pushNotice]);
 
   const refreshLocalDeepseekState = useCallback(async () => {
+    const generation = ++refreshGeneration.current;
     const [savedConfig, defaults, installed, progress, capabilities] = await Promise.all([
       getAiConfig(),
       getDefaultAiConfig(),
@@ -129,6 +138,7 @@ export function useAiSettingsController() {
       getLocalDeepseekDownloadProgress().catch(() => null),
       getSystemCapabilities().catch(() => null)
     ]);
+    if (generation !== refreshGeneration.current) return;
     const normalizedConfig = normalizeConfig(savedConfig);
     setDefaultConfig(normalizeConfig(defaults));
     setLocalDeepseek(installed);
@@ -157,6 +167,7 @@ export function useAiSettingsController() {
     window.addEventListener("focus", refreshWhenVisible);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
+      refreshGeneration.current += 1;
       window.removeEventListener("focus", refreshWhenVisible);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };

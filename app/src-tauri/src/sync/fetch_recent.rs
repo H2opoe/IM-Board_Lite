@@ -10,7 +10,7 @@ async fn fetch_recent_session_messages(
     resource_dir: std::path::PathBuf,
     cache_dir: std::path::PathBuf,
     warnings: &mut Vec<String>,
-) -> Result<(usize, i64), String> {
+) -> Result<(usize, i64, Vec<String>), String> {
     let local_latest_by_chat = latest_saved_message_timestamps(state, profile, &window.day)
         .map_err(|err| err.to_string())?;
     let mut jobs = Vec::new();
@@ -73,7 +73,7 @@ async fn fetch_recent_session_messages(
     }
 
     if jobs.is_empty() {
-        return Ok((0, 0));
+        return Ok((0, 0, Vec::new()));
     }
 
     let connector = connector_for_profile(profile)?;
@@ -95,6 +95,7 @@ async fn fetch_recent_session_messages(
         );
     }
 
+    let mut errors = Vec::new();
     let mut fetched_messages = 0usize;
     let mut inserted_messages = 0i64;
     for chunk in jobs.chunks(concurrency) {
@@ -130,17 +131,31 @@ async fn fetch_recent_session_messages(
         let histories = join_all(futures).await;
         for (job, history) in chunk.iter().zip(histories) {
             ensure_sync_not_cancelled(state)?;
-            let history = history.map_err(|err| err.to_string())?;
+            let history = match history {
+                Ok(history) => history,
+                Err(error) => {
+                    let message = error.to_string();
+                    if is_sync_cancelled_message(&message) {
+                        return Err(message);
+                    }
+                    errors.push(format!(
+                        "{} / {}：{}",
+                        profile.label, job.chat_name, message
+                    ));
+                    continue;
+                }
+            };
             warnings.extend(history.warnings);
             if !history.ok {
-                if let Some(error) = history.error {
-                    if !(connector.should_silence_message_error)(&error.code) {
-                        warnings.push(format!(
-                            "{} / {}：{}",
-                            profile.label, job.chat_name, error.message
-                        ));
-                    }
-                }
+                // A silenced UI warning is still a failed read, never a successful checkpoint.
+                let message = history
+                    .error
+                    .map(|error| error.message)
+                    .unwrap_or_else(|| "消息读取失败，平台未返回错误详情。".to_owned());
+                errors.push(format!(
+                    "{} / {}：{}",
+                    profile.label, job.chat_name, message
+                ));
                 continue;
             }
 
@@ -175,5 +190,5 @@ async fn fetch_recent_session_messages(
         }
     }
 
-    Ok((fetched_messages, inserted_messages))
+    Ok((fetched_messages, inserted_messages, errors))
 }

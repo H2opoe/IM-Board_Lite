@@ -19,6 +19,10 @@ pub struct SystemCapabilities {
     pub available_disk_bytes: u64,
     pub recommended_analysis_batch_size: i64,
     pub local_model_supported: bool,
+    pub local_model_profile: String,
+    pub local_model_context_size: u32,
+    pub local_model_gpu_layers: u32,
+    pub local_model_threads: usize,
     pub warnings: Vec<String>,
 }
 
@@ -43,10 +47,38 @@ impl SystemCapabilities {
         if available_disk_bytes > 0 && available_disk_bytes < LOCAL_MODEL_REQUIRED_DISK_BYTES {
             warnings.push("应用数据盘剩余空间低于7GB，暂不建议下载本地模型。".to_owned());
         }
-        let local_model_supported = (total_memory_bytes == 0
-            || total_memory_bytes >= LOCAL_MODEL_RECOMMENDED_MEMORY_BYTES)
+        let runtime_arch_supported = matches!(
+            (std::env::consts::OS, std::env::consts::ARCH),
+            ("macos", "aarch64") | ("macos", "x86_64") | ("windows", "x86_64")
+        );
+        let local_model_supported = runtime_arch_supported
+            && (total_memory_bytes == 0
+                || total_memory_bytes >= LOCAL_MODEL_RECOMMENDED_MEMORY_BYTES)
+            && (available_memory_bytes == 0 || available_memory_bytes >= 5 * GIB)
             && (available_disk_bytes == 0
                 || available_disk_bytes >= LOCAL_MODEL_REQUIRED_DISK_BYTES);
+        if !runtime_arch_supported {
+            warnings.push(format!(
+                "当前系统架构 {}/{} 暂不支持包内本地AI，可继续使用云端AI。",
+                std::env::consts::OS,
+                std::env::consts::ARCH
+            ));
+        }
+        if available_memory_bytes > 0 && available_memory_bytes < 5 * GIB {
+            warnings.push("当前可用内存低于5GB，暂不启动本地AI，以免系统卡顿。".to_owned());
+        }
+        let (local_model_profile, local_model_context_size) =
+            local_model_profile(available_memory_bytes, total_memory_bytes);
+        let local_model_gpu_layers = if std::env::consts::OS == "macos" {
+            match local_model_profile.as_str() {
+                "performance" => 99,
+                "balanced" => 48,
+                _ => 20,
+            }
+        } else {
+            0
+        };
+        let local_model_threads = physical_cpu_cores.clamp(1, 12);
 
         Self {
             os: std::env::consts::OS.to_owned(),
@@ -58,11 +90,18 @@ impl SystemCapabilities {
             available_disk_bytes,
             recommended_analysis_batch_size,
             local_model_supported,
+            local_model_profile,
+            local_model_context_size,
+            local_model_gpu_layers,
+            local_model_threads,
             warnings,
         }
     }
 
     pub fn ensure_local_model_disk_space(&self) -> Result<(), String> {
+        if !self.local_model_supported {
+            return Err("当前可用内存或磁盘空间不足，暂不建议启动7B本地模型。可改用云端AI，或释放内存和磁盘后重试。".to_owned());
+        }
         if self.available_disk_bytes > 0
             && self.available_disk_bytes < LOCAL_MODEL_REQUIRED_DISK_BYTES
         {
@@ -72,6 +111,28 @@ impl SystemCapabilities {
             ));
         }
         Ok(())
+    }
+}
+
+// Keep the server context aligned with the analysis request budget on every hardware tier.
+fn local_model_profile(available_memory_bytes: u64, total_memory_bytes: u64) -> (String, u32) {
+    let memory = if available_memory_bytes > 0 {
+        available_memory_bytes
+    } else {
+        total_memory_bytes
+    };
+    if memory > 0 && memory < 8 * GIB {
+        ("eco".to_owned(), crate::ai::LOCAL_DEEPSEEK_CONTEXT_SIZE)
+    } else if memory > 0 && memory < 16 * GIB {
+        (
+            "balanced".to_owned(),
+            crate::ai::LOCAL_DEEPSEEK_CONTEXT_SIZE,
+        )
+    } else {
+        (
+            "performance".to_owned(),
+            crate::ai::LOCAL_DEEPSEEK_CONTEXT_SIZE,
+        )
     }
 }
 
@@ -106,5 +167,34 @@ mod tests {
         assert_eq!(recommended_batch_size(12 * GIB, 8), 15);
         assert_eq!(recommended_batch_size(32 * GIB, 8), 20);
         assert_eq!(recommended_batch_size(32 * GIB, 4), 10);
+    }
+
+    #[test]
+    fn local_model_profiles_keep_the_request_context_contract() {
+        assert_eq!(
+            local_model_profile(6 * GIB, 32 * GIB),
+            ("eco".to_owned(), crate::ai::LOCAL_DEEPSEEK_CONTEXT_SIZE)
+        );
+        assert_eq!(
+            local_model_profile(12 * GIB, 32 * GIB),
+            (
+                "balanced".to_owned(),
+                crate::ai::LOCAL_DEEPSEEK_CONTEXT_SIZE
+            )
+        );
+        assert_eq!(
+            local_model_profile(24 * GIB, 32 * GIB),
+            (
+                "performance".to_owned(),
+                crate::ai::LOCAL_DEEPSEEK_CONTEXT_SIZE
+            )
+        );
+        assert_eq!(
+            local_model_profile(0, 12 * GIB),
+            (
+                "balanced".to_owned(),
+                crate::ai::LOCAL_DEEPSEEK_CONTEXT_SIZE
+            )
+        );
     }
 }

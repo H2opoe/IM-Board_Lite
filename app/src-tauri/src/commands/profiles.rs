@@ -65,7 +65,7 @@ pub fn create_profile_draft(
     }
 
     let timestamp = now.to_rfc3339();
-    Ok(ImProfile {
+    let draft = ImProfile {
         id,
         platform: platform.clone(),
         label: platform_label(&platform).to_owned(),
@@ -75,7 +75,9 @@ pub fn create_profile_draft(
         sort_order,
         created_at: timestamp.clone(),
         updated_at: timestamp,
-    })
+    };
+    crate::profile_manager::drafts::register(&state, draft.clone())?;
+    Ok(draft)
 }
 
 #[tauri::command]
@@ -93,7 +95,13 @@ pub fn upsert_profile(state: State<'_, AppState>, profile: ImProfile) -> Result<
         return Err("不支持的账号平台。".to_owned());
     }
     let conn = state.db.lock().map_err(|err| err.to_string())?;
-    profile_manager::upsert_profile(&conn, profile).map_err(|err| err.to_string())
+    let saved = profile_manager::upsert_profile(&conn, profile).map_err(|err| err.to_string())?;
+    state
+        .binding_drafts
+        .lock()
+        .map_err(|err| err.to_string())?
+        .remove(&saved.id);
+    Ok(saved)
 }
 
 #[tauri::command]

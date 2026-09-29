@@ -28,19 +28,7 @@ pub(super) struct NpmVersionMetadata {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub(super) struct NpmDistMetadata {
     pub(super) tarball: String,
-}
-
-pub async fn npm_latest_version(
-    package: &str,
-    progress: Option<&PlatformCliProgressContext<'_>>,
-) -> Result<String, String> {
-    let metadata = npm_metadata(package, progress).await?;
-    metadata
-        .dist_tags
-        .get("latest")
-        .cloned()
-        .or_else(|| metadata.versions.keys().next_back().cloned())
-        .ok_or_else(|| "官方源未返回版本号。".to_owned())
+    pub(super) integrity: Option<String>,
 }
 
 pub(super) async fn npm_metadata(

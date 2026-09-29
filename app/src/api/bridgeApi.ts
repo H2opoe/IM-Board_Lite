@@ -15,6 +15,16 @@ interface BridgeEnvelope<T = unknown> {
   };
 }
 
+export type BridgeCommand =
+  | "auth-status"
+  | "account-identity"
+  | "fetch-messages"
+  | "get-self"
+  | "list-chats"
+  | "list-contacts"
+  | "search-groups"
+  | "search-messages";
+
 export interface PlatformDeployment {
   platform: Platform;
   cliPath: string;
@@ -46,7 +56,7 @@ export interface PlatformCliVersionStatus {
   checkedAt: string;
 }
 
-export async function runBridgeCommand(profile: ImProfile, command: string, args: Record<string, string>) {
+export async function runBridgeCommand(profile: ImProfile, command: BridgeCommand, args: Record<string, string>) {
   const envelope = await invoke<BridgeEnvelope>("run_bridge_command", {
     request: {
       platform: profile.platform,

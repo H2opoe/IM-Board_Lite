@@ -34,6 +34,58 @@ pub fn sanitize_log(input: &str) -> String {
     output
 }
 
+pub fn redact_json_value(value: serde_json::Value, string_limit: usize) -> serde_json::Value {
+    match value {
+        serde_json::Value::Array(items) => serde_json::Value::Array(
+            items
+                .into_iter()
+                .map(|item| redact_json_value(item, string_limit))
+                .collect(),
+        ),
+        serde_json::Value::Object(object) => serde_json::Value::Object(
+            object
+                .into_iter()
+                .map(|(key, value)| {
+                    if is_sensitive_key(&key) {
+                        (key, serde_json::json!("***"))
+                    } else {
+                        (key, redact_json_value(value, string_limit))
+                    }
+                })
+                .collect(),
+        ),
+        serde_json::Value::String(text) => {
+            serde_json::Value::String(truncate_sanitized(&text, string_limit))
+        }
+        other => other,
+    }
+}
+
+#[allow(dead_code)]
+pub fn truncate_sanitized(value: &str, limit: usize) -> String {
+    let sanitized = sanitize_log(value);
+    if sanitized.chars().count() <= limit {
+        return sanitized;
+    }
+    let mut output = sanitized.chars().take(limit).collect::<String>();
+    output.push_str("...");
+    output
+}
+
+fn is_sensitive_key(key: &str) -> bool {
+    let normalized = key.to_ascii_lowercase();
+    [
+        "key",
+        "token",
+        "secret",
+        "authorization",
+        "password",
+        "cookie",
+    ]
+    .iter()
+    .any(|marker| normalized.contains(marker))
+}
+
 fn mask_key_value(input: &str, key: &str) -> String {
     let lower = input.to_ascii_lowercase();
     let key = key.to_ascii_lowercase();
@@ -52,9 +104,7 @@ fn mask_key_value(input: &str, key: &str) -> String {
         }
 
         let suffix = &input[key_end..];
-        let Some(separator_offset) =
-            suffix.find(|character: char| character == ':' || character == '=')
-        else {
+        let Some(separator_offset) = suffix.find([':', '=']) else {
             output.push_str(&input[cursor..key_end]);
             cursor = key_end;
             continue;
@@ -121,5 +171,20 @@ mod tests {
             sanitize_log("upstream rejected sk-1234567890abcdef"),
             "upstream rejected ***"
         );
+    }
+
+    #[test]
+    fn redacts_nested_json_and_truncates_sanitized_strings() {
+        let value = serde_json::json!({
+            "request": {
+                "accessToken": "token-sensitive123",
+                "message": "authorization=Bearer abc.def.ghi; a long diagnostic message"
+            }
+        });
+        let output = redact_json_value(value, 32);
+        assert_eq!(output["request"]["accessToken"], "***");
+        let message = output["request"]["message"].as_str().unwrap();
+        assert!(!message.contains("abc.def.ghi"));
+        assert!(message.chars().count() <= 35);
     }
 }

@@ -1,3 +1,5 @@
+pub mod drafts;
+
 use chrono::Local;
 use rusqlite::{params, Connection};
 use std::collections::BTreeSet;
@@ -124,7 +126,7 @@ pub fn delete_profile(
     Ok(profile)
 }
 
-fn profile_by_id(conn: &Connection, profile_id: &str) -> anyhow::Result<Option<ImProfile>> {
+pub fn profile_by_id(conn: &Connection, profile_id: &str) -> anyhow::Result<Option<ImProfile>> {
     let mut stmt = conn.prepare(
         "select id, platform, label, enabled, config_json, status, sort_order, created_at, updated_at
          from profiles where id = ?1",

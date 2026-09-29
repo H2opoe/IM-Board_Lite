@@ -92,7 +92,10 @@ impl LocalRuntimeSupervisor {
     pub async fn wait_until_ready(&self, model: &str, timeout: Duration) -> bool {
         let started_at = Instant::now();
         while started_at.elapsed() < timeout {
-            if self.is_owned_runtime_ready(model).await {
+            if !self.has_owned_process() {
+                return false;
+            }
+            if self.is_owned_runtime_ready(model).await && self.probe_inference(model).await {
                 return true;
             }
             tokio::time::sleep(Duration::from_millis(700)).await;
@@ -133,6 +136,29 @@ impl LocalRuntimeSupervisor {
                 })
             })
     }
+
+    async fn probe_inference(&self, model: &str) -> bool {
+        if !self.has_owned_process() {
+            return false;
+        }
+        let Ok(client) = reqwest::Client::builder()
+            .timeout(Duration::from_secs(20))
+            .build()
+        else {
+            return false;
+        };
+        client
+            .post(format!("{}/chat/completions", self.base_url()))
+            .json(&serde_json::json!({
+                "model": model,
+                "messages": [{ "role": "user", "content": "ping" }],
+                "max_tokens": 1,
+                "temperature": 0
+            }))
+            .send()
+            .await
+            .is_ok_and(|response| response.status().is_success())
+    }
 }
 
 impl Drop for LocalRuntimeSupervisor {
@@ -161,15 +187,36 @@ fn terminate_process_tree(pid: u32) -> Result<(), String> {
 
 #[cfg(not(windows))]
 fn terminate_process_tree(pid: u32) -> Result<(), String> {
-    let status = Command::new("kill")
-        .args(["-TERM", &pid.to_string()])
-        .status()
-        .map_err(|error| format!("终止本地推理进程失败：{error}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("终止本地推理进程失败：{status}"))
+    let group = format!("-{pid}");
+    let _ = Command::new("kill").args(["-TERM", "--", &group]).status();
+    for _ in 0..20 {
+        if !process_group_exists(pid) {
+            return Ok(());
+        }
+        std::thread::sleep(Duration::from_millis(50));
     }
+    let _ = Command::new("kill").args(["-KILL", "--", &group]).status();
+    for _ in 0..20 {
+        if !process_group_exists(pid) {
+            return Ok(());
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    if process_group_exists(pid) {
+        Err(format!("本地推理进程 {pid} 未能退出。"))
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(not(windows))]
+fn process_group_exists(pid: u32) -> bool {
+    Command::new("kill")
+        .args(["-0", "--", &format!("-{pid}")])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .is_ok_and(|status| status.success())
 }
 
 #[cfg(test)]
@@ -193,5 +240,40 @@ mod tests {
         assert!(supervisor.has_owned_process());
         assert!(supervisor.clear_if_owned(10_002, second_generation));
         assert!(!supervisor.has_owned_process());
+    }
+}
+
+#[cfg(all(test, unix))]
+mod process_tree_tests {
+    use super::*;
+    use std::io::{BufRead, BufReader};
+    use std::os::unix::process::CommandExt;
+    use std::process::Stdio;
+
+    #[test]
+    fn escalates_when_leader_exits_but_descendant_ignores_term() {
+        let mut command = Command::new("/bin/sh");
+        command.args([
+            "-c",
+            "sh -c 'trap \"\" TERM; echo ready; exec sleep 30' & wait",
+        ]);
+        command.process_group(0).stdout(Stdio::piped());
+        let mut child = command.spawn().unwrap();
+        let pid = child.id();
+        let mut line = String::new();
+        BufReader::new(child.stdout.take().unwrap())
+            .read_line(&mut line)
+            .unwrap();
+        assert_eq!(line.trim(), "ready");
+        let reaper = std::thread::spawn(move || child.wait().unwrap());
+        let result = terminate_process_tree(pid);
+        // Cleanup is unconditional, including a failing assertion on the implementation.
+        let alive = process_group_exists(pid);
+        let _ = Command::new("kill")
+            .args(["-KILL", "--", &format!("-{pid}")])
+            .status();
+        reaper.join().unwrap();
+        assert!(result.is_ok(), "{result:?}");
+        assert!(!alive, "a descendant survived cancellation");
     }
 }

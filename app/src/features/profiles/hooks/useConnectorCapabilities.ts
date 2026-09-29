@@ -21,7 +21,12 @@ export function useConnectorCapabilities() {
             runtimeDependency: capability.runtimeDependency,
             permissions: capability.permissions,
             commands: capability.commands,
-            healthCheck: capability.healthCheck
+            healthCheck: capability.healthCheck,
+            editions: capability.editions,
+            operatingSystems: capability.operatingSystems,
+            architectures: capability.architectures,
+            compatibleRuntimeVersion: capability.compatibleRuntimeVersion,
+            maxParallelReads: capability.maxParallelReads
           }))
         );
       })

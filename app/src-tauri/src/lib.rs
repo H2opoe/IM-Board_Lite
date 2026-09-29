@@ -37,9 +37,12 @@ fn show_main_window(app: &tauri::AppHandle) {
 
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }))
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState::new().expect("failed to initialize app state"))
         .setup(|app| {
+            app.manage(AppState::new()?);
             sync::job::spawn_auto_sync_task(app.handle().clone());
 
             let show_item =
@@ -118,5 +121,15 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("failed to build Tauri app");
 
-    app.run(|_app, _event| {});
+    app.run(|app, event| {
+        if matches!(
+            &event,
+            tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
+        ) {
+            if let Some(state) = app.try_state::<AppState>() {
+                let _ = sync::job::terminate_tracked_sync_bridges(&state);
+                let _ = state.local_model_runtime.stop();
+            }
+        }
+    });
 }
