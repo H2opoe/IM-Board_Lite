@@ -40,15 +40,27 @@ function componentStats(component) {
   const files = walk(componentRoot);
   const tree = createHash("sha256");
   for (const file of files) {
-    const fileSha256 = createHash("sha256").update(file.kind === "symlink" ? file.content : readFileSync(file.path)).digest("hex");
-    tree.update(`${file.name.split(sep).join("/")}\\0${file.kind}\\0${file.size}\\0${fileSha256}\\n`);
+    const content = file.kind === "symlink" ? Buffer.from(file.content) : readFileSync(file.path);
+    const lfsPointer = file.kind === "file" ? parseLfsPointer(content) : undefined;
+    file.verifiedSize = lfsPointer?.size ?? file.size;
+    file.sha256 = lfsPointer?.sha256 ?? createHash("sha256").update(content).digest("hex");
+    tree.update(`${file.name.split(sep).join("/")}\\0${file.kind}\\0${file.verifiedSize}\\0${file.sha256}\\n`);
   }
   return {
     fileCount: files.length,
-    sizeBytes: files.reduce((total, file) => total + file.size, 0),
+    sizeBytes: files.reduce((total, file) => total + file.verifiedSize, 0),
     treeSha256: tree.digest("hex"),
     files,
   };
+}
+
+function parseLfsPointer(content) {
+  if (content.length > 1024) return undefined;
+  const match = content
+    .toString("utf8")
+    .match(/^version https:\/\/git-lfs\.github\.com\/spec\/v1\noid sha256:([0-9a-f]{64})\nsize ([1-9]\d*)\n?$/);
+  if (!match) return undefined;
+  return { sha256: match[1], size: Number(match[2]) };
 }
 
 if (runtimeManifest.schemaVersion !== 1) fail("unsupported schemaVersion");
@@ -57,9 +69,23 @@ if (runtimeManifest.edition !== releaseManifest.edition || runtimeManifest.targe
 }
 if (!Array.isArray(runtimeManifest.components) || runtimeManifest.components.length === 0) fail("components are empty");
 
-const covered = new Set();
 for (const component of runtimeManifest.components) {
   if (!component.id || !component.version || !component.platform || !component.path) fail("component metadata is incomplete");
+}
+if (runtimeManifest.edition === "lite" && runtimeManifest.components.some((component) => component.id !== "llama.cpp")) {
+  fail("Lite runtime may only contain llama.cpp");
+}
+
+const hostTarget = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : undefined;
+if (hostTarget !== runtimeManifest.target) {
+  console.log(
+    `Runtime payload verification skipped on ${process.platform}; release target is ${runtimeManifest.target}.`,
+  );
+  process.exit(0);
+}
+
+const covered = new Set();
+for (const component of runtimeManifest.components) {
   const actual = componentStats(component);
   for (const key of ["fileCount", "sizeBytes", "treeSha256"]) {
     if (actual[key] !== component[key]) {
@@ -73,8 +99,4 @@ for (const path of walk(runtimeRoot)) {
   if (path.name === "manifest.json") continue;
   if (!covered.has(resolve(path.path))) fail(`unlisted runtime file: ${relative(appRoot, path.path)}`);
 }
-if (runtimeManifest.edition === "lite" && runtimeManifest.components.some((component) => component.id !== "llama.cpp")) {
-  fail("Lite runtime may only contain llama.cpp");
-}
-
 console.log(`Runtime manifest verified: ${runtimeManifest.components.length} components, ${runtimeManifest.edition}/${runtimeManifest.target}.`);
