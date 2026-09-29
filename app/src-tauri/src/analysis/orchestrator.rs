@@ -357,7 +357,7 @@ pub(crate) async fn analyze_pending_messages(
         }
     }
 
-    run_summary_stage(
+    if let Err(error) = run_summary_stage(
         app,
         state,
         day,
@@ -368,7 +368,14 @@ pub(crate) async fn analyze_pending_messages(
         &analysis_scope_label,
         warnings,
     )
-    .await?;
+    .await
+    {
+        ai_status = "failed".to_owned();
+        warnings.push(format!(
+            "{}消息读取和事项分析已保留，但最终汇总未完成：{}。可稍后只重试AI分析。",
+            analysis_scope_label, error
+        ));
+    }
 
     Ok((ai_status, analyzed_messages))
 }

@@ -25,11 +25,18 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
         permissions: &["chat.list", "chat.message:list"],
         commands: &[
             "auth-status",
-            "search-chats",
+            "get-self",
             "list-chats",
+            "search-groups",
+            "search-messages",
             "fetch-messages",
         ],
         health_check: "auth-status",
+        editions: &["full", "lite"],
+        operating_systems: &["macos", "windows"],
+        architectures: &["aarch64", "x86_64"],
+        compatible_runtime_version: "1.0.47",
+        max_parallel_reads: 4,
     },
 };
 

@@ -8,8 +8,9 @@ use std::sync::atomic::Ordering;
 
 use futures::StreamExt;
 use sha2::{Digest, Sha256};
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tokio::process::Command;
 use tokio::time::{interval, sleep, Duration};
 
 use crate::ai;
@@ -73,7 +74,7 @@ pub fn save_ai_config(
 
 #[tauri::command]
 pub fn get_system_capabilities(state: State<'_, AppState>) -> SystemCapabilities {
-    state.system_capabilities.clone()
+    SystemCapabilities::detect(&state.app_dir)
 }
 
 pub(crate) async fn runtime_config_for_analysis(
@@ -127,6 +128,7 @@ pub async fn test_ai_connection(
     let mut config = config.into_config(stored_api_key);
     if is_managed_local_deepseek_config(&config) {
         if !verified_local_deepseek_status(&state).await.installed {
+            SystemCapabilities::detect(&state.app_dir).ensure_local_model_disk_space()?;
             start_local_deepseek_download(&app, &state).map_err(|err| {
                 record_local_ai_error(&state, "start_local_deepseek_download", &err);
                 err
@@ -269,7 +271,6 @@ pub async fn install_local_deepseek_model(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<LocalModelStatus, String> {
-    state.system_capabilities.ensure_local_model_disk_space()?;
     let installed = verified_local_deepseek_status(&state).await;
     if installed.installed {
         ensure_local_deepseek_runtime(&app, &state, false)
@@ -286,6 +287,7 @@ pub async fn install_local_deepseek_model(
         );
         return Ok(local_deepseek_status(&state));
     }
+    SystemCapabilities::detect(&state.app_dir).ensure_local_model_disk_space()?;
     start_local_deepseek_download(&app, &state).map_err(|err| {
         record_local_ai_error(&state, "start_local_deepseek_download", &err);
         err

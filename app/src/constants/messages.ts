@@ -25,6 +25,7 @@ export const DASHBOARD_MESSAGES = {
     sync: {
       idle: "空闲",
       synced: "已同步",
+      partial: "部分同步成功",
       syncing: "同步中",
       analyzing: "分析中",
       failed: "失败",

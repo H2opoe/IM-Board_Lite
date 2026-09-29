@@ -3,10 +3,12 @@ use std::io::Cursor;
 use std::path::{Component, Path, PathBuf};
 
 use flate2::read::GzDecoder;
+use sha2::{Digest, Sha512};
 
 pub(super) async fn download_and_extract_tgz(
     client: &reqwest::Client,
     url: &str,
+    integrity: &str,
     destination: &Path,
 ) -> Result<(), String> {
     let response = client
@@ -21,9 +23,26 @@ pub(super) async fn download_and_extract_tgz(
         .bytes()
         .await
         .map_err(|err| format!("读取官方CLI包失败：{err}"))?;
+    verify_npm_integrity(&bytes, integrity)?;
     fs::remove_dir_all(destination).ok();
     fs::create_dir_all(destination).map_err(|err| err.to_string())?;
     extract_tgz_bytes(&bytes, destination, true)
+}
+
+fn verify_npm_integrity(bytes: &[u8], integrity: &str) -> Result<(), String> {
+    use base64::Engine;
+
+    let expected = integrity
+        .strip_prefix("sha512-")
+        .ok_or_else(|| "官方CLI包使用了不支持的完整性算法。".to_owned())?;
+    let expected = base64::engine::general_purpose::STANDARD
+        .decode(expected)
+        .map_err(|_| "官方CLI包完整性信息无效。".to_owned())?;
+    let actual = Sha512::digest(bytes);
+    if actual.as_slice() != expected.as_slice() {
+        return Err("官方CLI包完整性校验失败，已拒绝安装。".to_owned());
+    }
+    Ok(())
 }
 
 pub(super) async fn download_first_available(urls: &[String]) -> Result<Vec<u8>, String> {
@@ -115,4 +134,23 @@ pub(super) fn make_executable(path: &Path) -> Result<(), String> {
         fs::set_permissions(path, permissions).map_err(|err| err.to_string())?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::Engine;
+
+    #[test]
+    fn npm_integrity_accepts_only_matching_sha512() {
+        let payload = b"verified official cli archive";
+        let digest = Sha512::digest(payload);
+        let integrity = format!(
+            "sha512-{}",
+            base64::engine::general_purpose::STANDARD.encode(digest)
+        );
+        assert!(verify_npm_integrity(payload, &integrity).is_ok());
+        assert!(verify_npm_integrity(b"tampered", &integrity).is_err());
+        assert!(verify_npm_integrity(payload, "sha256-unsupported").is_err());
+    }
 }

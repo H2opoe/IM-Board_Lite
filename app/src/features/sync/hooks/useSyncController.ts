@@ -173,7 +173,7 @@ export function useSyncController({ activeProfileId, demoMode, profiles, setDash
             },
             finalProfileId
           );
-          setSyncState(result.aiStatus === "failed" ? "failed" : "done");
+          setSyncState(result.aiStatus === "failed" || result.syncStatus === "failed" ? "failed" : "done");
           const visibleWarnings = result.warnings.filter(shouldShowSyncWarning);
           if (visibleWarnings.length > 0) {
             setSyncProgressNotices(syncWarningNotices(visibleWarnings));

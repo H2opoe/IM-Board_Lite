@@ -40,9 +40,12 @@ fn show_main_window(app: &tauri::AppHandle) {
 
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }))
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState::new().expect("初始化应用状态失败"))
         .setup(|_app| {
+            _app.manage(AppState::new()?);
             sync::job::spawn_auto_sync_task(_app.handle().clone());
 
             #[cfg(not(target_os = "macos"))]
@@ -131,9 +134,18 @@ pub fn run() {
         if let tauri::RunEvent::Reopen {
             has_visible_windows: false,
             ..
-        } = event
+        } = &event
         {
             show_main_window(app);
+        }
+        if matches!(
+            &event,
+            tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
+        ) {
+            if let Some(state) = app.try_state::<AppState>() {
+                let _ = sync::job::terminate_tracked_sync_bridges(&state);
+                let _ = state.local_model_runtime.stop();
+            }
         }
     });
 }

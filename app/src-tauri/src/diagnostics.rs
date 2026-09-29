@@ -3,7 +3,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::bridge_runner::{BridgeEnvelope, BridgeRequest};
-use crate::security::sanitize_log;
+use crate::security::redact_json_value;
 use crate::storage::{models::ImProfile, AppState};
 
 const RAW_DETAIL_LIMIT: usize = 2_000;
@@ -35,9 +35,10 @@ pub(crate) fn record_error_event_conn(
     conn: &Connection,
     event: DiagnosticErrorEvent,
 ) -> rusqlite::Result<()> {
-    let raw_detail_json = serde_json::to_string(&redact_diagnostic_value(event.raw_detail))
-        .unwrap_or_else(|_| "{}".to_owned());
-    let context_json = serde_json::to_string(&redact_diagnostic_value(event.context))
+    let raw_detail_json =
+        serde_json::to_string(&redact_json_value(event.raw_detail, RAW_DETAIL_LIMIT))
+            .unwrap_or_else(|_| "{}".to_owned());
+    let context_json = serde_json::to_string(&redact_json_value(event.context, CONTEXT_LIMIT))
         .unwrap_or_else(|_| "{}".to_owned());
     conn.execute(
         "insert into diagnostic_error_events(
@@ -470,55 +471,6 @@ fn platform_label(platform: &str) -> &'static str {
     }
 }
 
-fn redact_diagnostic_value(value: serde_json::Value) -> serde_json::Value {
-    match value {
-        serde_json::Value::Array(items) => {
-            serde_json::Value::Array(items.into_iter().map(redact_diagnostic_value).collect())
-        }
-        serde_json::Value::Object(object) => serde_json::Value::Object(
-            object
-                .into_iter()
-                .map(|(key, value)| {
-                    if is_sensitive_key(&key) {
-                        (key, json!("***"))
-                    } else {
-                        (key, redact_diagnostic_value(value))
-                    }
-                })
-                .collect(),
-        ),
-        serde_json::Value::String(text) => {
-            serde_json::Value::String(truncate_sanitized(&text, RAW_DETAIL_LIMIT))
-        }
-        other => other,
-    }
-}
-
-fn is_sensitive_key(key: &str) -> bool {
-    let normalized = key.to_ascii_lowercase();
-    [
-        "key",
-        "token",
-        "secret",
-        "authorization",
-        "password",
-        "cookie",
-    ]
-    .iter()
-    .any(|marker| normalized.contains(marker))
-}
-
-fn truncate_sanitized(value: &str, limit: usize) -> String {
-    let sanitized = sanitize_log(value);
-    let limit = limit.min(CONTEXT_LIMIT.max(RAW_DETAIL_LIMIT));
-    if sanitized.chars().count() <= limit {
-        return sanitized;
-    }
-    let mut output = sanitized.chars().take(limit).collect::<String>();
-    output.push_str("...");
-    output
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -646,10 +598,13 @@ mod tests {
 
     #[test]
     fn redacts_sensitive_raw_detail() {
-        let value = redact_diagnostic_value(json!({
-            "apiKey": "sk-test",
-            "message": "真实错误",
-        }));
+        let value = redact_json_value(
+            json!({
+                "apiKey": "sk-test",
+                "message": "真实错误",
+            }),
+            RAW_DETAIL_LIMIT,
+        );
         assert_eq!(value["apiKey"], "***");
         assert_eq!(value["message"], "真实错误");
     }

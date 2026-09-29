@@ -28,11 +28,17 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
         permissions: &["contacts", "messages"],
         commands: &[
             "auth-status",
+            "account-identity",
             "list-contacts",
             "list-chats",
             "fetch-messages",
         ],
         health_check: "auth-status",
+        editions: &["full", "lite"],
+        operating_systems: &["macos", "windows"],
+        architectures: &["aarch64", "x86_64"],
+        compatible_runtime_version: "0.1.9",
+        max_parallel_reads: 4,
     },
 };
 

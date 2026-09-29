@@ -14,12 +14,11 @@ pub(super) fn replace_install_root_atomically(
         .parent()
         .ok_or_else(|| format!("官方CLI热更新目录无效：{}", install_root.display()))?;
     let backup_root = parent.join(format!(
-        ".{}-{}.bak",
+        ".{}.previous",
         install_root
             .file_name()
             .and_then(|value| value.to_str())
-            .unwrap_or("cli"),
-        uuid::Uuid::new_v4()
+            .unwrap_or("cli")
     ));
     fs::remove_dir_all(&backup_root).ok();
     if install_root.exists() {
@@ -35,7 +34,8 @@ pub(super) fn replace_install_root_atomically(
             install_root.display()
         ));
     }
-    fs::remove_dir_all(&backup_root).ok();
+    // 保留一份上一个可用版本。新版本若无法启动，后续修复可以直接回滚，
+    // 不需要在网络异常时重新下载。
     Ok(())
 }
 
@@ -89,7 +89,17 @@ pub(super) async fn install_npm_package_tree(
         let package_dir = install_root
             .join("node_modules")
             .join(package_dir(&version_metadata.name));
-        download_and_extract_tgz(&client, &version_metadata.dist.tarball, &package_dir).await?;
+        let integrity =
+            version_metadata.dist.integrity.as_deref().ok_or_else(|| {
+                format!("官方源缺少 {package_name}@{resolved_version} 完整性信息。")
+            })?;
+        download_and_extract_tgz(
+            &client,
+            &version_metadata.dist.tarball,
+            integrity,
+            &package_dir,
+        )
+        .await?;
         write_minimal_package_metadata(&package_dir, &version_metadata)?;
         for (dependency, dependency_range) in &version_metadata.dependencies {
             pending.push((dependency.clone(), dependency_range.clone()));
@@ -135,15 +145,17 @@ fn optional_dependency_matches_current_target(name: &str) -> bool {
         "darwin"
     } else if cfg!(target_os = "linux") {
         "linux"
+    } else if cfg!(target_os = "windows") {
+        "win32"
     } else {
-        ""
+        return !name.contains("darwin-") && !name.contains("win32-") && !name.contains("linux-");
     };
-    let arch = current_npm_arch();
-    let windows_marker = ["win", "32-"].concat();
+    optional_dependency_matches_target(name, os, current_npm_arch())
+}
+
+fn optional_dependency_matches_target(name: &str, os: &str, arch: &str) -> bool {
     name.contains(&format!("{os}-{arch}"))
-        || (!name.contains("darwin-")
-            && !name.contains(&windows_marker)
-            && !name.contains("linux-"))
+        || (!name.contains("darwin-") && !name.contains("win32-") && !name.contains("linux-"))
 }
 
 fn current_npm_arch() -> &'static str {
@@ -153,5 +165,34 @@ fn current_npm_arch() -> &'static str {
         "x64"
     } else {
         std::env::consts::ARCH
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::optional_dependency_matches_target;
+
+    #[test]
+    fn optional_dependencies_are_selected_for_the_exact_os_and_architecture() {
+        assert!(optional_dependency_matches_target(
+            "native-win32-x64",
+            "win32",
+            "x64"
+        ));
+        assert!(!optional_dependency_matches_target(
+            "native-darwin-x64",
+            "win32",
+            "x64"
+        ));
+        assert!(!optional_dependency_matches_target(
+            "native-linux-x64",
+            "win32",
+            "x64"
+        ));
+        assert!(optional_dependency_matches_target(
+            "platform-neutral",
+            "win32",
+            "x64"
+        ));
     }
 }

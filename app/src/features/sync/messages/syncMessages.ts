@@ -87,6 +87,12 @@ export function syncMaintenanceStoppingMessage(action: SyncMaintenanceAction): s
 
 export function syncCompletionMessage(mode: SyncJobMode, result: SyncResult): string {
   const prefix = SYNC_JOB_UI_CONFIG[mode].completedPrefix;
+  if (result.syncStatus === "failed") {
+    return "本次没有账号同步成功，请查看上方账号错误后重试。";
+  }
+  if (result.syncStatus === "partial") {
+    return `${prefix}部分账号同步成功，已读取${result.insertedMessages}条新消息；失败账号未更新成功时间。`;
+  }
   if (result.aiStatus === "not_configured") {
     if (mode === "retry_analysis") return "AI未启用。";
     return `${prefix}已读取${result.insertedMessages}条新消息，AI未启用。`;

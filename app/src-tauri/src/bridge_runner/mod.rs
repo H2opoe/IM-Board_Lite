@@ -20,6 +20,7 @@ mod feishu_runner;
 mod normalizers;
 mod paths;
 mod process;
+mod validation;
 mod wecom_runner;
 use dingtalk_runner::run_official_dingtalk_cli;
 #[cfg(test)]
@@ -76,6 +77,7 @@ pub async fn run_bridge_tracked(
     cache_dir: PathBuf,
     active_pids: Option<&Mutex<Vec<u32>>>,
 ) -> anyhow::Result<BridgeEnvelope> {
+    validation::validate_bridge_request(&request).map_err(anyhow::Error::msg)?;
     let started_at = Instant::now();
     if let Some(adapter) = connectors::find(&request.platform) {
         match adapter.kind {
@@ -114,6 +116,7 @@ pub async fn run_bridge_tracked(
     let executable = resolve_bridge_executable(&resource_dir, &request);
     let process = bridge_process_spec(&request.platform, executable, &resource_dir);
     let mut command = Command::new(&process.executable);
+    configure_process_supervision(&mut command);
     command.args(&process.prefix_args);
 
     command.arg(&request.command).arg("--format").arg("json");

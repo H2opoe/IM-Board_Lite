@@ -13,9 +13,22 @@ use crate::storage::AppState;
 pub async fn run_bridge_command(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
-    request: BridgeRequest,
+    mut request: BridgeRequest,
 ) -> Result<BridgeEnvelope, String> {
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
+    if request.command != "init-profile" {
+        if let Some(profile_id) = request.profile.as_ref().map(|profile| profile.id.clone()) {
+            let profile = crate::profile_manager::drafts::resolve_for_command(
+                &state,
+                &profile_id,
+                &request.platform,
+                &request.command,
+            )?;
+            request.platform = profile.platform.clone();
+            request.profile = Some(profile);
+        }
+    }
+
     let diagnostic_request = request.clone();
     let envelope = bridge_runner::run_bridge(request, resource_dir, state.cache_dir.clone())
         .await
@@ -91,6 +104,13 @@ pub async fn deploy_platform_bridge(
         message
     })?;
 
+    crate::profile_manager::drafts::record_deployment(
+        &state,
+        &profile_id,
+        &platform,
+        &cli_path,
+        &config_dir,
+    )?;
     Ok(PlatformDeployment {
         platform: platform.clone(),
         cli_path: cli_path.to_string_lossy().to_string(),
@@ -137,12 +157,10 @@ pub async fn check_platform_cli_update(
         );
         message
     })?;
-    let latest_version = official_cli::npm_latest_version(spec.package, None)
-        .await
-        .unwrap_or_else(|_| current_version.clone());
+    let latest_version = spec.compatible_version.to_owned();
     Ok(PlatformCliVersionStatus {
         platform,
-        update_available: official_cli::version_is_newer(&latest_version, &current_version),
+        update_available: latest_version != current_version,
         current_version,
         latest_version,
         source: spec.source.to_owned(),
@@ -159,19 +177,7 @@ pub async fn update_platform_cli(
     let platform = platform.trim().to_ascii_lowercase();
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
-    let latest_version = official_cli::npm_latest_version(spec.package, None)
-        .await
-        .map_err(|err| {
-            let message = err.to_string();
-            crate::diagnostics::record_cli_lifecycle_error(
-                &state,
-                &platform,
-                None,
-                "update_platform_cli",
-                &message,
-            );
-            message
-        })?;
+    let latest_version = spec.compatible_version.to_owned();
     let install_root =
         official_cli::writable_cli_install_root(&state.app_dir, spec).map_err(|err| {
             let message = err.to_string();
@@ -235,7 +241,7 @@ pub async fn update_platform_cli(
         })?;
     Ok(PlatformCliVersionStatus {
         platform,
-        update_available: official_cli::version_is_newer(&latest_version, &current_version),
+        update_available: latest_version != current_version,
         current_version,
         latest_version,
         source: spec.source.to_owned(),

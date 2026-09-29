@@ -13,6 +13,7 @@ use models::LocalModelDownloadProgress;
 
 pub struct AppState {
     pub db: Mutex<Connection>,
+    pub binding_drafts: Mutex<std::collections::HashMap<String, models::ImProfile>>,
     pub app_dir: PathBuf,
     pub cache_dir: PathBuf,
     pub sync_cancel_requested: AtomicBool,
@@ -30,18 +31,20 @@ const APP_DATA_DIR_NAME: &str = "IMBoard";
 
 impl AppState {
     pub fn new() -> anyhow::Result<Self> {
-        let app_dir = dirs::data_dir()
-            .unwrap_or_else(|| std::env::current_dir().unwrap())
-            .join(APP_DATA_DIR_NAME);
+        let data_root = dirs::data_dir()
+            .or_else(|| std::env::current_dir().ok())
+            .ok_or_else(|| anyhow::anyhow!("无法确定应用数据目录。"))?;
+        let app_dir = data_root.join(APP_DATA_DIR_NAME);
         let cache_dir = dirs::cache_dir()
-            .unwrap_or_else(|| app_dir.join("Caches"))
-            .join(APP_DATA_DIR_NAME);
+            .map(|root| root.join(APP_DATA_DIR_NAME))
+            .unwrap_or_else(|| app_dir.join("Caches"));
 
         fs::create_dir_all(app_dir.join("Profiles"))?;
         fs::create_dir_all(&cache_dir)?;
 
         let db_path = app_dir.join("app.sqlite");
         let mut conn = Connection::open(&db_path)?;
+        conn.busy_timeout(std::time::Duration::from_secs(5))?;
         backup_database_before_upgrade(&conn, &app_dir)?;
         run_migrations(&mut conn)?;
         if let Err(error) = crate::security::credentials::migrate_legacy_ai_api_key(&conn) {
@@ -56,6 +59,7 @@ impl AppState {
 
         Ok(Self {
             db: Mutex::new(conn),
+            binding_drafts: Mutex::new(std::collections::HashMap::new()),
             app_dir,
             cache_dir,
             sync_cancel_requested: AtomicBool::new(false),
@@ -110,7 +114,7 @@ fn stored_auto_sync_frequency_minutes(conn: &Connection) -> anyhow::Result<Optio
         .filter(|value| *value > 0))
 }
 
-const LATEST_SCHEMA_VERSION: i64 = 2;
+const LATEST_SCHEMA_VERSION: i64 = 3;
 
 fn backup_database_before_upgrade(
     conn: &Connection,
@@ -137,8 +141,31 @@ fn backup_database_before_upgrade(
     let backup = rusqlite::backup::Backup::new(conn, &mut destination)?;
     backup.run_to_completion(128, std::time::Duration::from_millis(25), None)?;
     drop(backup);
-    destination.execute_batch("pragma integrity_check;")?;
+    let integrity: String =
+        destination.pragma_query_value(None, "integrity_check", |row| row.get(0))?;
+    if integrity != "ok" {
+        anyhow::bail!("升级前数据库备份完整性检查失败：{integrity}");
+    }
+    prune_database_backups(&backup_dir, 5)?;
     Ok(Some(backup_path))
+}
+
+fn prune_database_backups(backup_dir: &std::path::Path, keep: usize) -> anyhow::Result<()> {
+    let mut backups = fs::read_dir(backup_dir)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("app-v") && name.ends_with(".sqlite"))
+        })
+        .collect::<Vec<_>>();
+    backups.sort();
+    let remove_count = backups.len().saturating_sub(keep);
+    for path in backups.into_iter().take(remove_count) {
+        fs::remove_file(path)?;
+    }
+    Ok(())
 }
 
 fn run_migrations(conn: &mut Connection) -> anyhow::Result<()> {
@@ -163,7 +190,38 @@ fn run_migrations(conn: &mut Connection) -> anyhow::Result<()> {
         migrate_schema_v2(&tx)?;
         tx.pragma_update(None, "user_version", 2)?;
     }
+    if current_version < 3 {
+        migrate_schema_v3(&tx)?;
+        tx.pragma_update(None, "user_version", 3)?;
+    }
     tx.commit()?;
+    Ok(())
+}
+
+fn migrate_schema_v3(conn: &Connection) -> anyhow::Result<()> {
+    for (column, sql) in [
+        (
+            "last_attempt_at",
+            "alter table sync_state add column last_attempt_at text",
+        ),
+        (
+            "last_success_at",
+            "alter table sync_state add column last_success_at text",
+        ),
+        (
+            "last_error",
+            "alter table sync_state add column last_error text",
+        ),
+    ] {
+        ensure_column(conn, "sync_state", column, sql)?;
+    }
+    conn.execute(
+        "update sync_state
+         set last_attempt_at = coalesce(last_attempt_at, last_sync_at),
+             last_success_at = coalesce(last_success_at, last_sync_at)
+         where last_sync_at is not null",
+        [],
+    )?;
     Ok(())
 }
 
@@ -261,6 +319,12 @@ mod tests {
              create table daily_messages(id text primary key);
              create table ai_config(id integer primary key);
              create table ai_analysis_runs(id text primary key, created_at text not null);
+             create table sync_state(
+               profile_id text not null,
+               day text not null,
+               last_sync_at text,
+               primary key(profile_id, day)
+             );
              pragma user_version = 1;",
         )
         .expect("create legacy schema");
@@ -277,6 +341,9 @@ mod tests {
             ("ai_config", "summary_prompt_custom"),
             ("ai_config", "analysis_batch_size"),
             ("ai_analysis_runs", "diagnostic_json"),
+            ("sync_state", "last_attempt_at"),
+            ("sync_state", "last_success_at"),
+            ("sync_state", "last_error"),
         ] {
             let mut stmt = conn
                 .prepare(&format!("pragma table_info({table})"))

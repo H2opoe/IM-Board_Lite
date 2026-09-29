@@ -8,7 +8,7 @@ async fn fetch_dingtalk_window_messages(
     resource_dir: std::path::PathBuf,
     cache_dir: std::path::PathBuf,
     warnings: &mut Vec<String>,
-) -> Result<(usize, i64), String> {
+) -> Result<(usize, i64, Vec<String>), String> {
     emit_sync_progress(
         app,
         profile,
@@ -43,17 +43,11 @@ async fn fetch_dingtalk_window_messages(
 
     warnings.extend(history.warnings);
     if !history.ok {
-        if let Some(error) = history.error {
-            if !(connector_for_profile(profile)?.should_silence_message_error)(&error.code) {
-                warnings.push(format!(
-                    "【{} · {}】今天的消息：{}",
-                    platform_label(&profile.platform),
-                    profile_remark(profile),
-                    error.message
-                ));
-            }
-        }
-        return Ok((0, 0));
+        let message = history
+            .error
+            .map(|error| error.message)
+            .unwrap_or_else(|| "钉钉消息读取失败，平台未返回错误详情。".to_owned());
+        return Ok((0, 0, vec![message]));
     }
 
     let mut messages = Vec::new();
@@ -100,7 +94,7 @@ async fn fetch_dingtalk_window_messages(
         fetched as i64,
         fetched as i64,
     );
-    Ok((fetched, inserted))
+    Ok((fetched, inserted, Vec::new()))
 }
 
 async fn fetch_dingtalk_discovered_group_messages(
@@ -113,10 +107,10 @@ async fn fetch_dingtalk_discovered_group_messages(
     resource_dir: std::path::PathBuf,
     cache_dir: std::path::PathBuf,
     warnings: &mut Vec<String>,
-) -> Result<(usize, i64), String> {
+) -> Result<(usize, i64, Vec<String>), String> {
     let queries = (connector_for_profile(profile)?.fallback_group_search_queries)(profile);
     if queries.is_empty() {
-        return Ok((0, 0));
+        return Ok((0, 0, Vec::new()));
     }
 
     emit_sync_progress(
@@ -132,6 +126,7 @@ async fn fetch_dingtalk_discovered_group_messages(
         queries.len() as i64,
     );
 
+    let mut errors = Vec::new();
     let mut chats = Vec::new();
     let mut seen = HashSet::new();
     for (index, query) in queries.iter().enumerate() {
@@ -154,14 +149,12 @@ async fn fetch_dingtalk_discovered_group_messages(
         .map_err(|err| err.to_string())?;
         warnings.extend(searched.warnings);
         if !searched.ok {
-            if let Some(error) = searched.error {
-                if !(connector_for_profile(profile)?.should_silence_message_error)(&error.code) {
-                    warnings.push(format!(
-                        "{}群聊检索「{}」：{}",
-                        profile.label, query, error.message
-                    ));
-                }
-            }
+            errors.push(
+                searched
+                    .error
+                    .map(|error| error.message)
+                    .unwrap_or_else(|| "钉钉群聊检索失败。".to_owned()),
+            );
             continue;
         }
         for chat in value_array(&searched.data) {
@@ -192,11 +185,11 @@ async fn fetch_dingtalk_discovered_group_messages(
     }
 
     if chats.is_empty() {
-        return Ok((0, 0));
+        return Ok((0, 0, errors));
     }
 
     let chat_total = chats.len() as i64;
-    fetch_recent_session_messages(
+    let (fetched, inserted, read_errors) = fetch_recent_session_messages(
         app,
         state,
         profile,
@@ -209,5 +202,7 @@ async fn fetch_dingtalk_discovered_group_messages(
         cache_dir,
         warnings,
     )
-    .await
+    .await?;
+    errors.extend(read_errors);
+    Ok((fetched, inserted, errors))
 }

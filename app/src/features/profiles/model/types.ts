@@ -8,6 +8,11 @@ export interface ConnectorCapability {
   permissions: string[];
   commands: string[];
   healthCheck: string;
+  editions: string[];
+  operatingSystems: string[];
+  architectures: string[];
+  compatibleRuntimeVersion: string;
+  maxParallelReads: number;
 }
 
 export interface ImProfile {
