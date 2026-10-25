@@ -2724,6 +2724,33 @@
         "IM-Board-lite",
         "IM-Board-lite-win"
       ]
+    },
+    {
+      "source": "app/src/api/aboutLinks.ts",
+      "destination": "app/src/api/aboutLinks.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/aboutLinks.test.ts",
+      "destination": "app/src/api/aboutLinks.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/about_links.rs",
+      "destination": "app/src-tauri/src/commands/about_links.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
     }
   ],
   "manualReview": [

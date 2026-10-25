@@ -100,6 +100,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            commands::about_links::open_about_link,
             commands::profiles::list_profiles,
             commands::profiles::get_connector_capabilities,
             commands::profiles::create_profile_draft,
