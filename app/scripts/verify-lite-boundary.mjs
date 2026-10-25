@@ -3,6 +3,8 @@ import { dirname, join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import { maskLitePresentationContent } from "./lite-presentation-content.mjs";
+
 import { maskWecomOfficialDomain } from "./lite-enterprise-domains.mjs";
 
 const appRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -85,7 +87,7 @@ function verifyWorkingTree() {
     }
     const content = readFileSync(file);
     if (looksBinary(content)) continue;
-    const text = maskWecomOfficialDomain(name, content.toString("utf8"));
+    const text = maskLitePresentationContent(name, maskWecomOfficialDomain(name, content.toString("utf8")));
     if (contentPatterns.some((pattern) => pattern.test(text))) {
       violations.push(`forbidden source marker: ${name}`);
     }
@@ -127,7 +129,7 @@ function verifyReachableHistory(ref) {
     if (grep.status === 0) {
       const badLine = grep.stdout.split(/\r?\n/).filter(Boolean).some((line) => {
         const match = line.match(/^[^:]+:([^:]+):(.*)$/);
-        return !match || contentPatterns.some((pattern) => pattern.test(maskWecomOfficialDomain(match[1], match[2])));
+        return !match || contentPatterns.some((pattern) => pattern.test(maskLitePresentationContent(match[1], maskWecomOfficialDomain(match[1], match[2]))));
       });
       if (badLine) violations.push(`${commit.slice(0, 12)} forbidden historical source content`);
     } else if (grep.status !== 1) {
