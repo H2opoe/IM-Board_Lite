@@ -195,7 +195,9 @@ mod windows_tests {
     fn powershell(script: &str) -> Command {
         let mut command = Command::new("powershell.exe");
         command.args(["-NoProfile", "-NonInteractive", "-Command", script]);
-        command.stdout(Stdio::null()).stderr(Stdio::null());
+        // These sessions use synthetic tokens in unique temporary namespaces.
+        // Preserve diagnostics so a failed native fixture reports its cause.
+        command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
         command
     }
     fn legacy_token(config: &Path) {

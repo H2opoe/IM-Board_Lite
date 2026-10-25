@@ -2715,6 +2715,15 @@
         "IM-Board-lite",
         "IM-Board-lite-win"
       ]
+    },
+    {
+      "source": "app/scripts/test-windows-regressions.py",
+      "destination": "app/scripts/test-windows-regressions.py",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
     }
   ],
   "manualReview": [
