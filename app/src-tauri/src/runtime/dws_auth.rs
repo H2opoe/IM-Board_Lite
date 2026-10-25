@@ -62,6 +62,7 @@ pub(crate) fn remove_namespace(value: &str) -> Result<(), String> {
         use std::time::{Duration, Instant};
         let script = include_str!("dws_cleanup.ps1").replace("__NAMESPACE__", &quote(value));
         let mut child = Command::new("powershell.exe")
+            .env_remove("PSModulePath")
             .args([
                 "-NoLogo",
                 "-NoProfile",
@@ -135,6 +136,9 @@ pub(crate) fn wrap_command(
     if let Some(directory) = source.get_current_dir() {
         wrapped.current_dir(directory);
     }
+    // PS7 -> application -> Windows PowerShell bypasses PowerShell's normal
+    // WinPSModulePath adjustment. Let Windows PowerShell rebuild its own paths.
+    wrapped.env_remove("PSModulePath");
     wrapped
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -194,12 +198,30 @@ mod windows_tests {
 
     fn powershell(script: &str) -> Command {
         let mut command = Command::new("powershell.exe");
+        command.env_remove("PSModulePath");
         command.args(["-NoProfile", "-NonInteractive", "-Command", script]);
         // These sessions use synthetic tokens in unique temporary namespaces.
         // Preserve diagnostics so a failed native fixture reports its cause.
         command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
         command
     }
+    #[test]
+    fn native_wrapper_drops_ps7_module_paths_and_keeps_account_environment() {
+        let mut command = tokio::process::Command::new("fixture-dws.exe");
+        command.env("PSModulePath", "fixture-ps7-modules");
+        command.env("DWS_CONFIG_DIR", "fixture-account");
+        let wrapped = wrap_command(command, Path::new("C:/fixture/account"));
+        let environment: Vec<_> = wrapped.as_std().get_envs().collect();
+        assert!(environment.iter().any(|(key, value)| key
+            .to_string_lossy()
+            .eq_ignore_ascii_case("PSModulePath")
+            && value.is_none()));
+        assert!(environment.iter().any(|(key, value)| key
+            .to_string_lossy()
+            .eq_ignore_ascii_case("DWS_CONFIG_DIR")
+            && *value == Some(std::ffi::OsStr::new("fixture-account"))));
+    }
+
     fn legacy_token(config: &Path) {
         let path = config.join("keychain/windows-auth-token.regvalue");
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
