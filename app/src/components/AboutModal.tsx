@@ -1,3 +1,4 @@
+import { openAboutLink } from "../api/aboutLinks";
 import { shouldHandleOutsideMouseDetection } from "../utils/windowActivity";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
@@ -20,6 +21,7 @@ const authorInfo = {
 };
 
 export function AboutModal({ onClose }: Props) {
+  const [linkError, setLinkError] = useState("");
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,6 +46,15 @@ export function AboutModal({ onClose }: Props) {
     };
   }, []);
 
+  function openLink(event: { preventDefault: () => void }, target: "profile" | "email") {
+    setLinkError("");
+    void openAboutLink(event, target).catch(() => {
+      setLinkError(target === "email"
+        ? "无法打开邮件应用，请复制邮箱地址，并在系统中设置默认邮件应用。"
+        : "无法打开浏览器，请复制链接后在浏览器中访问。");
+    });
+  }
+
   return (
     <div className="modal-backdrop" onMouseDown={() => { if (shouldHandleOutsideMouseDetection()) onClose(); }}>
       <article className="profile-modal about-modal" onMouseDown={(event) => event.stopPropagation()}>
@@ -64,14 +75,15 @@ export function AboutModal({ onClose }: Props) {
             <p>作者：{authorInfo.authorName}</p>
             <p>
               小红书：
-              <a href={authorInfo.xiaohongshuUrl} target="_blank" rel="noreferrer">
+              <a href={authorInfo.xiaohongshuUrl} target="_blank" rel="noreferrer" onClick={(event) => openLink(event, "profile")}>
                 {authorInfo.xiaohongshu}（小红书号：{authorInfo.xiaohongshuId}）
               </a>
             </p>
             <p>
               邮箱：
-              <a href={`mailto:${authorInfo.contact}`}>{authorInfo.contact}</a>
+              <a href={`mailto:${authorInfo.contact}`} onClick={(event) => openLink(event, "email")}>{authorInfo.contact}</a>
             </p>
+            {linkError && <p role="alert">{linkError}</p>}
             <p>Version {displayAppVersion(appVersion)}</p>
             <p>{authorInfo.copyright}</p>
           </div>
