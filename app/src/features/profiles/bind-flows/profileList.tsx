@@ -1,3 +1,4 @@
+import { PaidFeatureCard } from "../../../components/PaidFeatureCard";
 import { createPortal } from "react-dom";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { CheckCircle2, GripVertical, Info, MessageCircle, Pause, Search, Settings2, Trash2 } from "lucide-react";
@@ -70,6 +71,7 @@ export function ProfilePlatformEntryPanel({ orderedProfiles, platformOptions, on
         </button>
       </header>
       <div className="bind-grid">
+        <PaidFeatureCard onOpenDeveloperContact={onOpenDeveloperContact} />
         {platformOptions.map((platform) => {
           const boundCount = orderedProfiles.filter((profile) => profile.platform === platform.id).length;
           const isDisabled = Boolean(platform.disabled);

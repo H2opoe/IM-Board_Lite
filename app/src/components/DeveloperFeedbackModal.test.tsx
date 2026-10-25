@@ -7,6 +7,8 @@ let view: ReturnType<typeof create>;
 beforeEach(() => {
   listeners = new Map();
   vi.stubGlobal("window", {
+    setTimeout: vi.fn(() => 1),
+    clearTimeout: vi.fn(),
     addEventListener: (event: string, listener: (event: { key: string }) => void) => {
       if (!listeners.has(event)) listeners.set(event, new Set());
       listeners.get(event)!.add(listener);
@@ -36,4 +38,14 @@ it("removes its Escape listener on unmount", () => {
   act(() => view.unmount());
   expect(listeners.get("keydown")?.size).toBe(0);
   press("Escape"); expect(close).not.toHaveBeenCalled();
+});
+
+it("shows the public contact QR and copies the developer contact", async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  vi.stubGlobal("navigator", { clipboard: { writeText } });
+  act(() => { view = create(<DeveloperFeedbackModal onClose={vi.fn()} />); });
+  expect(view.root.findAllByType("svg").some((node) => node.props.className === "developer-feedback-qr")).toBe(true);
+  const button = view.root.findAllByType("button").find((node) => node.props.className === "secondary-button")!;
+  await act(async () => { await button.props.onClick(); });
+  expect(writeText).toHaveBeenCalledWith("DAISUNFILMS");
 });
