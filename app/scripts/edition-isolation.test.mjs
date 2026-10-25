@@ -1,0 +1,21 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { releaseConfig } from './release-config.mjs';
+const root=join(dirname(fileURLToPath(import.meta.url)), '..');
+const read=path=>readFileSync(join(root,path),'utf8');
+test('Lite package, data, cache and credentials have independent edition identities',()=>{
+ const config=JSON.parse(read('src-tauri/tauri.conf.json'));
+ assert.equal(config.identifier,'com.local.im-board-lite');
+ assert.equal(config.productName,'IM-Board Lite');
+ assert.equal(config.mainBinaryName,'IM-Board-Lite');
+ assert.equal(releaseConfig().bundleId, config.identifier);
+ assert.equal(releaseConfig().productName, config.productName);
+ const edition=read('src-tauri/src/edition.rs');
+ assert.match(edition,/DATA_DIR_NAME: &str = "IMBoardLite"/);
+ assert.match(edition,/AI_KEYRING_SERVICE: &str = "com.local.im-board-lite.ai"/);
+ for(const file of ['storage/mod.rs','bridge_runner/mod.rs']) assert.match(read(`src-tauri/src/${file}`),/const APP_DATA_DIR_NAME: &str = crate::edition::DATA_DIR_NAME/);
+ assert.match(read('src-tauri/src/security/credentials.rs'),/const AI_KEYRING_SERVICE: &str = crate::edition::AI_KEYRING_SERVICE/);
+});

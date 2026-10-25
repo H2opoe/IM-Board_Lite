@@ -11,6 +11,11 @@ use crate::analysis::local_keywords::{
 
 include!("tests/keywords.rs");
 include!("tests/batching_config.rs");
+#[path = "tests/prompt_config.rs"]
+mod prompt_config;
 include!("tests/message_summary.rs");
 include!("tests/topic_merge.rs");
 include!("tests/action_items.rs");
+
+#[path = "tests/action_day.rs"]
+mod action_day;

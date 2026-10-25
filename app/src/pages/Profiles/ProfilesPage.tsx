@@ -1,18 +1,12 @@
 import { useState } from "react";
 import { Settings2 } from "lucide-react";
-import {
-  deployPlatformBridge,
-  updatePlatformCli
-} from "../../api/bridgeApi";
-import type { PlatformDeployment } from "../../api/bridgeApi";
 import { reorderProfiles } from "../../features/profiles/api/profilesApi";
-import type { ImProfile, Platform } from "../../features/profiles/model/types";
+import type { ImProfile } from "../../features/profiles/model/types";
 import { FloatingNotice, FloatingNoticeStack, type FloatingNoticeVariant } from "../../components/shared/FloatingNotice";
 import { PagedTextBlock } from "../../components/shared/PagedTextBlock";
-import { APP_MESSAGES, OFFICIAL_CLI_MESSAGES, PROFILE_MESSAGES } from "../../constants/messages";
+import { APP_MESSAGES, PROFILE_MESSAGES } from "../../constants/messages";
 import { userErrorMessage } from "../../utils/errors";
 import { profileDisplayName } from "../../utils/profiles";
-import { isOfficialCliBindPlatform } from "../../features/profiles/bind-flows/officialCli";
 import { ProfileAccountList, ProfileBatchToolbar, ProfilePlatformEntryPanel } from "../../features/profiles/bind-flows/profileList";
 import { useProfileDragOrdering } from "../../features/profiles/hooks/useProfileDragOrdering";
 import { useModalEnterGuard } from "../../features/profiles/hooks/useModalEnterGuard";
@@ -67,7 +61,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
 
   const {
     cancelDeploymentRequest,
-    cleanupPlatformCliIfUnused,
     cliDeploymentProgress,
     isDeploymentRequestActive,
     nextDeploymentRequest,
@@ -93,16 +86,16 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
   } = useModalEnterGuard();
   const {
     closeOfficialCliSetup,
+    copyOfficialCliCommand,
     isSavingOfficialCliProfile,
     officialCliFlow,
     openOfficialCliSetup,
     saveOfficialCliProfile,
     saveOfficialCliSetupFromEnter,
     setOfficialCliFlow,
-    updateOfficialCliFlow
+    updateOfficialCli
   } = useOfficialCliBindController({
     cancelDeploymentRequest,
-    cleanupPlatformCliIfUnused,
     isDeploymentRequestActive,
     nextDeploymentRequest,
     onDuplicateProfileReplaced: handleDuplicateProfileReplaced,
@@ -111,6 +104,10 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     preservePersistedProfileState,
     resetCliDeploymentProgress,
     resetCopiedCommandStatus,
+    markCopiedCommand: (platform) => {
+      setCopiedCommandPlatform(platform);
+      scheduleCopiedCommandReset(platform);
+    },
     runAfterModalPaint,
     setFormMessage,
     setUpdatingCliPlatform,
@@ -152,7 +149,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     toggleProfileSelection
   } = useProfileBatchManagement({
     clearPendingDelete: () => setPendingDeleteId(""),
-    cleanupPlatformCliIfUnused,
     draggedProfileId,
     isBatchManaging,
     onProfilesChange,
@@ -170,7 +166,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     testSelectedProfilesRead,
     toggleProfile
   } = useProfilesController({
-    cleanupPlatformCliIfUnused,
     onProfilesChange,
     openOfficialCliSetup,
     orderedProfiles,
@@ -213,53 +208,6 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
     }
   }
 
-  async function copyOfficialCliCommand(platform: Platform, deployment: PlatformDeployment | null) {
-    if (!deployment) return;
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error(OFFICIAL_CLI_MESSAGES.clipboardUnsupported);
-      }
-      await navigator.clipboard.writeText(deployment.command);
-      setCopiedCommandPlatform(platform);
-      scheduleCopiedCommandReset(platform);
-      setFormMessage("");
-    } catch (error) {
-      resetCopiedCommandStatus();
-      setFormMessage(userErrorMessage(error, OFFICIAL_CLI_MESSAGES.copyFailed));
-    }
-  }
-
-  async function copyActiveOfficialCliCommand() {
-    if (!officialCliFlow.platform) return;
-    await copyOfficialCliCommand(officialCliFlow.platform, officialCliFlow.deployment);
-  }
-
-  async function updateOfficialCli(platform: Platform) {
-    setUpdatingCliPlatform(platform);
-    setFormMessage("");
-    try {
-      const status = await updatePlatformCli(platform);
-      if (isOfficialCliBindPlatform(platform)) {
-        updateOfficialCliFlow(platform, { versionStatus: status });
-        const setupProfile = officialCliFlow.platform === platform ? officialCliFlow.profile : null;
-        const deployment = setupProfile ? await deployPlatformBridge(platform, setupProfile.id) : null;
-        setOfficialCliFlow((current) => {
-          if (current.platform !== platform) return current;
-          return {
-            ...current,
-            versionStatus: status,
-            deployment: deployment ?? (current.deployment ? { ...current.deployment, currentVersion: status.currentVersion } : current.deployment),
-            cliPath: deployment?.cliPath ?? current.cliPath
-          };
-        });
-      }
-    } catch (error) {
-      setFormMessage(userErrorMessage(error, OFFICIAL_CLI_MESSAGES.updateFailed(platform)));
-    } finally {
-      setUpdatingCliPlatform(null);
-    }
-  }
-
   function isPersistedProfile(profile: ImProfile) {
     return profiles.some((item) => item.id === profile.id);
   }
@@ -270,7 +218,8 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
       ...nextProfile,
       enabled: original.enabled,
       status: original.status,
-      sortOrder: original.sortOrder
+      sortOrder: original.sortOrder,
+      updatedAt: original.updatedAt
     };
   }
 
@@ -428,7 +377,7 @@ export function ProfilesPage({ profiles, onProfilesChange }: Props) {
           officialCli: {
             state: officialCliFlow,
             isCopied: Boolean(officialCliFlow.platform && copiedCommandPlatform === officialCliFlow.platform),
-            onCopy: copyActiveOfficialCliCommand,
+            onCopy: copyOfficialCliCommand,
             onRemarkChange: (remark) => setOfficialCliFlow((current) => ({ ...current, remark })),
             onClose: closeOfficialCliSetup,
             onSave: saveOfficialCliProfile,

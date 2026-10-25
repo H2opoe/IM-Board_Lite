@@ -19,6 +19,7 @@ pub(crate) fn reset_ai_generated_cache(
         .db
         .lock()
         .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    daily_cache::ensure_current_day(&conn, &day.day)?;
     reset_ai_generated_cache_conn(&conn, day, target_profiles)
 }
 
@@ -67,21 +68,33 @@ fn delete_regenerable_action_items_for_profile(
     profile_id: &str,
     day: &daily_cache::DashboardDay,
 ) -> anyhow::Result<()> {
-    // 历史未完成事项按来源消息发生时间判断；旧数据找不到来源消息时才退回 first_detected_at。
+    // 历史未完成事项优先按来源消息发生时间判断；如果来源消息已被跨天缓存清理，
+    // 带 source_message_ids 的未完成项按历史遗留项保留，避免重新同步误删用户仍需处理的事项。
     conn.execute(
         "delete from action_items
          where profile_id = ?1
            and not (
              status = 'open'
              and type in ('reply', 'task')
-             and carry_over = 1
-             and coalesce((
-               select min(daily_messages.timestamp)
-               from daily_messages
-               where daily_messages.id in (
-                 select value from json_each(action_items.source_message_ids)
+             and (
+               coalesce((
+                 select min(daily_messages.timestamp)
+                 from daily_messages
+                 where daily_messages.id in (
+                   select value from json_each(action_items.source_message_ids)
+                 )
+               ), cast(strftime('%s', first_detected_at) as integer), 0) < ?2
+               or (
+                 json_array_length(source_message_ids) > 0
+                 and not exists (
+                   select 1
+                   from daily_messages
+                   where daily_messages.id in (
+                     select value from json_each(action_items.source_message_ids)
+                   )
+                 )
                )
-             ), cast(strftime('%s', first_detected_at) as integer), 0) < ?2
+             )
            )",
         params![profile_id, day.day_start_timestamp],
     )?;
@@ -93,19 +106,31 @@ pub(crate) fn delete_regenerable_action_items(
     day: &daily_cache::DashboardDay,
 ) -> anyhow::Result<()> {
     // 全量重新同步会重建今日消息与分析；历史口径仍以来源消息发生时间为准。
+    // 历史来源消息可能已经被每日缓存清理移除，此时保留带来源 ID 的未完成项。
     conn.execute(
         "delete from action_items
          where not (
            status = 'open'
            and type in ('reply', 'task')
-           and carry_over = 1
-           and coalesce((
-             select min(daily_messages.timestamp)
-             from daily_messages
-             where daily_messages.id in (
-               select value from json_each(action_items.source_message_ids)
+           and (
+             coalesce((
+               select min(daily_messages.timestamp)
+               from daily_messages
+               where daily_messages.id in (
+                 select value from json_each(action_items.source_message_ids)
+               )
+             ), cast(strftime('%s', first_detected_at) as integer), 0) < ?1
+             or (
+               json_array_length(source_message_ids) > 0
+               and not exists (
+                 select 1
+                 from daily_messages
+                 where daily_messages.id in (
+                   select value from json_each(action_items.source_message_ids)
+                 )
+               )
              )
-           ), cast(strftime('%s', first_detected_at) as integer), 0) < ?1
+           )
          )",
         params![day.day_start_timestamp],
     )?;
@@ -120,6 +145,7 @@ pub(crate) fn clear_dashboard_cache(
         .db
         .lock()
         .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    daily_cache::ensure_current_day(&conn, &day.day)?;
     clear_dashboard_cache_conn(&conn, day)
 }
 
@@ -150,6 +176,7 @@ pub(crate) fn clear_profile_dashboard_cache(
         .db
         .lock()
         .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    daily_cache::ensure_current_day(&conn, &day.day)?;
     let tx = conn.unchecked_transaction()?;
     tx.execute(
         "delete from daily_stats where profile_id = 'aggregate' and metric in ('topics', 'keywords')",
@@ -221,6 +248,47 @@ mod tests {
         assert_eq!(count_rows(&conn, "daily_messages"), 0);
     }
 
+    #[test]
+    fn clear_dashboard_cache_preserves_open_item_when_historical_source_was_pruned() {
+        let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+        conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+            .expect("schema");
+        conn.execute(
+            "insert into daily_messages(
+               id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
+               timestamp, time_text, msg_type, content, content_hash
+             )
+             values('msg-today', '2026-05-06', 'profile-1', 'feishu', 'chat-1', '客户群', 1,
+                    'u-1', '客户', cast(strftime('%s', '2026-05-06 09:30:00') as integer),
+                    '09:30', 'text', '今天新产生的待办', 'hash-today')",
+            [],
+        )
+        .expect("messages");
+        conn.execute(
+            "insert into action_items(
+               id, type, status, priority, title, description, profile_id, platform, chat_id,
+               chat_name, source_message_ids, evidence_summary, carry_over, first_detected_at, last_updated_at
+             )
+             values('act-pruned-history', 'task', 'open', 'medium', '历史聊天待办', '来源消息已被跨天清理',
+                    'profile-1', 'feishu', 'chat-old', '旧客户群', '[\"msg-yesterday-pruned\"]',
+                    '历史证据', 0, '2026-05-06 10:00:00', '2026-05-06 10:00:00'),
+                   ('act-today', 'task', 'open', 'medium', '今天聊天待办', '今天聊天产生',
+                    'profile-1', 'feishu', 'chat-1', '客户群', '[\"msg-today\"]',
+                    '今天证据', 1, '2026-05-06 10:00:00', '2026-05-06 10:00:00')",
+            [],
+        )
+        .expect("action items");
+
+        let day = test_dashboard_day("2026-05-06");
+        clear_dashboard_cache_conn(&conn, &day).expect("clear cache");
+
+        assert_eq!(
+            action_item_ids(&conn),
+            vec!["act-pruned-history".to_owned()]
+        );
+        assert_eq!(count_rows(&conn, "daily_messages"), 0);
+    }
+
     fn test_dashboard_day(day: &str) -> daily_cache::DashboardDay {
         let day_start_timestamp = NaiveDate::parse_from_str(day, "%Y-%m-%d")
             .expect("day")
@@ -267,6 +335,7 @@ fn insert_daily_message(
          values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
          on conflict(id) do update set
            chat_name = excluded.chat_name,
+           is_group = excluded.is_group,
            sender_name = excluded.sender_name,
            time_text = excluded.time_text,
            msg_type = excluded.msg_type,
@@ -307,7 +376,21 @@ pub(crate) fn insert_messages(
         .db
         .lock()
         .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    insert_messages_conn(&conn, messages)
+}
+
+fn insert_messages_conn(
+    conn: &rusqlite::Connection,
+    messages: &[DailyMessage],
+) -> anyhow::Result<i64> {
     let tx = conn.unchecked_transaction()?;
+    if let Some(first) = messages.first() {
+        daily_cache::ensure_current_day(&tx, &first.day)?;
+        anyhow::ensure!(
+            messages.iter().all(|message| message.day == first.day),
+            "消息批次包含不同看板日期，已取消入库。"
+        );
+    }
     let mut inserted = 0;
     for message in messages {
         inserted += insert_daily_message(&tx, message)?;
@@ -398,4 +481,50 @@ fn map_profile(row: &rusqlite::Row<'_>) -> rusqlite::Result<ImProfile> {
         created_at: row.get(7)?,
         updated_at: row.get(8)?,
     })
+}
+
+#[cfg(test)]
+#[path = "stale_day_tests.rs"]
+mod stale_day_tests;
+
+#[cfg(test)]
+mod group_import_regression_tests {
+    use super::*;
+    #[test]
+    fn repeated_import_corrects_group_metadata_without_changing_message_identity_or_count() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+            .unwrap();
+        let mut message = DailyMessage {
+            id: "same".into(),
+            day: "2026-10-25".into(),
+            profile_id: "p".into(),
+            platform: "dingtalk".into(),
+            chat_id: "group".into(),
+            chat_name: "项目组".into(),
+            is_group: false,
+            sender_id: "D_peer".into(),
+            sender_name: "同事".into(),
+            timestamp: 50,
+            time_text: "time".into(),
+            msg_type: "text".into(),
+            content: "项目已确认".into(),
+            raw_type: None,
+            local_id: Some("message-id".into()),
+            raw_json: "{}".into(),
+            content_hash: "hash".into(),
+            partial: false,
+        };
+        insert_daily_message(&conn, &message).unwrap();
+        message.is_group = true;
+        insert_daily_message(&conn, &message).unwrap();
+        let row: (i64, i64) = conn
+            .query_row(
+                "select count(*),max(is_group) from daily_messages",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(row, (1, 1));
+    }
 }

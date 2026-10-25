@@ -1,5 +1,8 @@
+use crate::messages::message_type::is_system_message_type;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MessageNoiseKind {
+    SystemEvent,
     GroupMembership,
     ClientCompatibility,
     BotCheckin,
@@ -15,6 +18,13 @@ pub(crate) fn classify_message_noise(
     let trimmed = content.trim();
     if trimmed.is_empty() {
         return None;
+    }
+
+    if is_system_message_type(msg_type.unwrap_or_default()) {
+        if contains_group_announcement_notice(msg_type, trimmed) {
+            return Some(MessageNoiseKind::GroupAnnouncement);
+        }
+        return Some(MessageNoiseKind::SystemEvent);
     }
 
     if contains_group_membership_notice(trimmed) {
@@ -42,75 +52,65 @@ pub(crate) fn is_message_noise(msg_type: Option<&str>, content: &str, is_group: 
 
 pub(crate) fn contains_client_compatibility_notice(content: &str) -> bool {
     let compact = compact_text(content);
-    if compact.is_empty() {
-        return false;
+    let notice = compact.trim_end_matches(['。', '.', '!', '！']);
+    // Known complete client placeholders; surrounding business discussion stays readable.
+    for client in ["当前", "飞书", "钉钉", "企业微信"] {
+        for body in ["版本不支持显示内容", "版本不支持展示内容"] {
+            let prefix = format!("{client}{body}");
+            if let Some(tail) = notice.strip_prefix(&prefix) {
+                if matches!(
+                    tail,
+                    "" | "，请升级后查看"
+                        | ",请升级后查看"
+                        | "，请升级至最新版本查看"
+                        | ",请升级至最新版本查看"
+                ) {
+                    return true;
+                }
+            }
+        }
+        if client != "当前" {
+            if let Some(tail) = notice.strip_prefix(&format!("请升级{client}查看")) {
+                if matches!(tail, "" | "此消息" | "该消息" | "消息" | "内容") {
+                    return true;
+                }
+            }
+        }
     }
-
-    (compact.contains("版本不支持")
-        && (compact.contains("展示内容")
-            || compact.contains("显示内容")
-            || compact.contains("查看")
-            || compact.contains("升级")))
-        || ((compact.contains("飞书") || compact.contains("钉钉") || compact.contains("企业微信"))
-            && compact.contains("请升级")
-            && compact.contains("查看"))
+    false
 }
 
 pub(crate) fn contains_group_membership_notice(content: &str) -> bool {
     let compact = compact_text(content);
-    if compact.is_empty() {
-        return false;
-    }
-
-    // 入群、退群、邀请入群属于平台系统事件，不能参与 AI 分析、词云或看板聚合。
-    compact.contains("让我们一起欢迎新人")
-        || compact.contains("欢迎新人")
-        || compact.contains("加入了群聊")
-        || compact.contains("退出了群聊")
-        || compact.contains("退出群聊")
-        || compact.contains("移出群聊")
-        || (compact.contains("邀请") && compact.contains("加入群聊"))
-        || (compact.contains("通过") && compact.contains("加入群聊"))
-        || (compact.contains("二维码") && compact.contains("加入"))
-        || looks_like_group_welcome_template(&compact)
+    let notice = compact.trim_end_matches(['。', '.', '!', '！']);
+    // Legacy producer templates with identifiable shape, not generic welcome/invite words.
+    let qr_join = notice.ends_with("加入群聊")
+        && (notice.contains("通过扫描二维码")
+            || (notice.contains("通过") && notice.contains("分享的二维码")));
+    let dingtalk_welcome_card = compact.contains("让我们一起欢迎新人")
+        && compact.contains("群小钉")
+        && compact.contains("dingtalk://");
+    qr_join || dingtalk_welcome_card || looks_like_group_welcome_template(&compact)
 }
 
 fn contains_group_announcement_notice(msg_type: Option<&str>, content: &str) -> bool {
-    let compact = compact_text(content);
-    if compact.is_empty() {
-        return false;
-    }
-
-    let msg_type = msg_type.unwrap_or_default().trim().to_ascii_lowercase();
-    let system_type = matches!(
-        msg_type.as_str(),
-        "sys" | "system" | "notice" | "notification" | "10000" | "10002"
-    );
-    compact.contains("群公告")
-        || compact.contains("[系统]群公告")
-        || compact.contains("【系统】群公告")
-        || ((system_type || compact.starts_with("[系统]") || compact.starts_with("【系统】"))
-            && compact.contains("公告"))
+    is_system_message_type(msg_type.unwrap_or_default()) && compact_text(content).contains("公告")
 }
 
 fn contains_bot_checkin_notice(content: &str, is_group: bool) -> bool {
     let compact = compact_text(content);
-    if compact.is_empty() {
-        return false;
-    }
-
-    if is_group && compact == "签到" {
-        return true;
-    }
-
-    let has_checkin = compact.contains("签到");
-    let has_reward_signal = compact.contains("积分")
-        || compact.contains("连续签到")
-        || compact.contains("点击领取")
-        || compact.contains("更多惊喜好礼")
-        || compact.contains("当前会员总积分")
-        || compact.contains("今日第");
-    has_checkin && has_reward_signal
+    // The bare group command and complete automated receipt are intentionally low signal.
+    (is_group && compact == "签到")
+        || (compact.starts_with('@')
+            && compact.contains("今日第")
+            && compact.contains("个签到")
+            && compact.contains("当前会员总积分")
+            && compact.contains("已连续签到"))
+        || (compact.starts_with('@')
+            && compact.contains("🕹今日已签到")
+            && compact.contains("连续签到解锁")
+            && compact.contains("点击进入积分商城")
+            && compact.contains("https://"))
 }
 
 fn contains_jielong_notice(content: &str) -> bool {
@@ -127,7 +127,7 @@ fn contains_jielong_notice(content: &str) -> bool {
         .trim_start_matches("【链接】")
         .trim_start_matches("[文件]")
         .trim_start_matches("【文件】");
-    if normalized_prefix.starts_with("#接龙") || normalized_prefix.starts_with("接龙") {
+    if normalized_prefix.starts_with("#接龙") {
         return true;
     }
 
@@ -138,12 +138,10 @@ fn contains_jielong_notice(content: &str) -> bool {
 }
 
 fn looks_like_group_welcome_template(compact: &str) -> bool {
-    compact.contains("欢迎")
+    compact.starts_with("🖥欢迎")
         && compact.contains("加入")
-        && (compact.contains("群")
-            || compact.contains("新人")
-            || compact.contains("公测体验")
-            || compact.contains("萌新"))
+        && compact.contains("公测体验群")
+        && compact.contains("🔹如何参与公测")
 }
 
 fn numbered_list_line_count(content: &str) -> usize {
@@ -221,6 +219,10 @@ mod tests {
     fn keeps_real_discussion_from_noisy_groups() {
         for content in [
             "Steam官网被墙了，直接其他渠道找一个Steam的安装包，也一样的",
+            "请设计欢迎新人引导流程",
+            "明天邀请客户加入群聊讨论交付",
+            "当前版本不支持显示内容，我们下周修复",
+            "签到奖励积分规则需要产品确认",
             "softwareupdate --install-rosetta 在【终端】里执行下这个命令试试",
             "@通宝妈手工美食 早！不好意思，昨天有点事搞忘了，还在不，我一会过来拿",
         ] {

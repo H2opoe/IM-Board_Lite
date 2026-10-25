@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "assets": {
+    "llama-b8987-bin-macos-arm64.tar.gz": {
+      "sha256": "6cd6cba40cc3689a598cf06b5658e9256a7d75357a2c712ec15b17a22d950e3d",
+      "sizeBytes": 8592949,
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b8987/llama-b8987-bin-macos-arm64.tar.gz"
+    },
+    "llama-b8987-bin-macos-x64.tar.gz": {
+      "sha256": "7a5926ae54f8829c579955a583a21e11e26e14d557422c6bc4de1e3c58dacfc1",
+      "sizeBytes": 8626117,
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b8987/llama-b8987-bin-macos-x64.tar.gz"
+    }
+  }
+}

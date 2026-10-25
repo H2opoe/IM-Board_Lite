@@ -9,22 +9,6 @@ pub(crate) fn keyword_texts_from_message_content(content: &str) -> Vec<String> {
         return Vec::new();
     }
 
-    if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
-        let mut texts = Vec::new();
-        collect_message_content_strings(&value, None, &mut texts);
-        let texts = texts
-            .into_iter()
-            .map(|value| value.trim().to_owned())
-            .filter(|value| !value.is_empty())
-            .collect::<Vec<_>>();
-        if !texts.is_empty() {
-            return texts
-                .into_iter()
-                .flat_map(|text| sanitize_keyword_text(&text))
-                .collect();
-        }
-    }
-
     let labeled_texts = extract_labeled_message_content(trimmed);
     if !labeled_texts.is_empty() {
         return labeled_texts
@@ -39,12 +23,8 @@ pub(crate) fn keyword_texts_from_message_content(content: &str) -> Vec<String> {
 pub(crate) fn should_skip_keyword_message(content: &str, msg_type: Option<&str>) -> bool {
     let lower = content.to_ascii_lowercase();
     let trimmed = content.trim();
-    let compact = trimmed
-        .chars()
-        .filter(|ch| !ch.is_whitespace())
-        .collect::<String>();
     let msg_type = msg_type.unwrap_or_default().trim().to_ascii_lowercase();
-    is_system_keyword_message_type(&msg_type)
+    crate::messages::message_type::is_system_message_type(&msg_type)
         || lower.contains("<sysmsg")
         || lower.contains("<revokemsg")
         || lower.contains("<appmsg")
@@ -52,27 +32,10 @@ pub(crate) fn should_skip_keyword_message(content: &str, msg_type: Option<&str>)
         || lower.contains("<videomsg")
         || lower.contains("<img ")
         || lower.contains("<emoji")
-        || lower.contains("今日已签到")
-        || lower.contains("连续签到")
-        || lower.contains("积分商城")
-        || lower.contains("点击领取")
-        || lower.contains("点击进入")
-        || lower.contains("点击查看您的答题记录")
-        || lower.contains("积分商城")
         || looks_like_structural_payload(trimmed)
         || looks_like_pure_link_or_domain(trimmed)
-        || compact.contains("撤回了一条消息")
-        || compact.contains("修改群名")
         || message_noise::is_message_noise(Some(&msg_type), trimmed, true)
         || contains_media_placeholder(trimmed)
-        || contains_unsupported_client_notice(trimmed)
-}
-
-fn is_system_keyword_message_type(msg_type: &str) -> bool {
-    matches!(
-        msg_type,
-        "sys" | "system" | "notice" | "notification" | "10000" | "10002"
-    )
 }
 
 fn looks_like_structural_payload(content: &str) -> bool {
@@ -150,14 +113,6 @@ pub(crate) fn contains_disallowed_media_content(content: &str) -> bool {
         || content.contains("【语音通话】")
         || content.contains("[视频通话]")
         || content.contains("【视频通话】")
-}
-
-pub(crate) fn contains_unsupported_client_notice(content: &str) -> bool {
-    message_noise::contains_client_compatibility_notice(content)
-}
-
-pub(crate) fn contains_group_membership_notice(content: &str) -> bool {
-    message_noise::contains_group_membership_notice(content)
 }
 
 fn sanitize_keyword_text(content: &str) -> Vec<String> {

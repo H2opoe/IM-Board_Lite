@@ -41,9 +41,11 @@ function componentStats(component) {
   const tree = createHash("sha256");
   for (const file of files) {
     const content = file.kind === "symlink" ? Buffer.from(file.content) : readFileSync(file.path);
-    const lfsPointer = file.kind === "file" ? parseLfsPointer(content) : undefined;
-    file.verifiedSize = lfsPointer?.size ?? file.size;
-    file.sha256 = lfsPointer?.sha256 ?? createHash("sha256").update(content).digest("hex");
+    if (file.kind === "file" && parseLfsPointer(content)) {
+      fail(`Git LFS payload is missing: ${relative(appRoot, file.path)}; run git lfs pull before packaging`);
+    }
+    file.verifiedSize = file.size;
+    file.sha256 = createHash("sha256").update(content).digest("hex");
     tree.update(`${file.name.split(sep).join("/")}\\0${file.kind}\\0${file.verifiedSize}\\0${file.sha256}\\n`);
   }
   return {
@@ -72,15 +74,14 @@ if (!Array.isArray(runtimeManifest.components) || runtimeManifest.components.len
 for (const component of runtimeManifest.components) {
   if (!component.id || !component.version || !component.platform || !component.path) fail("component metadata is incomplete");
 }
-if (runtimeManifest.edition === "lite" && runtimeManifest.components.some((component) => component.id !== "llama.cpp")) {
-  fail("Lite runtime may only contain llama.cpp");
+if (runtimeManifest.edition === "lite" && runtimeManifest.components.some((component) => component.id !== "llama.cpp" && !(component.id === "dws" && ((runtimeManifest.target === "windows" && component.platform === "win-x64") || (runtimeManifest.target === "macos" && ["darwin-arm64", "darwin-x64"].includes(component.platform)))))) {
+  fail("Lite runtime may only contain llama.cpp and a matching DWS adapter");
 }
 
-const hostTarget = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : undefined;
-if (hostTarget !== runtimeManifest.target) {
-  console.log(
-    `Runtime payload verification skipped on ${process.platform}; release target is ${runtimeManifest.target}.`,
-  );
+const options = process.argv.slice(2);
+if (options.some((option) => option !== "--metadata-only")) fail("unsupported verification option");
+if (options.includes("--metadata-only")) {
+  console.log("Runtime metadata verified only; payload NOT verified. This mode must not be used for packaging.");
   process.exit(0);
 }
 

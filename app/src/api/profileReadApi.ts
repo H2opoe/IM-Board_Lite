@@ -7,32 +7,27 @@ export async function testProfileRead(profile: ImProfile): Promise<string> {
     if (profile.platform === "wecom") {
       const contacts = await runBridgeCommand(profile, "list-contacts", {});
       const todayChats = await runBridgeCommand(profile, "list-chats", todaySearchArgs("200"));
-      return formatReadSuccess(`通讯录${countArray(contacts.data)}人；今天群聊${countGroups(todayChats.data)}个`);
+      const warnings = [...(contacts.warnings ?? []), ...(todayChats.warnings ?? [])];
+      if (warnings.length) throw new Error(warnings.join("；"));
+      return formatReadSuccess(`通讯录${countArray(contacts.data)}人；今天会话${countArray(todayChats.data)}个；群聊${countGroups(todayChats.data)}个`);
     }
     if (profile.platform === "feishu") {
       const todaySessions = await runBridgeCommand(profile, "search-messages", todaySearchArgs("20"));
       return formatReadSuccess(`今天会话${countArray(todaySessions.data)}个；群聊${countGroups(todaySessions.data)}个`);
     }
     if (profile.platform === "dingtalk") {
-      const groups = await searchDingtalkTestGroups(profile);
-      const groupList = groups.slice(0, 12);
-      let messageCount = 0;
-      let todayChatCount = 0;
-      for (const group of groupList) {
-        const chatId = recordString(group, ["chatId", "openConversationId", "conversationId", "id"]);
-        if (!chatId) continue;
-        const messages = await runBridgeCommand(profile, "fetch-messages", {
-          chat: chatId,
-          chat_name: recordString(group, ["chatName", "title", "name"]) || chatId,
-          ...todaySearchArgs("50"),
-          forward: "true"
-        });
-        const groupMessageCount = countArray(messages.data);
-        messageCount += groupMessageCount;
-        if (groupMessageCount > 0) todayChatCount += 1;
-        if (messageCount > 0 && todayChatCount >= 3) break;
+      const result = await runBridgeCommand(profile, "search-messages", todaySearchArgs("100"));
+      if (result.warnings?.length) throw new Error(result.warnings.join("；"));
+      const messages = arrayData(result.data);
+      if (messages.length === 0) {
+        return "钉钉CLI已响应，但当前授权范围内未检索到今天的消息；这不代表钉钉今天没有会话，请核对授权账号和消息读取权限。";
       }
-      return formatReadSuccess(`今天会话${todayChatCount}个；群聊${groups.length}个`);
+      const chats = new Map<string, unknown>();
+      for (const message of messages) {
+        const chatId = recordString(message, ["chatId"]);
+        if (chatId) chats.set(chatId, message);
+      }
+      return formatReadSuccess(`今天消息${messages.length}条；会话${chats.size}个；群聊${countGroups([...chats.values()])}个`);
     }
     const sessions = await runBridgeCommand(profile, "list-chats", { limit: "20" });
     return formatReadSuccess(`最近会话${countArray(sessions.data)}个`);
@@ -80,7 +75,7 @@ function todaySearchArgs(limit: string) {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
+  end.setSeconds(end.getSeconds() + 1, 0);
   return {
     start_time: formatLocalDateTime(start),
     end_time: formatLocalDateTime(end),
@@ -206,43 +201,6 @@ function flattenRecords(value: unknown): Array<Record<string, unknown>> {
   };
   visit(value);
   return records;
-}
-
-async function searchDingtalkTestGroups(profile: ImProfile) {
-  const groups: unknown[] = [];
-  const seen = new Set<string>();
-  for (const query of dingtalkSearchQueries(profile)) {
-    const result = await runBridgeCommand(profile, "search-groups", { query });
-    for (const group of arrayData(result.data)) {
-      const chatId = recordString(group, ["chatId", "chat_id", "openConversationId", "conversationId", "id"]);
-      if (!chatId || seen.has(chatId)) continue;
-      seen.add(chatId);
-      groups.push(group);
-    }
-  }
-  return groups;
-}
-
-function dingtalkSearchQueries(profile: ImProfile) {
-  const queries: string[] = [];
-  for (const item of arrayData(profile.configJson.syncSearchQueries)) {
-    if (typeof item === "string") pushDingtalkSearchQuery(queries, item);
-  }
-  pushDingtalkSearchQuery(queries, recordString(profile.configJson, ["syncSearchQuery"]));
-  const identity = recordObject(profile.configJson.accountIdentity);
-  for (const key of ["orgName", "corpName", "tenantName", "userName"]) {
-    pushDingtalkSearchQuery(queries, recordString(identity, [key]));
-  }
-  pushDingtalkSearchQuery(queries, recordString(profile.configJson, ["remark"]));
-  if (profile.label !== "钉钉") pushDingtalkSearchQuery(queries, profile.label);
-  if (queries.length === 0) pushDingtalkSearchQuery(queries, "公司");
-  return queries;
-}
-
-function pushDingtalkSearchQuery(queries: string[], query: string) {
-  const normalized = query.trim();
-  if (!normalized || normalized === "钉钉" || queries.includes(normalized)) return;
-  queries.push(normalized);
 }
 
 function countGroups(data: unknown) {

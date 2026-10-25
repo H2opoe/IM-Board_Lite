@@ -57,12 +57,6 @@ fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> 
                 .join("bin")
                 .join("lark-cli"),
         );
-        candidates.push(
-            package_root
-                .join(package_dir(spec.package))
-                .join("scripts")
-                .join("run.js"),
-        );
     }
     if spec.platform == "dingtalk" {
         candidates.push(
@@ -77,37 +71,18 @@ fn official_cli_candidates(root: &Path, spec: &PlatformCliSpec) -> Vec<PathBuf> 
                 .join("vendor")
                 .join("dws"),
         );
-        candidates.push(
-            package_root
-                .join(package_dir(spec.package))
-                .join("bin")
-                .join("dws.js"),
-        );
     }
     candidates.push(package_root.join(".bin").join(spec.bin));
     candidates
 }
 
 fn is_dependency_free_cli(path: &Path) -> bool {
-    let extension = path
-        .extension()
-        .and_then(|value| value.to_str())
-        .unwrap_or_default()
-        .to_ascii_lowercase();
-    if extension == "js" {
-        return false;
-    }
-    if let Ok(bytes) = std::fs::read(path) {
-        let head = String::from_utf8_lossy(&bytes[..bytes.len().min(96)]).to_ascii_lowercase();
-        if head.contains("/usr/bin/env node") || head.contains("node ") {
-            return false;
-        }
-    }
-    true
+    crate::runtime::cli_candidate::is_dependency_free_cli(path, false)
 }
 
-fn is_usable_cli_candidate(path: &Path, _spec: &PlatformCliSpec) -> bool {
+fn is_usable_cli_candidate(path: &Path, spec: &PlatformCliSpec) -> bool {
     is_dependency_free_cli(path)
+        && (spec.platform != "dingtalk" || super::dws_bundle::verified(path))
 }
 
 pub fn official_cli_version(cli_path: &Path, spec: &PlatformCliSpec) -> Option<String> {
@@ -160,16 +135,69 @@ pub fn writable_cli_install_root(
     spec: &PlatformCliSpec,
 ) -> Result<PathBuf, String> {
     let install_root = app_dir.join("OfficialCli").join(spec.platform);
-    std::fs::create_dir_all(&install_root).map_err(|err| {
-        format!(
-            "无法创建{}官方CLI更新目录 {}：{err}",
-            platform_label(spec.platform),
-            install_root.display()
-        )
-    })?;
+    std::fs::create_dir_all(install_root.parent().ok_or("官方CLI安装目录无效。")?).map_err(
+        |err| {
+            format!(
+                "无法创建{}官方CLI更新目录 {}：{err}",
+                platform_label(spec.platform),
+                install_root.display()
+            )
+        },
+    )?;
     Ok(install_root)
 }
 
 pub(super) fn package_dir(package: &str) -> PathBuf {
     package.split('/').collect()
+}
+
+#[cfg(test)]
+mod pinned_dws_tests {
+    use super::*;
+    #[test]
+    fn dws_cannot_bypass_the_pinned_runtime_with_a_native_candidate() {
+        let dir = tempfile::tempdir().unwrap();
+        let binary = dir.path().join("dws");
+        std::fs::write(&binary, b"#!/bin/sh\nexit 0\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&binary, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        assert!(is_dependency_free_cli(&binary));
+        assert!(!is_usable_cli_candidate(
+            &binary,
+            cli_spec("dingtalk").unwrap()
+        ));
+    }
+}
+
+#[cfg(test)]
+mod candidate_selection_tests {
+    use super::*;
+
+    #[test]
+    fn invalid_preferred_entry_does_not_hide_the_next_native_candidate() {
+        let dir = tempfile::tempdir().unwrap();
+        let spec = cli_spec("feishu").unwrap();
+        let candidates = official_cli_candidates(dir.path(), spec);
+        let invalid = &candidates[0];
+        let usable = &candidates[1];
+        std::fs::create_dir_all(invalid).unwrap();
+        std::fs::write(usable, b"synthetic native fixture").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(usable, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let selected = candidates
+            .iter()
+            .find(|path| path.exists() && is_usable_cli_candidate(path, spec));
+        assert_eq!(selected, Some(usable));
+        std::fs::remove_file(usable).unwrap();
+        std::fs::write(usable, b"").unwrap();
+        assert!(candidates
+            .iter()
+            .all(|path| !is_usable_cli_candidate(path, spec)));
+    }
 }

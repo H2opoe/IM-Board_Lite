@@ -1,28 +1,31 @@
 # IM-Board Lite macOS 打包要求
 
-## 版本号
+## 版本与身份
 
-- Lite macOS 应用包版本号：`2.2.3-lite`
-- Lite macOS 系统版本号：`2.2.3`
-- Lite macOS 发布展示版本号：`2.2.3-lite`
-- 打包脚本、验包脚本、关于窗口展示统一通过 `app/scripts/release-config.mjs` 的 `releaseConfig()` 读取版本配置。
-- npm、Cargo、Tauri 的静态清单仍必须保留版本字段：修改版本时必须同步 `app/package.json`、`app/package-lock.json`、`app/src-tauri/tauri.conf.json`、`app/src-tauri/Cargo.toml` 和 `app/src-tauri/Cargo.lock`。
-- 平台不单独写入应用版本号，只写入最终产物文件名。
+版本以 `app/release-manifest.json` 为来源，通过 `app/scripts/release-config.mjs` 的 `releaseConfig()` 读取。当前应用系统版本为 3.0.0，发布标签为 3.0.0-lite；这是 2026-09-30 的配置快照。
 
-## Lite macOS 版
+修改版本时同步 npm、Cargo、Tauri 静态清单，并运行 `npm run verify:release-config`。`releaseLabel` 用于展示和产物名；系统版本不含 Lite 或 beta 后缀。Bundle ID 为 `com.local.im-board-lite`，产品名为 `IM-Board Lite`。macOS 构建号由 `macosBundleVersion` 配置，必须递增。
 
-- 分支/目录：`codex/lite`，`/Volumes/SanDisk SSD Plus/Applications Data/Codex/IM-Board-lite`
-- 应用包版本号：`2.2.3-lite`
-- 应用系统版本号：`2.2.3`
-- 发布展示版本号：`2.2.3-lite`
-- 产物命名：`IM-Board_2.2.3-lite_mac_universal.dmg`
-- 打包目标：`universal-apple-darwin`
-- Lite 功能边界：不包含微信账号绑定、微信同步入口、微信 bridge 源码或微信专用运行时。
-- CLI 内置边界：Lite macOS 版不得包含微信 CLI、独立 Python 运行时或 `third_party/wechat_bridge`；飞书、钉钉、企微 CLI 通过应用内后台热更新获取。
-- 运行时边界：非 macOS 自带的运行时依赖需要随 App 打包，不能依赖用户手动安装。
-- 验证重点：确认 DMG 内不包含用户 profile/账号状态，并由打包脚本逐项扫描，确认没有微信 bridge、微信 CLI、微信专用 Python 运行时或超出 Lite 边界的 CLI 资源。
-- Lite Windows 版打包要求以 `/Volumes/SanDisk SSD Plus/Applications Data/Codex/IM-Board-lite-win/PACKAGING.md` 为准，避免 macOS Lite 目录误承接 Windows 产物。
-- App 身份要求：`CFBundleIdentifier`、codesign Identifier 必须稳定为 `com.local.im-board`，`CFBundleName`/`CFBundleDisplayName` 必须为 `IM-Board`，`CFBundleShortVersionString` 必须使用不带 beta 后缀的系统版本号，`CFBundleVersion` 必须使用递增数字构建号。
-- Beta 版规则：beta 字符串只允许出现在 `package.json` 的 `release.label`、关于窗口、更新日志和安装包文件名中，不能写入 macOS `.app` 的 Bundle ID、codesign Identifier、`CFBundleShortVersionString`。
-- 发布前必须使用 `npm run package:macos` 或在 Tauri 打包后运行 `npm run repair:macos-app -- <IM-Board.app路径> --dmg <最终DMG路径>`，确保最终 `.app` 删除 `LSRequiresCarbon` 后重新 codesign，DMG 也来自修复后的 `.app`。
-- 发布前必须对最终 `.app` 运行 `npm run verify:macos-app -- <IM-Board.app路径>`，确认 Info.plist 没有 `LSRequiresCarbon`、签名封口覆盖 Info.plist 和资源、LaunchServices 能按当前 bundle 重新注册。
+工作树分支：`codex/lite`。在该工作树的 `app` 目录执行以下命令。
+
+## 构建及验包
+
+```sh
+npm run package:macos
+```
+
+目标为 `universal-apple-darwin`。最终 DMG 路径及名称由 releaseConfig 计算；此命令先构建，再修复并验证 App，最后发布由修复后 App 制作的 DMG。
+
+单独修复使用 `npm run repair:macos-app -- "<App路径>" --dmg "<最终DMG路径>"`，验证使用 `npm run verify:macos-app -- "<App路径>"`。默认 App 路径使用当前产品名。
+
+修复先复制到相邻独占目录，删除 LSRequiresCarbon、更新身份后只重签外层，保留内部签名、权限及执行模式；`--deep` 只用于签名验证。候选 App 和 DMG 均验证通过后才替换旧产物；普通失败保留旧产物，恢复失败会保留并报告备份。强制终止／断电的恢复不属于普通回滚承诺。
+
+最终发行还需核验 Developer ID、公证、Gatekeeper 和安装后的实际功能。脚本的 ad-hoc 签名或 spctl 警告不代表发行验收通过。
+
+## 资源与功能边界
+
+Lite 保留飞书、钉钉和企业微信；不得包含个人微信源码、绑定／同步、CLI 或专用 Python 运行时。运行 `npm run verify:lite-boundary`，并核对最终安装包的内容。
+
+当前 Tauri 资源清单包含对应平台的 llama.cpp、DWS 及许可材料；完整版另含个人平台资源。运行时下载固定大小和 SHA-256，镜像必须提供相同字节。飞书／企业微信的官方 CLI 安装更新由各自运行时管理器负责。源码边界、依赖和资源清单检查仍须与真实发行包内容共同核验。
+
+Demo 仅保留桌面壳、网页展示、主题与示例数据，资源清单为空，不能按正式后端版本同步。最终包不得携带用户账号、聊天记录、凭据、调试缓存或跨平台载荷。

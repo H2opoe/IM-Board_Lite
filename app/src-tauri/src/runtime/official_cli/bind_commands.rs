@@ -3,7 +3,7 @@ use std::path::Path;
 pub fn default_bind_command(platform: &str, cli_path: &Path, config_dir: &Path) -> String {
     match platform {
         "wecom" => format!(
-            "WECOM_CLI_CONFIG_DIR='{}' '{}' init",
+            "WECOM_CLI_CONFIG_DIR='{}' '{}' auth init",
             shell_single_quote(config_dir),
             shell_single_quote(cli_path)
         ),

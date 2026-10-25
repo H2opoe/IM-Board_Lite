@@ -1,0 +1,17 @@
+Source notice 1
+attr.rs:1-4
+bloom.rs:1-4
+build.rs:1-4
+builder.rs:1-4
+context.rs:1-4
+lib.rs:1-4
+matching.rs:1-4
+nth_index_cache.rs:1-4
+parser.rs:1-4
+sink.rs:1-4
+tree.rs:1-4
+visitor.rs:1-4
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */

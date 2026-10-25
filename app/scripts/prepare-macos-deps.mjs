@@ -1,10 +1,9 @@
-import { createWriteStream, existsSync, mkdirSync, rmSync } from "node:fs";
+import { ensureRuntimeArchive } from "./runtime-download.mjs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { pipeline } from "node:stream/promises";
-import { Readable } from "node:stream";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeRoot = join(root, "runtime", "llama.cpp");
@@ -30,31 +29,8 @@ function run(command, args, options = {}) {
   }
 }
 
-async function download(url, to) {
-  console.log(`[macos-deps] downloading ${url}`);
-  const response = await fetch(url);
-  if (!response.ok || !response.body) {
-    throw new Error(`${url} returned ${response.status}`);
-  }
-  mkdirSync(dirname(to), { recursive: true });
-  await pipeline(Readable.fromWeb(response.body), createWriteStream(to));
-}
-
 async function ensureArchive(platform, archivePath) {
-  if (existsSync(archivePath)) return;
-  const officialUrl = `https://github.com/ggml-org/llama.cpp/releases/download/${version}/${platform.archive}`;
-  const mirrors = [`https://gh-proxy.com/${officialUrl}`, `https://gh.llkk.cc/${officialUrl}`, officialUrl];
-  const errors = [];
-  for (const url of mirrors) {
-    try {
-      await download(url, archivePath);
-      return;
-    } catch (error) {
-      errors.push(`${url}: ${error.message}`);
-      if (existsSync(archivePath)) rmSync(archivePath, { force: true });
-    }
-  }
-  throw new Error(`failed to download ${platform.archive}: ${errors.join("; ")}`);
+  await ensureRuntimeArchive(archivePath, platform.archive);
 }
 
 async function ensureExtracted(platform) {

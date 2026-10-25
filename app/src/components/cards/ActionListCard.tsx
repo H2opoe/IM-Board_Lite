@@ -37,7 +37,11 @@ function actionSourceTime(item: ActionItem) {
 }
 
 function actionCompletedTime(item: ActionItem) {
-  const timestamp = new Date(item.completedAt || item.lastUpdatedAt).getTime();
+  // SQLite datetime('now') writes UTC without a timezone; source times stay local.
+  const updatedAt = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(item.lastUpdatedAt)
+    ? `${item.lastUpdatedAt.replace(" ", "T")}Z`
+    : item.lastUpdatedAt;
+  const timestamp = new Date(item.completedAt || updatedAt).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 

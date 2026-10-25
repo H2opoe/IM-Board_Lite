@@ -1,7 +1,3 @@
-use std::collections::BTreeSet;
-use std::fs;
-use std::path::{Component, Path, PathBuf};
-
 use tauri::State;
 
 #[tauri::command]
@@ -32,7 +28,7 @@ pub fn create_profile_draft(
     }
 
     let now = chrono::Local::now();
-    let id = format!("{platform}_{}", now.timestamp_millis());
+    let id = format!("{platform}_{}", uuid::Uuid::new_v4());
     let profile_dir = state.app_dir.join("Profiles").join(&id);
     let cache_dir = state.cache_dir.join(&id);
     let mut config = serde_json::json!({
@@ -95,24 +91,47 @@ pub fn upsert_profile(state: State<'_, AppState>, profile: ImProfile) -> Result<
         return Err("不支持的账号平台。".to_owned());
     }
     let conn = state.db.lock().map_err(|err| err.to_string())?;
-    let saved = profile_manager::upsert_profile(&conn, profile).map_err(|err| err.to_string())?;
-    state
-        .binding_drafts
-        .lock()
-        .map_err(|err| err.to_string())?
-        .remove(&saved.id);
-    Ok(saved)
+    let mut drafts = state.binding_drafts.lock().map_err(|err| err.to_string())?;
+    profile_manager::drafts::save_registered(&conn, &mut drafts, profile)
 }
 
 #[tauri::command]
 pub fn delete_profile(state: State<'_, AppState>, profile_id: String) -> Result<(), String> {
-    let deleted_profile = {
-        let mut conn = state.db.lock().map_err(|err| err.to_string())?;
-        profile_manager::delete_profile(&mut conn, &profile_id).map_err(|err| err.to_string())?
-    };
-    if let Some(profile) = deleted_profile {
-        cleanup_profile_runtime_files(&profile, &state.app_dir, &state.cache_dir)?;
+    profile_manager::runtime_paths::validate_profile_id(&profile_id)?;
+    let _activity = state.profile_activity.begin_delete()?;
+    // Keep the established DB -> drafts lock order through planning and cleanup.
+    // Other account saves/registrations cannot acquire a new reference mid-delete.
+    let mut conn = state.db.lock().map_err(|err| err.to_string())?;
+    let mut drafts = state.binding_drafts.lock().map_err(|err| err.to_string())?;
+    if let Some(profile) =
+        profile_manager::profile_by_id(&conn, &profile_id).map_err(|err| err.to_string())?
+    {
+        let profiles = profile_manager::list_profiles(&mut conn).map_err(|err| err.to_string())?;
+        let others = profiles
+            .iter()
+            .chain(drafts.values())
+            .filter(|item| item.id != profile_id);
+        let paths = profile_manager::runtime_paths::cleanup_plan(
+            &profile,
+            others,
+            &state.app_dir,
+            &state.cache_dir,
+        )?;
+        let encoded =
+            profile_manager::cleanup_queue::encode(&paths, &state.app_dir, &state.cache_dir)
+                .map_err(|err| err.to_string())?;
+        profile_manager::delete_profile(&mut conn, &profile_id, Some(&encoded))
+            .map_err(|err| err.to_string())?;
+        drafts.remove(&profile_id);
     }
+    let active_drafts: Vec<_> = drafts.values().cloned().collect();
+    profile_manager::cleanup_queue::retry_pending(
+        &mut conn,
+        &active_drafts,
+        &state.app_dir,
+        &state.cache_dir,
+        Some(&profile_id),
+    )?;
     Ok(())
 }
 
@@ -125,76 +144,7 @@ fn platform_label(platform: &str) -> &'static str {
     }
 }
 
-fn cleanup_profile_runtime_files(
-    profile: &ImProfile,
-    app_dir: &Path,
-    cache_dir: &Path,
-) -> Result<(), String> {
-    let mut targets = BTreeSet::new();
-    let profile_root = app_dir.join("Profiles");
-    for path in profile_runtime_path_candidates(profile, cache_dir) {
-        if let Some(target) = managed_profile_root(&profile_root, &path) {
-            targets.insert(target);
-        }
-        if let Some(target) = managed_profile_root(cache_dir, &path) {
-            targets.insert(target);
-        }
-    }
-    targets.insert(profile_root.join(&profile.id));
-    targets.insert(cache_dir.join(&profile.id));
-
-    for target in targets {
-        if target.exists() {
-            fs::remove_dir_all(&target)
-                .map_err(|err| format!("删除账号本地缓存 {} 失败：{err}", target.display()))?;
-        }
-    }
-    Ok(())
-}
-
-fn profile_runtime_path_candidates(profile: &ImProfile, cache_dir: &Path) -> Vec<PathBuf> {
-    let mut candidates = Vec::new();
-    for key in [
-        "profileDir",
-        "configDir",
-        "configPath",
-        "keysPath",
-        "cacheDir",
-        "tmpDir",
-    ] {
-        if let Some(path) = profile
-            .config_json
-            .get(key)
-            .and_then(|value| value.as_str())
-        {
-            candidates.push(expand_tilde_path(path));
-        }
-    }
-    candidates.push(cache_dir.join(&profile.id));
-    candidates
-}
-
-fn expand_tilde_path(path: &str) -> PathBuf {
-    if path == "~" {
-        if let Some(home) = dirs::home_dir() {
-            return home;
-        }
-    }
-    if let Some(rest) = path.strip_prefix("~/") {
-        if let Some(home) = dirs::home_dir() {
-            return home.join(rest);
-        }
-    }
-    PathBuf::from(path)
-}
-
-fn managed_profile_root(managed_root: &Path, path: &Path) -> Option<PathBuf> {
-    let relative = path.strip_prefix(managed_root).ok()?;
-    let first = relative
-        .components()
-        .find_map(|component| match component {
-            Component::Normal(value) => Some(value),
-            _ => None,
-        })?;
-    Some(managed_root.join(first))
+#[tauri::command]
+pub fn release_profile_draft(state: State<'_, AppState>, profile_id: String) -> Result<(), String> {
+    crate::profile_manager::drafts::release(&state, &profile_id)
 }

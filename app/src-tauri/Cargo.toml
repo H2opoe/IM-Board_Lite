@@ -22,6 +22,8 @@ futures = "0.3"
 jieba-rs = "0.9"
 keyring = "4.1.6"
 regex = "1"
+ring = "=0.17.14"
+zeroize = "=1.8.2"
 rusqlite = { version = "0.32", features = ["backup", "bundled", "chrono"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 serde = { version = "1", features = ["derive"] }
@@ -31,9 +33,9 @@ sysinfo = { version = "0.39.6", default-features = false, features = ["disk", "s
 tar = "0.4"
 tauri = { version = "2", default-features = false, features = ["wry", "tray-icon", "image-png", "compression", "dynamic-acl"] }
 thiserror = "2"
-tokio = { version = "1", features = ["process", "rt-multi-thread", "macros", "sync", "time"] }
+tokio = { version = "1.53.3", features = ["process", "rt-multi-thread", "macros", "sync", "time", "io-util"] }
 uuid = { version = "1", features = ["v4", "serde"] }
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9.1.0", default-features = false, features = ["deflate"] }
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-single-instance = "2"
 
@@ -44,3 +46,13 @@ tempfile = "3"
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSImage"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "=0.62.2", features = ["Win32_Foundation", "Win32_System_Threading", "Win32_System_JobObjects", "Win32_System_Diagnostics_ToolHelp", "Win32_Security"] }
+
+[target.'cfg(unix)'.dependencies]
+macos-owned-process = { path = "../native/macos-owned-process" }
+libc = "=0.2.186"
+
+[target.'cfg(unix)'.dev-dependencies]
+macos-owned-process = { path = "../native/macos-owned-process", features = ["test-support"] }

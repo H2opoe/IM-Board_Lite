@@ -14,19 +14,10 @@ export function useConnectorCapabilities() {
       .then((capabilities) => {
         if (!active) return;
         setOptions(
-          capabilities.map((capability) => ({
-            id: capability.platform,
-            label: capability.label,
-            auth: capability.authDescription,
-            runtimeDependency: capability.runtimeDependency,
-            permissions: capability.permissions,
-            commands: capability.commands,
-            healthCheck: capability.healthCheck,
-            editions: capability.editions,
-            operatingSystems: capability.operatingSystems,
-            architectures: capability.architectures,
-            compatibleRuntimeVersion: capability.compatibleRuntimeVersion,
-            maxParallelReads: capability.maxParallelReads
+          capabilities.map(({ platform, authDescription, ...capability }) => ({
+            ...capability,
+            id: platform,
+            auth: authDescription
           }))
         );
       })

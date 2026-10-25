@@ -38,17 +38,15 @@ export const emptyConfig: AiConfig = {
 };
 
 export function normalizeConfig(config: Partial<AiConfig> & Pick<AiConfig, "provider">): AiConfig {
-  const normalizedProvider = config.provider === "火山引擎" ? "火山方舟" : config.provider;
-  const provider = normalizedProvider === "本地模型"
-    ? "其他本地模型"
-    : providerOptions.includes(normalizedProvider)
-      ? normalizedProvider
-      : "本地DeepSeek";
+  const normalizedProvider = config.provider === "火山引擎"
+    ? "火山方舟"
+    : config.provider === "本地模型" ? "其他本地模型" : config.provider;
+  const provider = providerOptions.includes(normalizedProvider) ? normalizedProvider : "本地DeepSeek";
   const defaults = providerDefaults[provider];
-  const providerChanged = provider !== config.provider;
+  const unsupportedProvider = provider !== normalizedProvider;
   const currentModel = config.model ?? "";
   const currentBaseUrl = config.baseUrl ?? "";
-  const model = providerChanged || !currentModel.trim() || (provider === "本地DeepSeek" && legacyLocalDeepseekModels.has(currentModel))
+  const model = unsupportedProvider || !currentModel.trim() || (provider === "本地DeepSeek" && legacyLocalDeepseekModels.has(currentModel))
     ? defaults.model
     : currentModel;
   return {
@@ -58,7 +56,7 @@ export function normalizeConfig(config: Partial<AiConfig> & Pick<AiConfig, "prov
     apiKey: provider.includes("本地") ? "" : (config.apiKey ?? ""),
     apiKeyConfigured: Boolean(config.apiKeyConfigured),
     clearApiKey: Boolean(config.clearApiKey),
-    baseUrl: providerChanged || !currentBaseUrl.trim() ? defaults.baseUrl : currentBaseUrl,
+    baseUrl: unsupportedProvider || !currentBaseUrl.trim() ? defaults.baseUrl : currentBaseUrl,
     model,
     analysisBatchSize: normalizeAnalysisBatchSize(provider, config.analysisBatchSize ?? 0),
     enabled: config.enabled ?? true
@@ -75,4 +73,19 @@ function normalizeAnalysisBatchSize(provider: string, value: number): number {
   if (provider !== "本地DeepSeek" && value === legacyOtherModelDefaultBatchSize) return fallback;
   const requested = Number.isFinite(value) && value > 0 ? value : fallback;
   return Math.max(minAnalysisBatchSize, Math.min(max, requested));
+}
+
+
+export function configForProvider(config: AiConfig, provider: string): AiConfig {
+  const defaults = providerDefaults[provider];
+  if (provider === config.provider) return config;
+  return {
+    ...config,
+    provider,
+    apiKey: provider.includes("本地") ? "" : config.apiKey,
+    clearApiKey: false,
+    baseUrl: defaults ? defaults.baseUrl : config.baseUrl,
+    model: defaults && (!config.model.trim() || Object.values(providerDefaults).some(item => item.model === config.model)) ? defaults.model : config.model,
+    analysisBatchSize: defaultAnalysisBatchSize(provider)
+  };
 }

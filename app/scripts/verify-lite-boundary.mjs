@@ -3,6 +3,8 @@ import { dirname, join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import { maskWecomOfficialDomain } from "./lite-enterprise-domains.mjs";
+
 const appRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = join(appRoot, "..");
 const contentPatterns = [
@@ -83,7 +85,7 @@ function verifyWorkingTree() {
     }
     const content = readFileSync(file);
     if (looksBinary(content)) continue;
-    const text = content.toString("utf8");
+    const text = maskWecomOfficialDomain(name, content.toString("utf8"));
     if (contentPatterns.some((pattern) => pattern.test(text))) {
       violations.push(`forbidden source marker: ${name}`);
     }
@@ -99,8 +101,11 @@ function verifyWorkingTree() {
   if (violations.length > 0) fail(violations);
 }
 
-function verifyReachableHistory() {
-  const commits = spawnSync("git", ["rev-list", "--all"], { cwd: repoRoot, encoding: "utf8" });
+function verifyReachableHistory(ref) {
+  const resolved = spawnSync("git", ["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`], { cwd: repoRoot, encoding: "utf8" });
+  if (resolved.status !== 0) fail([`unable to resolve requested history ref: ${ref}`]);
+  const sha = resolved.stdout.trim();
+  const commits = spawnSync("git", ["rev-list", sha], { cwd: repoRoot, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
   if (commits.status !== 0) fail(["unable to enumerate Git history"]);
   const violations = [];
   for (const commit of commits.stdout.split(/\r?\n/).filter(Boolean)) {
@@ -108,6 +113,7 @@ function verifyReachableHistory() {
       cwd: repoRoot,
       encoding: "utf8",
     });
+    if (objects.status !== 0) fail([`unable to read tree: ${commit}`]);
     for (const name of objects.stdout.split(/\r?\n/).filter(Boolean)) {
       if (pathPatterns.some((pattern) => pattern.test(name))) {
         violations.push(`${commit.slice(0, 12)} forbidden historical path: ${name}`);
@@ -119,7 +125,11 @@ function verifyReachableHistory() {
       { cwd: repoRoot, encoding: "utf8" },
     );
     if (grep.status === 0) {
-      violations.push(`${commit.slice(0, 12)} forbidden historical source content`);
+      const badLine = grep.stdout.split(/\r?\n/).filter(Boolean).some((line) => {
+        const match = line.match(/^[^:]+:([^:]+):(.*)$/);
+        return !match || contentPatterns.some((pattern) => pattern.test(maskWecomOfficialDomain(match[1], match[2])));
+      });
+      if (badLine) violations.push(`${commit.slice(0, 12)} forbidden historical source content`);
     } else if (grep.status !== 1) {
       violations.push(`${commit.slice(0, 12)} history content scan failed`);
     }
@@ -127,6 +137,15 @@ function verifyReachableHistory() {
   if (violations.length > 0) fail(violations.slice(0, 100));
 }
 
+const args = process.argv.slice(2);
+let history = false;
+let ref = "HEAD";
+for (let index = 0; index < args.length; index += 1) {
+  if (args[index] === "--history") history = true;
+  else if (args[index] === "--ref" && args[index + 1] && !args[index + 1].startsWith("-")) ref = args[++index];
+  else fail([`unsupported or incomplete option: ${args[index]}`]);
+}
+if (ref !== "HEAD" && !history) fail(["--ref requires --history"]);
 verifyWorkingTree();
-if (process.argv.includes("--history")) verifyReachableHistory();
+if (history) verifyReachableHistory(ref);
 console.log(`Lite boundary verified${process.argv.includes("--history") ? " including reachable Git history" : ""}.`);

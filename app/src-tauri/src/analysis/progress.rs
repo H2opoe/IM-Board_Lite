@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use tauri::{Emitter, State};
+use tauri::State;
 
 use crate::messages::normalizer::{platform_label, profile_remark};
 use crate::storage::models::ImProfile;
@@ -101,8 +101,8 @@ pub(crate) fn emit_sync_progress(
     current: i64,
     total: i64,
 ) {
-    let _ = app.emit(
-        "sync-progress",
+    crate::sync::status::emit_progress(
+        app,
         SyncProgress::new(
             profile.id.clone(),
             profile.label.clone(),
@@ -143,8 +143,8 @@ fn emit_aggregate_progress(
     current: i64,
     total: i64,
 ) {
-    let _ = app.emit(
-        "sync-progress",
+    crate::sync::status::emit_progress(
+        app,
         SyncProgress::new(
             "aggregate".to_owned(),
             "全平台".to_owned(),

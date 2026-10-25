@@ -1,5 +1,3 @@
-use std::fs;
-
 use chrono::Local;
 use tauri::{Manager, State};
 
@@ -15,6 +13,7 @@ pub async fn run_bridge_command(
     state: State<'_, AppState>,
     mut request: BridgeRequest,
 ) -> Result<BridgeEnvelope, String> {
+    let _activity = state.profile_activity.acquire()?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     if request.command != "init-profile" {
         if let Some(profile_id) = request.profile.as_ref().map(|profile| profile.id.clone()) {
@@ -30,7 +29,14 @@ pub async fn run_bridge_command(
     }
 
     let diagnostic_request = request.clone();
-    let envelope = bridge_runner::run_bridge(request, resource_dir, state.cache_dir.clone())
+    let envelope = state
+        .profile_activity
+        .bridge_scope()?
+        .run(bridge_runner::run_bridge(
+            request,
+            resource_dir,
+            state.cache_dir.clone(),
+        ))
         .await
         .map_err(|err| {
             let message = err.to_string();
@@ -48,7 +54,14 @@ pub async fn deploy_platform_bridge(
     platform: String,
     profile_id: String,
 ) -> Result<PlatformDeployment, String> {
+    let _activity = state.profile_activity.acquire()?;
     let platform = platform.trim().to_ascii_lowercase();
+    crate::profile_manager::drafts::resolve_for_command(
+        &state,
+        &profile_id,
+        &platform,
+        "auth-status",
+    )?;
     let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let progress = PlatformCliProgressContext {
@@ -76,15 +89,14 @@ pub async fn deploy_platform_bridge(
         Some(&progress),
     )
     .await
-    .map_err(|err| {
+    .inspect_err(|err| {
         crate::diagnostics::record_cli_lifecycle_error(
             &state,
             &platform,
             Some(profile_id.clone()),
             "deploy_platform_bridge",
-            &err,
+            err,
         );
-        err
     })?;
     let current_version = official_cli::official_cli_version(&cli_path, spec).unwrap_or_default();
     let config_dir = state
@@ -247,38 +259,4 @@ pub async fn update_platform_cli(
         source: spec.source.to_owned(),
         checked_at: Local::now().to_rfc3339(),
     })
-}
-
-#[tauri::command]
-pub fn cleanup_unused_platform_cli(
-    state: State<'_, AppState>,
-    platform: String,
-) -> Result<bool, String> {
-    let platform = platform.trim().to_ascii_lowercase();
-    let spec = official_cli::cli_spec(&platform).ok_or_else(|| "暂不支持该平台。".to_owned())?;
-    let bound_count = {
-        let conn = state.db.lock().map_err(|err| err.to_string())?;
-        conn.query_row(
-            "select count(*) from profiles where platform = ?1",
-            [spec.platform],
-            |row| row.get::<_, i64>(0),
-        )
-        .map_err(|err| err.to_string())?
-    };
-    if bound_count > 0 {
-        return Ok(false);
-    }
-
-    let install_root = state.app_dir.join("OfficialCli").join(spec.platform);
-    if install_root.exists() {
-        fs::remove_dir_all(&install_root).map_err(|err| {
-            format!(
-                "删除{}缓存 {} 失败：{err}",
-                official_cli::platform_cli_label(spec.platform),
-                install_root.display()
-            )
-        })?;
-    }
-    official_cli::remove_platform_cli_staging_dirs(&state.app_dir, spec.platform)?;
-    Ok(true)
 }

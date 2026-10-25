@@ -1,0 +1,3724 @@
+{
+  "schemaVersion": 1,
+  "source": "Fixed upstream licensing materials supplement for exact locked registry crates. This is not a complete SBOM or legal compatibility decision.",
+  "completionCriteria": "A complete component entry has full applicable license terms associated with its locked package and retains published copyright/license notices. Canonical terms do not establish actual copyright. Additional SDK and source-distribution obligations remain separate.",
+  "components": [
+    {
+      "name": "alloc-stdlib",
+      "version": "0.2.2",
+      "registryChecksum": "94fb8275041c72129eb51b7d0322c29b8387a0386127718b096429201a5d6ece",
+      "licenseDeclaration": "BSD-3-Clause",
+      "selectedLicense": "BSD-3-Clause",
+      "upstream": {
+        "repository": "https://github.com/dropbox/rust-alloc-no-stdlib",
+        "commit": "6032b6a9b20e03737135c55a0270ccffcc1438ef",
+        "pathInVcs": "alloc-stdlib",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/dropbox--rust-alloc-no-stdlib/6032b6a9b20e03737135c55a0270ccffcc1438ef/LICENSE",
+          "url": "https://raw.githubusercontent.com/dropbox/rust-alloc-no-stdlib/6032b6a9b20e03737135c55a0270ccffcc1438ef/LICENSE",
+          "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae",
+          "bytes": 1483,
+          "kind": "upstream-license-terms",
+          "licenseId": "BSD-3-Clause",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Daniel Reiter Horn <danielrh@dropbox.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/alloc-stdlib/alloc-stdlib-0.2.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "block2",
+      "version": "0.6.2",
+      "registryChecksum": "cdeb9d870516001442e364c5220d3574d2da8dc765554b4a617230d33fa58ef5",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "b4167b582b2f75f9a1be75495c41b765344fd03c",
+        "pathInVcs": "crates/block2",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/spdx-license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "url": "https://raw.githubusercontent.com/spdx/license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "sha256": "b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+          "bytes": 1078,
+          "kind": "canonical-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [
+        "Mads Marquart <mads@marquart.dk>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/block2/block2-0.6.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "brotli",
+      "version": "8.0.2",
+      "registryChecksum": "4bd8b9603c7aa97359dbd97ecf258968c95f3adddd6db2f7e7a5bef101c84560",
+      "licenseDeclaration": "BSD-3-Clause AND MIT",
+      "selectedLicense": "BSD-3-Clause AND MIT",
+      "upstream": {
+        "repository": "https://github.com/dropbox/rust-brotli",
+        "commit": "769efcbca153bfc4737f1986459da5d9d23368b8",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/dropbox--rust-brotli/769efcbca153bfc4737f1986459da5d9d23368b8/LICENSE.BSD-3-Clause",
+          "url": "https://raw.githubusercontent.com/dropbox/rust-brotli/769efcbca153bfc4737f1986459da5d9d23368b8/LICENSE.BSD-3-Clause",
+          "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae",
+          "bytes": 1483,
+          "kind": "upstream-license-terms",
+          "licenseId": "BSD-3-Clause",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Daniel Reiter Horn <danielrh@dropbox.com>",
+        "The Brotli Authors"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/brotli/brotli-8.0.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "component-upstream-license-terms",
+      "termAssociation": "Fixed upstream BSD-3-Clause text and authentic packaged LICENSE.MIT jointly satisfy the unchanged BSD-3-Clause AND MIT declaration.",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro",
+          "applicabilityIsGraphAuthority": false
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro",
+          "applicabilityIsGraphAuthority": false
+        }
+      ]
+    },
+    {
+      "name": "convert_case",
+      "version": "0.4.0",
+      "registryChecksum": "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/rutrum/convert-case",
+        "commit": "300d9eef9e8c970e15f324afbc3df8b6a4ebbf71",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "canonical/spdx-license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "url": "https://raw.githubusercontent.com/spdx/license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "sha256": "b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+          "bytes": 1078,
+          "kind": "canonical-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [],
+      "packageAuthors": [
+        "David Purdum <purdum41@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/convert_case/convert_case-0.4.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "dispatch2",
+      "version": "0.3.1",
+      "registryChecksum": "1e0e367e4e7da84520dedcac1901e4da967309406d1e51017ae1abfb97adbd38",
+      "licenseDeclaration": "Zlib OR Apache-2.0 OR MIT",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "8852b424193ca41602281b3d7540d7c8ed51e49a",
+        "pathInVcs": "crates/dispatch2",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [
+        "Mads Marquart <mads@marquart.dk>",
+        "Mary <mary@mary.zone>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/dispatch2/dispatch2-0.3.1.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "fxhash",
+      "version": "0.2.1",
+      "registryChecksum": "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c",
+      "licenseDeclaration": "Apache-2.0/MIT",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/cbreeden/fxhash",
+        "commit": "537570af68de22d2f4bbdd5bee5d6e07268e6f42",
+        "pathInVcs": "",
+        "revisionEvidence": "all-packaged-source-files-match-fixed-commit"
+      },
+      "files": [
+        {
+          "path": "components/fxhash-0.2.1/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/fxhash/fxhash-0.2.1.crate",
+          "sha256": "b94a8299fc7a86f2b6101247fb64d51d1a2eeafa358dd5164c66f40068ad88f3",
+          "bytes": 495,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "5d392ff1ac69a18c9beb41720ecbfd56f7792a1ec4321428e73757d4283f5a61",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "885b72a1c977dc1c3ff4e0652719e62b6d8c3e713403e571afd581283f72df7b",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/fxhash/fxhash-0.2.1.crate",
+                  "sourceArchiveSha256": "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "cbreeden <github@u.breeden.cc>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/fxhash/fxhash-0.2.1.crate",
+      "sourceArchiveChecksumVerified": true,
+      "termAssociation": "Packaged lib.rs explicitly links Apache-2.0 official terms; retained copyright is the actual upstream source header.",
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "source-linked-official-terms",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "include-flate-codegen",
+      "version": "0.3.3",
+      "registryChecksum": "5e7148f24ef8922cc0e5574ebb908729ccdd3a110c440a45165733fedadd9969",
+      "licenseDeclaration": "Apache-2.0",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/SOF3/include-flate",
+        "commit": "046f0abdd3a7f7f9cc46afdf7a16ea2d9b66a9b9",
+        "pathInVcs": "codegen",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/SOF3--include-flate/046f0abdd3a7f7f9cc46afdf7a16ea2d9b66a9b9/LICENSE",
+          "url": "https://raw.githubusercontent.com/SOF3/include-flate/046f0abdd3a7f7f9cc46afdf7a16ea2d9b66a9b9/LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "components/include-flate-codegen-0.3.3/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/include-flate-codegen/include-flate-codegen-0.3.3.crate",
+          "sha256": "12ce7649b093ed9f06a4131a5fe6d8aad52ecad85ef58e66e279e40151763ce9",
+          "bytes": 630,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "507837fa25b23cc635966214fdc8cff309aa16a30f4fa5347ef8e5b8309bf68d",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 15,
+                  "sourceFileSha256": "e101655f562db30dd8f8a9a97a3910af336092e90dc414ebc2ab016b253e3532",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/include-flate-codegen/include-flate-codegen-0.3.3.crate",
+                  "sourceArchiveSha256": "5e7148f24ef8922cc0e5574ebb908729ccdd3a110c440a45165733fedadd9969"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "SOFe <sofe2038@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/include-flate-codegen/include-flate-codegen-0.3.3.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "include-flate-compress",
+      "version": "0.3.3",
+      "registryChecksum": "74783a9ed407e844e99d5e7a57bd650acbfa124cf6e97ffd790ba59d8ab8e7ff",
+      "licenseDeclaration": "Apache-2.0",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/SOF3/include-flate",
+        "commit": "046f0abdd3a7f7f9cc46afdf7a16ea2d9b66a9b9",
+        "pathInVcs": "compress",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/SOF3--include-flate/046f0abdd3a7f7f9cc46afdf7a16ea2d9b66a9b9/LICENSE",
+          "url": "https://raw.githubusercontent.com/SOF3/include-flate/046f0abdd3a7f7f9cc46afdf7a16ea2d9b66a9b9/LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "components/include-flate-compress-0.3.3/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/include-flate-compress/include-flate-compress-0.3.3.crate",
+          "sha256": "f1cd0b893b3ff35896dae53943ab5de9e44d75ccf84130cb0e31622a9ae44897",
+          "bytes": 641,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "3c4193440bb1c808c653f4ac925eb84d61a2155759f081c3b4bd5f4ed418c6f0",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 15,
+                  "sourceFileSha256": "2fece899e13c4ad8379bfa942c6ec03d25398d5ae6452f1edd47fb91d2772972",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/include-flate-compress/include-flate-compress-0.3.3.crate",
+                  "sourceArchiveSha256": "74783a9ed407e844e99d5e7a57bd650acbfa124cf6e97ffd790ba59d8ab8e7ff"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "SOFe <sofe2038@gmail.com>",
+        "Kento Oki <hrn832@protonmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/include-flate-compress/include-flate-compress-0.3.3.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "jieba-macros",
+      "version": "0.9.0",
+      "registryChecksum": "a29cfc5dcd898604c6f80363411fa6b6b08e27d1d253d6225b9cb6702ea02fc0",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/messense/jieba-rs",
+        "commit": "d05cbcd758bf3891647c94a1a67391c5c73129af",
+        "pathInVcs": "jieba-macros",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/messense--jieba-rs/d05cbcd758bf3891647c94a1a67391c5c73129af/LICENSE",
+          "url": "https://raw.githubusercontent.com/messense/jieba-rs/d05cbcd758bf3891647c94a1a67391c5c73129af/LICENSE",
+          "sha256": "92257c8d1c7a059fa02720b34fce017574a990bed14cee8f565597f4fbfb1f13",
+          "bytes": 1101,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/jieba-macros/jieba-macros-0.9.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "jieba-rs",
+      "version": "0.9.0",
+      "registryChecksum": "3245d6e9d1d5facbd6a23848d6b67e3439738ccbb4fa5a3d65da315ba1a910a2",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/messense/jieba-rs",
+        "commit": "d05cbcd758bf3891647c94a1a67391c5c73129af",
+        "pathInVcs": "jieba",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/messense--jieba-rs/d05cbcd758bf3891647c94a1a67391c5c73129af/LICENSE",
+          "url": "https://raw.githubusercontent.com/messense/jieba-rs/d05cbcd758bf3891647c94a1a67391c5c73129af/LICENSE",
+          "sha256": "92257c8d1c7a059fa02720b34fce017574a990bed14cee8f565597f4fbfb1f13",
+          "bytes": 1101,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/jieba-rs/jieba-rs-0.9.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "mac",
+      "version": "0.1.1",
+      "registryChecksum": "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4",
+      "licenseDeclaration": "MIT/Apache-2.0",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/reem/rust-mac",
+        "commit": "66afc663b68a65633ea165c742b5a9c6734581c2",
+        "pathInVcs": "",
+        "revisionEvidence": "all-packaged-source-files-match-fixed-release-tag"
+      },
+      "files": [
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Jonathan Reem <jonathan.reem@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/mac/mac-0.1.1.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "match_token",
+      "version": "0.1.0",
+      "registryChecksum": "88a9689d8d44bf9964484516275f5cd4c9b59457a6940c1d5d0ecbb94510a36b",
+      "licenseDeclaration": "MIT OR Apache-2.0",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/servo/html5ever",
+        "commit": "0e4e125b8672abad4ff14d1e0043d3be9305af6a",
+        "pathInVcs": "match_token",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/servo--html5ever/0e4e125b8672abad4ff14d1e0043d3be9305af6a/AUTHORS",
+          "url": "https://raw.githubusercontent.com/servo/html5ever/0e4e125b8672abad4ff14d1e0043d3be9305af6a/AUTHORS",
+          "sha256": "02930215f07fb88b2ec9503a2a1b2345fdcbd351f525c652583fb9df6bc271b9",
+          "bytes": 724,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/servo--html5ever/0e4e125b8672abad4ff14d1e0043d3be9305af6a/COPYRIGHT",
+          "url": "https://raw.githubusercontent.com/servo/html5ever/0e4e125b8672abad4ff14d1e0043d3be9305af6a/COPYRIGHT",
+          "sha256": "c6b91503fc0a9852e688b56eef715dba9a1ab4b074e86875af2471ce0163b2e5",
+          "bytes": 422,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/servo--html5ever/0e4e125b8672abad4ff14d1e0043d3be9305af6a/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/servo/html5ever/0e4e125b8672abad4ff14d1e0043d3be9305af6a/LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/servo--html5ever/0e4e125b8672abad4ff14d1e0043d3be9305af6a/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/servo/html5ever/0e4e125b8672abad4ff14d1e0043d3be9305af6a/LICENSE-MIT",
+          "sha256": "86dd7f026f916daf7511e39951ad8ea8cf55a8db67ae64060dacf829761c18f3",
+          "bytes": 1076,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/match_token/match_token-0.1.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2",
+      "version": "0.6.4",
+      "registryChecksum": "3a12a8ed07aefc768292f076dc3ac8c48f3781c8f2d5851dd3d98950e8c5a89f",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "8852b424193ca41602281b3d7540d7c8ed51e49a",
+        "pathInVcs": "crates/objc2",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/spdx-license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "url": "https://raw.githubusercontent.com/spdx/license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "sha256": "b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+          "bytes": 1078,
+          "kind": "canonical-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [
+        "Mads Marquart <mads@marquart.dk>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2/objc2-0.6.4.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2-app-kit",
+      "version": "0.3.2",
+      "registryChecksum": "d49e936b501e5c5bf01fda3a9452ff86dc3ea98ad5f283e1455153142d97518c",
+      "licenseDeclaration": "Zlib OR Apache-2.0 OR MIT",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+        "pathInVcs": "framework-crates/objc2-app-kit",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2-app-kit/objc2-app-kit-0.3.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2-core-foundation",
+      "version": "0.3.2",
+      "registryChecksum": "2a180dd8642fa45cdb7dd721cd4c11b1cadd4929ce112ebd8b9f5803cc79d536",
+      "licenseDeclaration": "Zlib OR Apache-2.0 OR MIT",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+        "pathInVcs": "framework-crates/objc2-core-foundation",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2-core-foundation/objc2-core-foundation-0.3.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2-core-graphics",
+      "version": "0.3.2",
+      "registryChecksum": "e022c9d066895efa1345f8e33e584b9f958da2fd4cd116792e15e07e4720a807",
+      "licenseDeclaration": "Zlib OR Apache-2.0 OR MIT",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+        "pathInVcs": "framework-crates/objc2-core-graphics",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2-core-graphics/objc2-core-graphics-0.3.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2-encode",
+      "version": "4.1.0",
+      "registryChecksum": "ef25abbcd74fb2609453eb695bd2f860d389e457f67dc17cafc8b8cbc89d0c33",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "8d214f5477365ffcbcbb7de058c86ed9a518efb7",
+        "pathInVcs": "crates/objc2-encode",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/spdx-license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "url": "https://raw.githubusercontent.com/spdx/license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "sha256": "b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+          "bytes": 1078,
+          "kind": "canonical-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [
+        "Mads Marquart <mads@marquart.dk>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2-encode/objc2-encode-4.1.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2-exception-helper",
+      "version": "0.1.1",
+      "registryChecksum": "c7a1c5fbb72d7735b076bb47b578523aedc40f3c439bea6dfd595c089d79d98a",
+      "licenseDeclaration": "Zlib OR Apache-2.0 OR MIT",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "8d214f5477365ffcbcbb7de058c86ed9a518efb7",
+        "pathInVcs": "crates/objc2-exception-helper",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [
+        "Mads Marquart <mads@marquart.dk>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2-exception-helper/objc2-exception-helper-0.1.1.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2-foundation",
+      "version": "0.3.2",
+      "registryChecksum": "e3e0adef53c21f888deb4fa59fc59f7eb17404926ee8a6f59f5df0fd7f9f3272",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+        "pathInVcs": "framework-crates/objc2-foundation",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/spdx-license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "url": "https://raw.githubusercontent.com/spdx/license-list-data/d46e94e2c78ceede1cfc63cfa0396472d2798d4c/text/MIT.txt",
+          "sha256": "b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+          "bytes": 1078,
+          "kind": "canonical-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2-foundation/objc2-foundation-0.3.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2-io-kit",
+      "version": "0.3.2",
+      "registryChecksum": "33fafba39597d6dc1fb709123dfa8289d39406734be322956a69f0931c73bb15",
+      "licenseDeclaration": "Zlib OR Apache-2.0 OR MIT",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+        "pathInVcs": "framework-crates/objc2-io-kit",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2-io-kit/objc2-io-kit-0.3.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "objc2-web-kit",
+      "version": "0.3.2",
+      "registryChecksum": "b2e5aaab980c433cf470df9d7af96a7b46a9d892d521a2cbbb2f8a4c16751e7f",
+      "licenseDeclaration": "Zlib OR Apache-2.0 OR MIT",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/madsmtm/objc2",
+        "commit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+        "pathInVcs": "framework-crates/objc2-web-kit",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/madsmtm--objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54",
+          "bytes": 1339,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": false,
+      "gaps": [
+        {
+          "kind": "upstream-complete-license-file-absent",
+          "detail": "Fixed upstream root and package supply a license declaration but no complete component license file. Canonical terms are separate evidence."
+        },
+        {
+          "kind": "actual-copyright-notice-not-published",
+          "detail": "No actual component copyright statement found in locked package or fixed upstream licensing files. Package authors are recorded as metadata, never substituted for copyright holders."
+        }
+      ],
+      "additionalReview": [
+        {
+          "kind": "apple-sdk-derived-bindings",
+          "detail": "Upstream LICENSE.md identifies Apple SDK derivation and unresolved SDK distribution implications. Canonical Rust license terms do not settle this SDK scope.",
+          "url": "https://www.apple.com/legal/sla/docs/xcode.pdf"
+        }
+      ],
+      "packageAuthors": [],
+      "sourceArchiveUrl": "https://static.crates.io/crates/objc2-web-kit/objc2-web-kit-0.3.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "canonical-terms-with-component-gaps",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "phf",
+      "version": "0.10.1",
+      "registryChecksum": "fabbf1ead8a5bcbc20f5f8b939ee3f5b0f6f281b6ad3468b84656b658b455259",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/sfackler/rust-phf",
+        "commit": "bed01538ae576876f11189d541875d228acef9e8",
+        "pathInVcs": "phf",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/sfackler--rust-phf/bed01538ae576876f11189d541875d228acef9e8/LICENSE",
+          "url": "https://raw.githubusercontent.com/sfackler/rust-phf/bed01538ae576876f11189d541875d228acef9e8/LICENSE",
+          "sha256": "d8870d5e2ab20fc50915b711c5aa7588131c9abcc1bcb980da1efd7486522a46",
+          "bytes": 1086,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Steven Fackler <sfackler@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/phf/phf-0.10.1.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "phf",
+      "version": "0.8.0",
+      "registryChecksum": "3dfb61232e34fcb633f43d12c58f83c1df82962dcdfa565a4e866ffc17dafe12",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/sfackler/rust-phf",
+        "commit": "81c7cc5b48649108428671d3b8ad151f6fbdb359",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/sfackler--rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE",
+          "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE",
+          "sha256": "d8870d5e2ab20fc50915b711c5aa7588131c9abcc1bcb980da1efd7486522a46",
+          "bytes": 1086,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Steven Fackler <sfackler@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/phf/phf-0.8.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "phf_codegen",
+      "version": "0.8.0",
+      "registryChecksum": "cbffee61585b0411840d3ece935cce9cb6321f01c45477d30066498cd5e1a815",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/sfackler/rust-phf",
+        "commit": "81c7cc5b48649108428671d3b8ad151f6fbdb359",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/sfackler--rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE",
+          "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE",
+          "sha256": "d8870d5e2ab20fc50915b711c5aa7588131c9abcc1bcb980da1efd7486522a46",
+          "bytes": 1086,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Steven Fackler <sfackler@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/phf_codegen/phf_codegen-0.8.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "build-exclusive"
+        }
+      ]
+    },
+    {
+      "name": "phf_generator",
+      "version": "0.10.0",
+      "registryChecksum": "5d5285893bb5eb82e6aaf5d59ee909a06a16737a8970984dd7746ba9283498d6",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/sfackler/rust-phf",
+        "commit": "3ea14b2166553ad6e7b9afe7244144f5d661b6c6",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/sfackler--rust-phf/3ea14b2166553ad6e7b9afe7244144f5d661b6c6/LICENSE",
+          "url": "https://raw.githubusercontent.com/sfackler/rust-phf/3ea14b2166553ad6e7b9afe7244144f5d661b6c6/LICENSE",
+          "sha256": "d8870d5e2ab20fc50915b711c5aa7588131c9abcc1bcb980da1efd7486522a46",
+          "bytes": 1086,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Steven Fackler <sfackler@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/phf_generator/phf_generator-0.10.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "phf_generator",
+      "version": "0.8.0",
+      "registryChecksum": "17367f0cc86f2d25802b2c26ee58a7b23faeccf78a396094c13dced0d0182526",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/sfackler/rust-phf",
+        "commit": "81c7cc5b48649108428671d3b8ad151f6fbdb359",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/sfackler--rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE",
+          "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE",
+          "sha256": "d8870d5e2ab20fc50915b711c5aa7588131c9abcc1bcb980da1efd7486522a46",
+          "bytes": 1086,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Steven Fackler <sfackler@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/phf_generator/phf_generator-0.8.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "build-exclusive"
+        }
+      ]
+    },
+    {
+      "name": "phf_macros",
+      "version": "0.10.0",
+      "registryChecksum": "58fdf3184dd560f160dd73922bea2d5cd6e8f064bf4b13110abd81b03697b4e0",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/sfackler/rust-phf",
+        "commit": "3cc6f05cb07933af4cf886645d1170bdcb306b6b",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/sfackler--rust-phf/3cc6f05cb07933af4cf886645d1170bdcb306b6b/LICENSE",
+          "url": "https://raw.githubusercontent.com/sfackler/rust-phf/3cc6f05cb07933af4cf886645d1170bdcb306b6b/LICENSE",
+          "sha256": "d8870d5e2ab20fc50915b711c5aa7588131c9abcc1bcb980da1efd7486522a46",
+          "bytes": 1086,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Steven Fackler <sfackler@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/phf_macros/phf_macros-0.10.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "phf_shared",
+      "version": "0.10.0",
+      "registryChecksum": "b6796ad771acdc0123d2a88dc428b5e38ef24456743ddb1744ed628f9815c096",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/sfackler/rust-phf",
+        "commit": "3ea14b2166553ad6e7b9afe7244144f5d661b6c6",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/sfackler--rust-phf/3ea14b2166553ad6e7b9afe7244144f5d661b6c6/LICENSE",
+          "url": "https://raw.githubusercontent.com/sfackler/rust-phf/3ea14b2166553ad6e7b9afe7244144f5d661b6c6/LICENSE",
+          "sha256": "d8870d5e2ab20fc50915b711c5aa7588131c9abcc1bcb980da1efd7486522a46",
+          "bytes": 1086,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Steven Fackler <sfackler@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/phf_shared/phf_shared-0.10.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "phf_shared",
+      "version": "0.8.0",
+      "registryChecksum": "c00cf8b9eafe68dde5e9eaa2cef8ee84a9336a47d566ec55ca16589633b65af7",
+      "licenseDeclaration": "MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/sfackler/rust-phf",
+        "commit": "81c7cc5b48649108428671d3b8ad151f6fbdb359",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/sfackler--rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE",
+          "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE",
+          "sha256": "d8870d5e2ab20fc50915b711c5aa7588131c9abcc1bcb980da1efd7486522a46",
+          "bytes": 1086,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Steven Fackler <sfackler@gmail.com>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/phf_shared/phf_shared-0.8.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "selectors",
+      "version": "0.24.0",
+      "registryChecksum": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416",
+      "licenseDeclaration": "MPL-2.0",
+      "selectedLicense": "MPL-2.0",
+      "upstream": {
+        "repository": "https://github.com/servo/servo",
+        "commit": "e82d7868d999d84f6d59719e4c397e5252aecb85",
+        "pathInVcs": "components/selectors",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/servo--servo/e82d7868d999d84f6d59719e4c397e5252aecb85/LICENSE",
+          "url": "https://raw.githubusercontent.com/servo/servo/e82d7868d999d84f6d59719e4c397e5252aecb85/LICENSE",
+          "sha256": "1af2d2b02d9c86030d29ed77117ca7a1b0e4b6ff35bcf8eeb124867d0f5cb59e",
+          "bytes": 15649,
+          "kind": "upstream-license-terms",
+          "licenseId": "MPL-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "components/selectors-0.24.0/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+          "sha256": "8ce52ebba83a8e508b40e298b3c055dc4ac2c5599fbf8f5b03c5990a66767924",
+          "bytes": 394,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": false,
+          "excerpts": [
+            {
+              "excerptSha256": "766674381e88a468d55e07de3596987391cf0e8beebe51baf4fddf11078785b3",
+              "hasCopyrightStatement": false,
+              "occurrences": [
+                {
+                  "packagePath": "attr.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "673af51fabf8c4074096561ac3f74fbe31c6398285ff705c7812e2a8853fbd3c",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "bloom.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "91ab1e288ef50db8bec09fde5e2a028c2a78342ee0e73e318bd5da2d0f44029c",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "build.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "36ba09a8d2089d0cae8e310829ecf0e94bcbaa87e775a6578c7d2f0459a5b6ca",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "builder.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "0fde1e45490c060c185acb8255454aabf5c2b557159a6ef90ffd95cb8e6cdd6d",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "context.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "e903fe71fecbf13cef3219440d8e9c5c4bbd1450ef8aba4ec45265bf930a974a",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "36852ef793d9130d118bd6e7d9588bf5f5895de0ed463e3ed88c04a7687938ea",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "matching.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "4b5952e9dac7a9e70bfa84107813e7521e479414241129c3dd1b65336bc9a6a4",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "nth_index_cache.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "47850e287c05d4b051b6a8e8e4eb4c148654b9c56029c674b9896cb8ba0d9b04",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "parser.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "071e2290716f5ebb230188c14849ddda70a3d1c41d6bb356ea0bafd156879956",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "sink.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "34d4cd4127a6e4979eba11f8e6c41dbc527c0a996be78bd2e3167916c025a04b",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "tree.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "a459dbfdc2f59da2831605b5145851f1a7a6c2a4bf83197a981b88ba2c2daca7",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                },
+                {
+                  "packagePath": "visitor.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "24e92ac85cb89373d88733c4212c6fae6eb0ffc6dc7622d07f598f0c5589fce7",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+                  "sourceArchiveSha256": "0c37578180969d00692904465fb7f6b3d50b9a2b952b87c23d0e2e5cb5013416"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [
+        {
+          "kind": "MPL-source-availability",
+          "detail": "Distribution of executable covered software requires source availability and notice under MPL-2.0 section 3.2. The exact unmodified published crate is available at sourceArchiveUrl and fixed upstream repository commit."
+        }
+      ],
+      "packageAuthors": [
+        "The Servo Project Developers"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/selectors/selectors-0.24.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": false,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "siphasher",
+      "version": "0.3.11",
+      "registryChecksum": "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d",
+      "licenseDeclaration": "MIT/Apache-2.0",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/jedisct1/rust-siphash",
+        "commit": "55ff379462517d8ec790bd9ce5382d2a1c364ee0",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/jedisct1--rust-siphash/55ff379462517d8ec790bd9ce5382d2a1c364ee0/COPYING",
+          "url": "https://raw.githubusercontent.com/jedisct1/rust-siphash/55ff379462517d8ec790bd9ce5382d2a1c364ee0/COPYING",
+          "sha256": "306b56d1a86d1ff32cffdf3bd26d809354f7f06bcc8c4c1697fcb5e28aeedb7a",
+          "bytes": 281,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Frank Denis <github@pureftpd.org>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/siphasher/siphasher-0.3.11.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "source-linked-official-terms",
+      "termAssociation": "Locked COPYING retains actual Rust Project and Frank Denis copyright and explicitly offers Apache-2.0 via the official source link; authenticated source headers also contain that same license link. Official full Apache terms are retained separately and do not establish component copyright.",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro",
+          "applicabilityIsGraphAuthority": false
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro",
+          "applicabilityIsGraphAuthority": false
+        }
+      ]
+    },
+    {
+      "name": "siphasher",
+      "version": "1.0.2",
+      "registryChecksum": "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e",
+      "licenseDeclaration": "MIT/Apache-2.0",
+      "selectedLicense": "Apache-2.0",
+      "upstream": {
+        "repository": "https://github.com/jedisct1/rust-siphash",
+        "commit": "db8172048a1c9bdef0dcec782d965c236161af13",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/jedisct1--rust-siphash/db8172048a1c9bdef0dcec782d965c236161af13/COPYING",
+          "url": "https://raw.githubusercontent.com/jedisct1/rust-siphash/db8172048a1c9bdef0dcec782d965c236161af13/COPYING",
+          "sha256": "c962ee4d1d05ddc138b202b2540219ebc57893fcf97b364852094a9a94ce1365",
+          "bytes": 281,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "canonical/apache.org/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30/LICENSE-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358,
+          "kind": "canonical-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Frank Denis <github@pureftpd.org>"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/siphasher/siphasher-1.0.2.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "source-linked-official-terms",
+      "termAssociation": "Locked COPYING retains actual Rust Project and Frank Denis copyright and explicitly offers Apache-2.0 via the official source link; authenticated source headers also contain that same license link. Official full Apache terms are retained separately and do not establish component copyright.",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro",
+          "applicabilityIsGraphAuthority": false
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro",
+          "applicabilityIsGraphAuthority": false
+        }
+      ]
+    },
+    {
+      "name": "tauri-plugin",
+      "version": "2.5.4",
+      "registryChecksum": "ddde7d51c907b940fb573006cdda9a642d6a7c8153657e88f8a5c3c9290cd4aa",
+      "licenseDeclaration": "Apache-2.0 OR MIT",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/tauri-apps/tauri",
+        "commit": "9b17a7aeae9a83222ffe829aa4e2d8a5ba6bed8c",
+        "pathInVcs": "crates/tauri-plugin",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/tauri-apps--tauri/9b17a7aeae9a83222ffe829aa4e2d8a5ba6bed8c/LICENSE.spdx",
+          "url": "https://raw.githubusercontent.com/tauri-apps/tauri/9b17a7aeae9a83222ffe829aa4e2d8a5ba6bed8c/LICENSE.spdx",
+          "sha256": "5e834fe9788c524210deda859c46a550ffa5aa0cba9ea0572f0d81120e97c008",
+          "bytes": 889,
+          "kind": "upstream-license-declaration",
+          "licenseId": null,
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "sources/tauri-apps--tauri/9b17a7aeae9a83222ffe829aa4e2d8a5ba6bed8c/LICENSE_APACHE-2.0",
+          "url": "https://raw.githubusercontent.com/tauri-apps/tauri/9b17a7aeae9a83222ffe829aa4e2d8a5ba6bed8c/LICENSE_APACHE-2.0",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+          "bytes": 10174,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/tauri-apps--tauri/9b17a7aeae9a83222ffe829aa4e2d8a5ba6bed8c/LICENSE_MIT",
+          "url": "https://raw.githubusercontent.com/tauri-apps/tauri/9b17a7aeae9a83222ffe829aa4e2d8a5ba6bed8c/LICENSE_MIT",
+          "sha256": "9dd42ea92cff2ede5cd477cbfcce051b2d0115c0ac7f368ee88cb545055dff1d",
+          "bytes": 1090,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "components/tauri-plugin-2.5.4/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/tauri-plugin/tauri-plugin-2.5.4.crate",
+          "sha256": "68052effc200ed2e5ee1dc6fe4282071cb6e550e3aaa6400b9d5f8a5d192cb93",
+          "bytes": 237,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "5ac83667211771c07b88c58fc6cdec8712974d74d2d8ee6e4cbc127f45d0f8e3",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/build/mobile.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "3f858ed781d12553f8f9392763b536192593193675dfc7c08e42274c24bc2ec5",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/tauri-plugin/tauri-plugin-2.5.4.crate",
+                  "sourceArchiveSha256": "ddde7d51c907b940fb573006cdda9a642d6a7c8153657e88f8a5c3c9290cd4aa"
+                },
+                {
+                  "packagePath": "src/build/mod.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "22be5c241a3280b8e0514c44114dbd1c50a6fcaf642f9bba7d0ba57c2b10e2f5",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/tauri-plugin/tauri-plugin-2.5.4.crate",
+                  "sourceArchiveSha256": "ddde7d51c907b940fb573006cdda9a642d6a7c8153657e88f8a5c3c9290cd4aa"
+                },
+                {
+                  "packagePath": "src/lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 4,
+                  "sourceFileSha256": "1f1dd553f35c7ac89dabb0b896aed0148720be77ab8c4bb6ff53630d427db9a6",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/tauri-plugin/tauri-plugin-2.5.4.crate",
+                  "sourceArchiveSha256": "ddde7d51c907b940fb573006cdda9a642d6a7c8153657e88f8a5c3c9290cd4aa"
+                },
+                {
+                  "packagePath": "src/runtime.rs",
+                  "firstLine": 1,
+                  "lastLine": 3,
+                  "sourceFileSha256": "5ac83667211771c07b88c58fc6cdec8712974d74d2d8ee6e4cbc127f45d0f8e3",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/tauri-plugin/tauri-plugin-2.5.4.crate",
+                  "sourceArchiveSha256": "ddde7d51c907b940fb573006cdda9a642d6a7c8153657e88f8a5c3c9290cd4aa"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "Tauri Programme within The Commons Conservancy"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/tauri-plugin/tauri-plugin-2.5.4.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "build-exclusive"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "build-exclusive"
+        }
+      ]
+    },
+    {
+      "name": "unic-char-property",
+      "version": "0.9.0",
+      "registryChecksum": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221",
+      "licenseDeclaration": "MIT/Apache-2.0",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/open-i18n/rust-unic",
+        "commit": "5878605364af97a3358368a6eaef02104af2e016",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/AUTHORS",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/AUTHORS",
+          "sha256": "2748c1a1fba7616917c61d455e8d715ab952671ead63f2026ad0124410596b09",
+          "bytes": 664,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md",
+          "sha256": "f5c342c49f3ac804f3e8e7bb62a8040a44c50d47bb36902b1abd13f66a1adf8b",
+          "bytes": 608,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "components/unic-char-property-0.9.0/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+          "sha256": "0dd60029cd0fd411e10a2042216025de3dcf2025027cca1bd9dd0cbbcef815ba",
+          "bytes": 660,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "d75a4a243fd3a5d8c6c28b6b287550d97f304248ae0e9ec665dbd1d52b8c831b",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "200af9360e201caaa404fea0c8ec5387fa3ead07f8c056adf56d869768b0201b",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                },
+                {
+                  "packagePath": "src/macros.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "969bde9782647b7b8acd8fea1721372eb41e747a6a11de0b7dd8ac9b286759f2",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                },
+                {
+                  "packagePath": "src/pkg_info.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "37cbe4efd0b0205d251e1ef7714b23e3be27052c8a0de6b1ae3cbf3aefae1fe5",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                },
+                {
+                  "packagePath": "src/property.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "f0e34e995306fef0d2a11bac0f7c385d936f6c7d68aed2ec3e33fc7f5eea57ee",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                },
+                {
+                  "packagePath": "src/range_types.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "269d781d752c90c0d8d24a299c4d6318ce5d47d843120f019a53df036030def9",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                },
+                {
+                  "packagePath": "src/tables.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "1f2a0213d78fc55a6421df8c74b490b9fd60f37a0b882aacccc6838af14b5279",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                },
+                {
+                  "packagePath": "tests/bool_property_macro.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "ce18763a5f7eb86925b0fbad1129dd770c9ddefbab76c1ea27d0a437acb20514",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                },
+                {
+                  "packagePath": "tests/enum_property_macro.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "3d19cbdfc9f174dbbba696f791f10659af0d1bc5676969e7f84f269faed174f8",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                },
+                {
+                  "packagePath": "tests/tables_tests.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "94c4e5f1fcf6b7914deb9295c7e7b3840a5310718e5ea875ae3bc01c7349e0da",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+                  "sourceArchiveSha256": "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "The UNIC Project Developers"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-property/unic-char-property-0.9.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "unic-char-range",
+      "version": "0.9.0",
+      "registryChecksum": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc",
+      "licenseDeclaration": "MIT/Apache-2.0",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/open-i18n/rust-unic",
+        "commit": "5878605364af97a3358368a6eaef02104af2e016",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/AUTHORS",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/AUTHORS",
+          "sha256": "2748c1a1fba7616917c61d455e8d715ab952671ead63f2026ad0124410596b09",
+          "bytes": 664,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md",
+          "sha256": "f5c342c49f3ac804f3e8e7bb62a8040a44c50d47bb36902b1abd13f66a1adf8b",
+          "bytes": 608,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "components/unic-char-range-0.9.0/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+          "sha256": "9cf74f9bf4e57e77cbf7993769e076be94ac16cb2d238b210cbfe11b3fab3983",
+          "bytes": 1161,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "d75a4a243fd3a5d8c6c28b6b287550d97f304248ae0e9ec665dbd1d52b8c831b",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "benches/benchmarks.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "43c24a525f93c2417e09e4a3914523faf5802e8d4e33697070ddb429ef16fbe0",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "examples/macro_use_std_tests.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "f96109f197e7750ed5ab10041542a5b59a0f3a791e52cc88ebfe5e098b05711e",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "src/iter.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "aeb949486a521f8c273d7875536d030643f74603112ef6688bafdd639bd8f487",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "src/iter_fused.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "2ab4a76b8e9610163deda5c602881c2b8e9696f607580a04bb4e17754e4f8f9b",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "src/iter_trusted_len.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "b89e6d7dbbc2f46a1b66015b1b5d2bc12d91309880847d4f980f7b39ff4a8945",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "src/lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "955ee0b9069740fd1ee724943562f9189b7eb29b49d79c8c352a6f193c12c3ec",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "src/macros.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "7f0a7eedfdd31a0d5f10b16f342524663b4f2c82a0c97728f8677d0d29490241",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "src/pkg_info.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "37cbe4efd0b0205d251e1ef7714b23e3be27052c8a0de6b1ae3cbf3aefae1fe5",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "src/range.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "5ce555d9cf8513c76f3b45002a3eed4a07cfe8a51e769f9888270091d319cb05",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "src/step.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "66cbc3e291f1014f994c88b61a741e4cd84e9ef62debef5e160b4ae4f5211bd7",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                },
+                {
+                  "packagePath": "tests/iter_tests.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "5af9a84509e992e83d1ee90e86ec1e88352edf7926013b4c7cbdfe1f90c61b7a",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                }
+              ]
+            },
+            {
+              "excerptSha256": "f366af7d998802946e27c24301e3bc6e9d1fd3da51ce93e034097a8109fd2e96",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/par_iter.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "d6a213e83fc3bd0b0d248c0a7e42fe1b8e24eeca1424195c4638c7328795d018",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+                  "sourceArchiveSha256": "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "The UNIC Project Developers"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/unic-char-range/unic-char-range-0.9.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "unic-common",
+      "version": "0.9.0",
+      "registryChecksum": "80d7ff825a6a654ee85a63e80f92f054f904f21e7d12da4e22f9834a4aaa35bc",
+      "licenseDeclaration": "MIT/Apache-2.0",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/open-i18n/rust-unic",
+        "commit": "5878605364af97a3358368a6eaef02104af2e016",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/AUTHORS",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/AUTHORS",
+          "sha256": "2748c1a1fba7616917c61d455e8d715ab952671ead63f2026ad0124410596b09",
+          "bytes": 664,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md",
+          "sha256": "f5c342c49f3ac804f3e8e7bb62a8040a44c50d47bb36902b1abd13f66a1adf8b",
+          "bytes": 608,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "components/unic-common-0.9.0/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/unic-common/unic-common-0.9.0.crate",
+          "sha256": "1893070f57f7dea3a4b36ce6a6459ecbf71adf9d0e825bf7c7ba705e2386624c",
+          "bytes": 502,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "d75a4a243fd3a5d8c6c28b6b287550d97f304248ae0e9ec665dbd1d52b8c831b",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "726d922245ebdf3bc474d48edf032b9af7fe24fc79ee17d87e2d295103e39ea0",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-common/unic-common-0.9.0.crate",
+                  "sourceArchiveSha256": "80d7ff825a6a654ee85a63e80f92f054f904f21e7d12da4e22f9834a4aaa35bc"
+                },
+                {
+                  "packagePath": "src/pkg_info.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "37cbe4efd0b0205d251e1ef7714b23e3be27052c8a0de6b1ae3cbf3aefae1fe5",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-common/unic-common-0.9.0.crate",
+                  "sourceArchiveSha256": "80d7ff825a6a654ee85a63e80f92f054f904f21e7d12da4e22f9834a4aaa35bc"
+                },
+                {
+                  "packagePath": "src/version.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "ee5f50444acc2df5f9cd4ec97bd81444c6425b55fd37327c254ccd1736270898",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-common/unic-common-0.9.0.crate",
+                  "sourceArchiveSha256": "80d7ff825a6a654ee85a63e80f92f054f904f21e7d12da4e22f9834a4aaa35bc"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "The UNIC Project Developers"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/unic-common/unic-common-0.9.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "unic-ucd-ident",
+      "version": "0.9.0",
+      "registryChecksum": "e230a37c0381caa9219d67cf063aa3a375ffed5bf541a452db16e744bdab6987",
+      "licenseDeclaration": "MIT/Apache-2.0",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/open-i18n/rust-unic",
+        "commit": "8a6ce83063d90b91ae2ce59eddb803edd393fca9",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/open-i18n--rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/AUTHORS",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/AUTHORS",
+          "sha256": "2748c1a1fba7616917c61d455e8d715ab952671ead63f2026ad0124410596b09",
+          "bytes": 664,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/COPYRIGHT.md",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/COPYRIGHT.md",
+          "sha256": "f5c342c49f3ac804f3e8e7bb62a8040a44c50d47bb36902b1abd13f66a1adf8b",
+          "bytes": 608,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "components/unic-ucd-ident-0.9.0/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+          "sha256": "949478e907f2c4bc0a1766099580e86da6dd9141c497c2c72419f6cf58425095",
+          "bytes": 1054,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "2c6b59d248ec7c944fcf83683bd8e3c5aa2140ab0e68e2403c3589af2af92594",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/id.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "4272423b2b2a15c62bdfa515e7a3bd99cede8bd96f04d270026ec643f8c66b00",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+                  "sourceArchiveSha256": "e230a37c0381caa9219d67cf063aa3a375ffed5bf541a452db16e744bdab6987"
+                },
+                {
+                  "packagePath": "src/lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "b855a13e55e654ea7e19c5d4ac0cf2fe17653ad6cae8d3559d35d041619c1fea",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+                  "sourceArchiveSha256": "e230a37c0381caa9219d67cf063aa3a375ffed5bf541a452db16e744bdab6987"
+                },
+                {
+                  "packagePath": "src/pattern.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "2804e1e3bde17edfcdafe467b0a5f20b9d4ce5c7501f76fc11138db4cb4f296f",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+                  "sourceArchiveSha256": "e230a37c0381caa9219d67cf063aa3a375ffed5bf541a452db16e744bdab6987"
+                },
+                {
+                  "packagePath": "src/xid.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "c844753b9166b7d4a9a784e0e5025b6e0831bd9ba0d66086b1eb117257d452c3",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+                  "sourceArchiveSha256": "e230a37c0381caa9219d67cf063aa3a375ffed5bf541a452db16e744bdab6987"
+                }
+              ]
+            },
+            {
+              "excerptSha256": "d75a4a243fd3a5d8c6c28b6b287550d97f304248ae0e9ec665dbd1d52b8c831b",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/pkg_info.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "37cbe4efd0b0205d251e1ef7714b23e3be27052c8a0de6b1ae3cbf3aefae1fe5",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+                  "sourceArchiveSha256": "e230a37c0381caa9219d67cf063aa3a375ffed5bf541a452db16e744bdab6987"
+                },
+                {
+                  "packagePath": "tests/lexical_class_tests.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "080030f251c4eeb4fe546ee4e3782de3f7625452b60f75f6ad11446834d1dc75",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+                  "sourceArchiveSha256": "e230a37c0381caa9219d67cf063aa3a375ffed5bf541a452db16e744bdab6987"
+                },
+                {
+                  "packagePath": "tests/unicode_version_tests.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "7d47a648cb707facf02088e79adcc1b283fab414128d8bb71529aa41b22cfa25",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+                  "sourceArchiveSha256": "e230a37c0381caa9219d67cf063aa3a375ffed5bf541a452db16e744bdab6987"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "The UNIC Project Developers"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-ident/unic-ucd-ident-0.9.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    },
+    {
+      "name": "unic-ucd-version",
+      "version": "0.9.0",
+      "registryChecksum": "96bd2f2237fe450fcd0a1d2f5f4e91711124f7857ba2e964247776ebeeb7b0c4",
+      "licenseDeclaration": "MIT/Apache-2.0",
+      "selectedLicense": "MIT",
+      "upstream": {
+        "repository": "https://github.com/open-i18n/rust-unic",
+        "commit": "5878605364af97a3358368a6eaef02104af2e016",
+        "pathInVcs": "",
+        "revisionEvidence": "packaged-cargo-vcs-info"
+      },
+      "files": [
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/AUTHORS",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/AUTHORS",
+          "sha256": "2748c1a1fba7616917c61d455e8d715ab952671ead63f2026ad0124410596b09",
+          "bytes": 664,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md",
+          "sha256": "f5c342c49f3ac804f3e8e7bb62a8040a44c50d47bb36902b1abd13f66a1adf8b",
+          "bytes": 608,
+          "kind": "upstream-copyright-or-authorship",
+          "licenseId": null,
+          "containsComponentCopyright": true
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847,
+          "kind": "upstream-license-terms",
+          "licenseId": "Apache-2.0",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "sources/open-i18n--rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023,
+          "kind": "upstream-license-terms",
+          "licenseId": "MIT",
+          "containsComponentCopyright": false
+        },
+        {
+          "path": "components/unic-ucd-version-0.9.0/SOURCE-NOTICES.txt",
+          "url": "https://static.crates.io/crates/unic-ucd-version/unic-ucd-version-0.9.0.crate",
+          "sha256": "ffd3ef1fd6e7752d2f668bcb0c76fa013ce65e14fdb89e4994da4da4ae4e6cdc",
+          "bytes": 536,
+          "kind": "upstream-source-notice-excerpts",
+          "licenseId": null,
+          "containsComponentCopyright": true,
+          "excerpts": [
+            {
+              "excerptSha256": "d75a4a243fd3a5d8c6c28b6b287550d97f304248ae0e9ec665dbd1d52b8c831b",
+              "hasCopyrightStatement": true,
+              "occurrences": [
+                {
+                  "packagePath": "src/lib.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "51d52da8220e430f32523aa5972708e698fca29fea8b64a4cbdc67d3d1830f37",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-version/unic-ucd-version-0.9.0.crate",
+                  "sourceArchiveSha256": "96bd2f2237fe450fcd0a1d2f5f4e91711124f7857ba2e964247776ebeeb7b0c4"
+                },
+                {
+                  "packagePath": "src/pkg_info.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "37cbe4efd0b0205d251e1ef7714b23e3be27052c8a0de6b1ae3cbf3aefae1fe5",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-version/unic-ucd-version-0.9.0.crate",
+                  "sourceArchiveSha256": "96bd2f2237fe450fcd0a1d2f5f4e91711124f7857ba2e964247776ebeeb7b0c4"
+                },
+                {
+                  "packagePath": "src/unicode_version.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "bc2fe0341c2a60909f1ef7e56593b836344ca4b4ae8f73e7f7aa07259963dd03",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-version/unic-ucd-version-0.9.0.crate",
+                  "sourceArchiveSha256": "96bd2f2237fe450fcd0a1d2f5f4e91711124f7857ba2e964247776ebeeb7b0c4"
+                },
+                {
+                  "packagePath": "tests/basic_tests.rs",
+                  "firstLine": 1,
+                  "lastLine": 10,
+                  "sourceFileSha256": "8d3597a7c3365b5516a2e6200386b5e8dac836aa6f90b8a329ff120f0c54f207",
+                  "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-version/unic-ucd-version-0.9.0.crate",
+                  "sourceArchiveSha256": "96bd2f2237fe450fcd0a1d2f5f4e91711124f7857ba2e964247776ebeeb7b0c4"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "complete": true,
+      "gaps": [],
+      "additionalReview": [],
+      "packageAuthors": [
+        "The UNIC Project Developers"
+      ],
+      "sourceArchiveUrl": "https://static.crates.io/crates/unic-ucd-version/unic-ucd-version-0.9.0.crate",
+      "sourceArchiveChecksumVerified": true,
+      "hasUpstreamCopyrightNotice": true,
+      "licenseTextStatus": "upstream-complete",
+      "applicableTargets": [
+        {
+          "edition": "IM-Board",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-lite-win",
+          "target": "x86_64-pc-windows-msvc",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "aarch64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        },
+        {
+          "edition": "IM-Board-demo",
+          "target": "x86_64-apple-darwin",
+          "graphRole": "normal-or-proc-macro"
+        }
+      ]
+    }
+  ],
+  "edition": "IM-Board-lite",
+  "targets": [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin"
+  ]
+}

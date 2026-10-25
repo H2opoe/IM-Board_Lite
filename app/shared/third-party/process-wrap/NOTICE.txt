@@ -1,0 +1,6 @@
+process-wrap 10.0.1
+Source: https://github.com/watchexec/process-wrap
+License: Apache-2.0 OR MIT
+The Windows suspended-process thread enumeration/resume strategy informed the
+adaptation in src-tauri/src/process_job.rs. The crate is no longer a linked dependency.
+The accompanying license and copyright files are retained for that adapted code.

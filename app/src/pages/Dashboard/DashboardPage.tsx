@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Clock3, RotateCcw, RefreshCw, Sparkles, StopCircle } from "lucide-react";
-import { getDashboard, markActionItem } from "../../features/dashboard/api/dashboardApi";
+import { useDashboardActions } from "../../features/dashboard/hooks/useDashboardActions";
 import type { SyncProgressNotice, SyncUiState } from "../../features/sync/hooks/useSyncController";
 import { ActivityChartCard } from "../../components/cards/ActivityChartCard";
 import { ActionListCard } from "../../components/cards/ActionListCard";
@@ -75,17 +75,7 @@ export function DashboardPage({
   const syncStatusLabel = syncStatusLabels[data.syncStatus] ?? data.syncStatus;
   const aiStatusLabel = aiStatusLabels[data.aiStatus] ?? data.aiStatus;
 
-  async function complete(item: ActionItem) {
-    await markActionItem(item.id, "done");
-    const next = await getDashboard(activeProfileId);
-    onDashboardChange(next);
-  }
-
-  async function reopen(item: ActionItem) {
-    await markActionItem(item.id, "open");
-    const next = await getDashboard(activeProfileId);
-    onDashboardChange(next);
-  }
+  const { complete, reopen, actionError, retryAction, isActionRetrying } = useDashboardActions(activeProfileId, onDashboardChange);
 
   useEffect(() => {
     if (!isFrequencyOpen) return undefined;
@@ -205,6 +195,15 @@ export function DashboardPage({
           </button>
         </div>
       </header>
+
+      {actionError && (
+        <div className="empty-state" role="alert">
+          <p>{actionError}</p>
+          <button className="secondary-button" disabled={isActionRetrying} onClick={() => void retryAction()}>
+            {isActionRetrying ? "正在重试…" : "重试事项操作"}
+          </button>
+        </div>
+      )}
 
       {syncProgressNotices.length > 0 && (
         <FloatingNoticeStack>

@@ -1,3 +1,4 @@
+#[cfg(all(test, unix))]
 use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -89,80 +90,17 @@ mod tests {
 }
 
 pub fn terminate_tracked_sync_bridges(state: &State<'_, AppState>) -> Result<bool, String> {
-    let pids = state
-        .sync_bridge_pids
-        .lock()
-        .map_err(|err| err.to_string())?
-        .clone();
-    for pid in &pids {
-        terminate_process_tree(*pid)?;
-    }
-    Ok(!pids.is_empty())
+    state.sync_bridges.cancel_all()
 }
 
-#[cfg(windows)]
-fn terminate_process_tree(pid: u32) -> Result<(), String> {
-    let status = Command::new("taskkill")
-        .args(["/PID", &pid.to_string(), "/T", "/F"])
-        .status()
-        .map_err(|error| format!("终止同步进程失败：{error}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("终止同步进程失败：{status}"))
-    }
-}
-
-#[cfg(not(windows))]
-fn terminate_process_tree(pid: u32) -> Result<(), String> {
-    let process_group = format!("-{pid}");
-    let terminated_group = Command::new("kill")
-        .args(["-TERM", "--", &process_group])
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false);
-    if !terminated_group {
-        let _ = Command::new("kill")
-            .args(["-TERM", &pid.to_string()])
-            .status();
-    }
-    for _ in 0..20 {
-        if !process_group_exists(pid) {
-            return Ok(());
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    }
-    let _ = Command::new("kill")
-        .args(["-KILL", "--", &process_group])
-        .status();
-    let _ = Command::new("kill")
-        .args(["-KILL", &pid.to_string()])
-        .status();
-    for _ in 0..20 {
-        if !process_group_exists(pid) {
-            return Ok(());
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    }
-    if process_group_exists(pid) {
-        Err(format!("同步进程 {pid} 未能在取消后退出。"))
-    } else {
-        Ok(())
-    }
-}
-
-#[cfg(not(windows))]
+#[cfg(all(test, unix))]
 fn process_group_exists(pid: u32) -> bool {
-    Command::new("kill")
-        .args(["-0", "--", &format!("-{pid}")])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .is_ok_and(|status| status.success())
+    crate::process_group::exists(pid).expect("fixture process-group query failed")
 }
 
 pub fn spawn_auto_sync_task(app: tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
+        let mut first_run = true;
         let mut retry_delay_seconds: Option<u64> = None;
         let mut consecutive_failures = 0_u32;
         loop {
@@ -171,7 +109,11 @@ pub fn spawn_auto_sync_task(app: tauri::AppHandle) {
                 .auto_sync_frequency_minutes
                 .load(Ordering::SeqCst)
                 .max(1);
-            let delay = retry_delay_seconds.unwrap_or_else(|| minutes.saturating_mul(60));
+            let delay = if first_run {
+                0
+            } else {
+                retry_delay_seconds.unwrap_or_else(|| minutes.saturating_mul(60))
+            };
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(delay)) => {}
                 _ = state.auto_sync_schedule_changed.notified() => {
@@ -181,6 +123,7 @@ pub fn spawn_auto_sync_task(app: tauri::AppHandle) {
                 },
             }
 
+            first_run = false;
             let state = app.state::<AppState>();
             if state.sync_job_running.load(Ordering::SeqCst) {
                 retry_delay_seconds = Some(60);
@@ -237,34 +180,34 @@ pub fn spawn_auto_sync_task(app: tauri::AppHandle) {
 #[cfg(all(test, unix))]
 mod process_tree_tests {
     use super::*;
-    use std::io::{BufRead, BufReader};
     use std::os::unix::process::CommandExt;
-    use std::process::Stdio;
-
     #[test]
-    fn escalates_when_leader_exits_but_descendant_ignores_term() {
+    fn owned_cancellation_disarms_repeated_calls_and_old_registration() {
+        let mut command = Command::new("/bin/sleep");
+        command.arg("30").process_group(0);
+        let child = command.spawn().unwrap();
+        let owner = crate::process_group::ProcessOwner::from_blocking(child);
+        let pid = owner.pid();
+        let registry = crate::bridge_registry::BridgeRegistry::default();
+        let registration = registry.register(owner.clone());
+        assert!(registry.cancel_all().unwrap());
+        assert!(!registry.cancel_all().unwrap());
+        assert!(registration.retire());
+        assert!(owner.confirm_exit().unwrap());
+        owner.terminate().unwrap();
+        assert!(!process_group_exists(pid));
+    }
+    #[test]
+    fn exited_leader_is_not_reaped_before_registry_finishes_the_group() {
         let mut command = Command::new("/bin/sh");
-        command.args([
-            "-c",
-            "sh -c 'trap \"\" TERM; echo ready; exec sleep 30' & wait",
-        ]);
-        command.process_group(0).stdout(Stdio::piped());
-        let mut child = command.spawn().unwrap();
-        let pid = child.id();
-        let mut line = String::new();
-        BufReader::new(child.stdout.take().unwrap())
-            .read_line(&mut line)
-            .unwrap();
-        assert_eq!(line.trim(), "ready");
-        let reaper = std::thread::spawn(move || child.wait().unwrap());
-        let result = terminate_process_tree(pid);
-        // Cleanup is unconditional, including a failing assertion on the implementation.
-        let alive = process_group_exists(pid);
-        let _ = Command::new("kill")
-            .args(["-KILL", "--", &format!("-{pid}")])
-            .status();
-        reaper.join().unwrap();
-        assert!(result.is_ok(), "{result:?}");
-        assert!(!alive, "a descendant survived cancellation");
+        command.args(["-c", "exit 7"]).process_group(0);
+        let owner = crate::process_group::ProcessOwner::from_blocking(command.spawn().unwrap());
+        assert_eq!(owner.wait_blocking().unwrap().code(), Some(7));
+        assert_eq!(unsafe { libc::kill(owner.pid() as i32, 0) }, 0);
+        let registry = crate::bridge_registry::BridgeRegistry::default();
+        let _registration = registry.register(owner.clone());
+        assert!(registry.cancel_all().unwrap());
+        assert!(owner.confirm_exit().unwrap());
+        assert_eq!(owner.wait_blocking().unwrap().code(), Some(7));
     }
 }

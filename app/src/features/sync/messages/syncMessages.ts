@@ -42,6 +42,8 @@ export const SYNC_CANCEL_CONFIRM_MESSAGES: Partial<Record<SyncMessageState, stri
 };
 
 export const SYNC_RUNTIME_MESSAGES = {
+  noAccounts: "尚未绑定账号，请到平台管理添加账号后再同步。",
+  noEnabledAccounts: "尚未启用任何账号，请到平台管理开启同步。",
   accountSyncDisabled: "该账号未启用同步，可到平台管理页开启。",
   cancelCurrentTask: "再次点击将停止当前任务。",
   cancellingAnalysis: "正在终止当前AI分析…",
@@ -87,8 +89,9 @@ export function syncMaintenanceStoppingMessage(action: SyncMaintenanceAction): s
 
 export function syncCompletionMessage(mode: SyncJobMode, result: SyncResult): string {
   const prefix = SYNC_JOB_UI_CONFIG[mode].completedPrefix;
+  if (result.syncStatus === "idle") return "";
   if (result.syncStatus === "failed") {
-    return "本次没有账号同步成功，请查看上方账号错误后重试。";
+    return "本次没有账号同步成功，请到平台管理查看账号状态，或检查同步错误后重试。";
   }
   if (result.syncStatus === "partial") {
     return `${prefix}部分账号同步成功，已读取${result.insertedMessages}条新消息；失败账号未更新成功时间。`;

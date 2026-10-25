@@ -47,14 +47,14 @@ pub(crate) fn load_summary_candidates_for_profiles(
     Ok(summary_candidates_from_messages(messages))
 }
 
-fn load_summary_candidate_messages(
+pub(super) fn load_summary_candidate_messages(
     conn: &rusqlite::Connection,
     day: &str,
     profile_id: &str,
 ) -> anyhow::Result<Vec<AnalysisMessage>> {
     let mut stmt = conn.prepare(
         "select id, profile_id, platform, chat_id, chat_name, is_group, timestamp,
-                sender_id, sender_name, time_text, msg_type, content, partial
+                sender_id, sender_name, time_text, msg_type, content, partial, raw_type, raw_json
          from daily_messages
          where day = ?1 and profile_id = ?2 and topic_summarized_at is null and trim(content) <> ''
          order by timestamp asc
@@ -67,8 +67,18 @@ fn load_summary_candidate_messages(
             let sender_id: String = row.get(7)?;
             let sender_name: String = row.get(8)?;
             let is_me = is_self_sender(&sender_id, &sender_name);
+            let platform: String = row.get(2)?;
             let msg_type: String = row.get(10)?;
+            let raw_type: Option<String> = row.get(13)?;
+            let raw_json: Option<String> = row.get(14)?;
             let raw_content: String = row.get(11)?;
+            let msg_type = crate::messages::message_type::resolve_stored_message_type(
+                &platform,
+                &msg_type,
+                raw_type.as_deref(),
+                raw_json.as_deref(),
+                &raw_content,
+            );
             let is_group = row.get::<_, i64>(5)? == 1;
             if message_noise::is_message_noise(Some(&msg_type), &raw_content, is_group) {
                 return Ok(None);

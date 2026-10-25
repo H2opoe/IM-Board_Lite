@@ -1,21 +1,43 @@
 function parseLocalDateTime(value: string) {
-  const match = value.match(
-    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/
+  const text = value.trim();
+  const match = text.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|[+-]\d{2}:?\d{2})?)?$/i
   );
   if (!match) {
-    const fallback = new Date(value);
+    // Do not accept a valid date prefix followed by an invalid time or suffix.
+    if (/^\d{4}-/.test(text)) return null;
+    const fallback = new Date(text);
     return Number.isNaN(fallback.getTime()) ? null : fallback;
   }
 
-  const [, year, month, day, hour = "00", minute = "00", second = "00"] = match;
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    Number(second)
-  );
+  const [, yearText, monthText, dayText, hourText = "00", minuteText = "00", secondText = "00", fraction = "", zone] = match;
+  const year = Number(yearText), month = Number(monthText), day = Number(dayText);
+  const hour = Number(hourText), minute = Number(minuteText), second = Number(secondText);
+  const millisecond = Number(fraction.slice(0, 3).padEnd(3, "0"));
+  const calendar = new Date(0);
+  calendar.setUTCFullYear(year, month - 1, day);
+  calendar.setUTCHours(0, 0, 0, 0);
+  if (calendar.getUTCFullYear() !== year || calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) return null;
+  if (hour > 24 || minute > 59 || second > 59) return null;
+  if (hour === 24 && (minute !== 0 || second !== 0 || /[1-9]/.test(fraction))) return null;
+
+  if (zone) {
+    let offsetMinutes = 0;
+    if (zone.toUpperCase() !== "Z") {
+      const offsetHour = Number(zone.slice(1, 3));
+      const offsetMinute = Number(zone.slice(-2));
+      if (offsetHour > 23 || offsetMinute > 59) return null;
+      offsetMinutes = (zone[0] === "+" ? 1 : -1) * (offsetHour * 60 + offsetMinute);
+    }
+    calendar.setUTCHours(hour, minute, second, millisecond);
+    return new Date(calendar.getTime() - offsetMinutes * 60_000);
+  }
+
+  // SQLite date/time values without a timezone retain local wall-clock meaning.
+  const local = new Date(0);
+  local.setFullYear(year, month - 1, day);
+  local.setHours(hour, minute, second, millisecond);
+  return local;
 }
 
 function startOfDay(date: Date) {
@@ -37,6 +59,10 @@ function clock(date: Date) {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+export function formatLocalDate(date: Date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 export function formatRelativeDateTime(value: string, now = new Date()) {
   const date = parseLocalDateTime(value);
   if (!date) return value;
@@ -53,5 +79,5 @@ export function formatRelativeDateTime(value: string, now = new Date()) {
     return `本周${weekDay} ${clock(date)}`;
   }
 
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${clock(date)}`;
+  return `${formatLocalDate(date)} ${clock(date)}`;
 }

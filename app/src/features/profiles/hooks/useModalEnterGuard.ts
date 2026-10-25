@@ -4,11 +4,11 @@ const MODAL_COMPOSITION_ENTER_GUARD_MS = 120;
 
 export function useModalEnterGuard() {
   const modalInputComposingRef = useRef(false);
-  const modalCompositionEndedAtRef = useRef(0);
+  const modalCompositionEndedAtRef = useRef<number | null>(null);
 
   function resetModalCompositionState() {
     modalInputComposingRef.current = false;
-    modalCompositionEndedAtRef.current = 0;
+    modalCompositionEndedAtRef.current = null;
   }
 
   function handleModalCompositionStart() {
@@ -24,7 +24,8 @@ export function useModalEnterGuard() {
     const nativeEvent = event.nativeEvent as KeyboardEvent & { isComposing?: boolean };
     const legacyCompositionKeyCode = 229;
     const nativeKeyCode = nativeEvent.keyCode || nativeEvent.which;
-    const isJustAfterComposition = performance.now() - modalCompositionEndedAtRef.current < MODAL_COMPOSITION_ENTER_GUARD_MS;
+    const isJustAfterComposition = modalCompositionEndedAtRef.current !== null
+      && performance.now() - modalCompositionEndedAtRef.current < MODAL_COMPOSITION_ENTER_GUARD_MS;
 
     // macOS 中文输入法用回车放弃候选词时，不同输入法对 isComposing 的上报不稳定，这里同时记录弹窗内的 composition 生命周期。
     return nativeEvent.isComposing || modalInputComposingRef.current || nativeKeyCode === legacyCompositionKeyCode || isJustAfterComposition;

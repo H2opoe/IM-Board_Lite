@@ -1,3 +1,5 @@
+// The fetch job builder still accepts its event and bridge inputs explicitly.
+#[allow(clippy::too_many_arguments)]
 async fn fetch_recent_session_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,

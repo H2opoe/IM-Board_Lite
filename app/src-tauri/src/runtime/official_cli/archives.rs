@@ -1,9 +1,49 @@
 use std::fs;
-use std::io::Cursor;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
-use flate2::read::GzDecoder;
+pub(super) use super::extraction::extract_tgz_bytes;
 use sha2::{Digest, Sha512};
+
+const MAX_DOWNLOAD_BYTES: usize = 128 * 1024 * 1024;
+
+pub(super) fn download_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(15))
+        .timeout(std::time::Duration::from_secs(120))
+        .https_only(true)
+        .redirect(reqwest::redirect::Policy::limited(5))
+        .build()
+        .map_err(|e| format!("无法创建CLI下载客户端：{e}"))
+}
+
+async fn download(client: &reqwest::Client, url: &str) -> Result<Vec<u8>, String> {
+    let mut response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| format!("下载官方CLI资源失败：{e}"))?;
+    if !response.status().is_success() {
+        return Err(format!("下载官方CLI资源失败：HTTP {}", response.status()));
+    }
+    if response
+        .content_length()
+        .is_some_and(|size| size > MAX_DOWNLOAD_BYTES as u64)
+    {
+        return Err("官方CLI资源超过大小限制。".into());
+    }
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|e| format!("读取CLI资源失败：{e}"))?
+    {
+        if chunk.len() > MAX_DOWNLOAD_BYTES - bytes.len() {
+            return Err("官方CLI资源超过大小限制。".into());
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    Ok(bytes)
+}
 
 pub(super) async fn download_and_extract_tgz(
     client: &reqwest::Client,
@@ -11,127 +51,106 @@ pub(super) async fn download_and_extract_tgz(
     integrity: &str,
     destination: &Path,
 ) -> Result<(), String> {
-    let response = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|err| format!("下载官方CLI包失败：{err}"))?;
-    if !response.status().is_success() {
-        return Err(format!("下载官方CLI包失败：HTTP {}", response.status()));
-    }
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|err| format!("读取官方CLI包失败：{err}"))?;
+    let bytes = download(client, url).await?;
     verify_npm_integrity(&bytes, integrity)?;
-    fs::remove_dir_all(destination).ok();
-    fs::create_dir_all(destination).map_err(|err| err.to_string())?;
+    fs::create_dir_all(destination).map_err(|e| e.to_string())?;
     extract_tgz_bytes(&bytes, destination, true)
 }
 
 fn verify_npm_integrity(bytes: &[u8], integrity: &str) -> Result<(), String> {
     use base64::Engine;
-
     let expected = integrity
         .strip_prefix("sha512-")
         .ok_or_else(|| "官方CLI包使用了不支持的完整性算法。".to_owned())?;
     let expected = base64::engine::general_purpose::STANDARD
         .decode(expected)
         .map_err(|_| "官方CLI包完整性信息无效。".to_owned())?;
-    let actual = Sha512::digest(bytes);
-    if actual.as_slice() != expected.as_slice() {
-        return Err("官方CLI包完整性校验失败，已拒绝安装。".to_owned());
+    if Sha512::digest(bytes).as_slice() != expected.as_slice() {
+        return Err("官方CLI包完整性校验失败，已拒绝安装。".into());
     }
     Ok(())
 }
 
-pub(super) async fn download_first_available(urls: &[String]) -> Result<Vec<u8>, String> {
-    let client = reqwest::Client::new();
-    let mut last_error = String::new();
+fn verify_sha256(bytes: &[u8], expected: &str) -> Result<(), String> {
+    let actual = format!("{:x}", sha2::Sha256::digest(bytes));
+    if actual != expected {
+        return Err("官方CLI可执行文件完整性校验失败，已拒绝安装。".into());
+    }
+    Ok(())
+}
+
+pub(super) async fn download_first_verified(
+    urls: &[String],
+    sha256: &str,
+) -> Result<Vec<u8>, String> {
+    let client = download_client()?;
+    download_verified_with_client(&client, urls, sha256).await
+}
+
+async fn download_verified_with_client(
+    client: &reqwest::Client,
+    urls: &[String],
+    sha256: &str,
+) -> Result<Vec<u8>, String> {
+    let mut failures = Vec::new();
     for url in urls {
-        match client.get(url).send().await {
-            Ok(response) if response.status().is_success() => {
-                return response
-                    .bytes()
-                    .await
-                    .map(|bytes| bytes.to_vec())
-                    .map_err(|err| format!("读取下载内容失败：{err}"));
-            }
-            Ok(response) => last_error = format!("{url}: HTTP {}", response.status()),
-            Err(err) => last_error = format!("{url}: {err}"),
+        match download(client, url).await {
+            Ok(bytes) => match verify_sha256(&bytes, sha256) {
+                Ok(()) => return Ok(bytes),
+                Err(e) => failures.push(e),
+            },
+            Err(e) => failures.push(e),
         }
     }
-    Err(format!("下载官方CLI可执行文件失败：{last_error}"))
-}
-
-pub(super) fn extract_tgz_bytes(
-    bytes: &[u8],
-    destination: &Path,
-    strip_package_prefix: bool,
-) -> Result<(), String> {
-    let decoder = GzDecoder::new(Cursor::new(bytes));
-    let mut archive = tar::Archive::new(decoder);
-    let entries = archive
-        .entries()
-        .map_err(|err| format!("读取 tgz 失败：{err}"))?;
-    for entry in entries {
-        let mut entry = entry.map_err(|err| format!("读取 tgz 条目失败：{err}"))?;
-        let raw_path = entry.path().map_err(|err| err.to_string())?.to_path_buf();
-        let relative = safe_archive_path(&raw_path, strip_package_prefix)?;
-        if relative.as_os_str().is_empty() {
-            continue;
-        }
-        let output = destination.join(relative);
-        if let Some(parent) = output.parent() {
-            fs::create_dir_all(parent).map_err(|err| err.to_string())?;
-        }
-        entry
-            .unpack(&output)
-            .map_err(|err| format!("解压官方CLI文件 {} 失败：{err}", output.display()))?;
-    }
-    Ok(())
-}
-
-fn safe_archive_path(path: &Path, strip_package_prefix: bool) -> Result<PathBuf, String> {
-    let mut output = PathBuf::new();
-    for (index, component) in path.components().enumerate() {
-        if strip_package_prefix && index == 0 {
-            continue;
-        }
-        match component {
-            Component::Normal(value) => output.push(value),
-            Component::CurDir => {}
-            _ => return Err(format!("官方CLI包含不安全路径：{}", path.display())),
-        }
-    }
-    Ok(output)
+    Err(format!(
+        "下载官方CLI可执行文件失败：{}",
+        failures.join("；")
+    ))
 }
 
 pub(super) fn find_file_named(root: &Path, name: &str) -> Option<PathBuf> {
-    let entries = fs::read_dir(root).ok()?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.is_file() && path.file_name().and_then(|value| value.to_str()) == Some(name) {
-            return Some(path);
+    let boundary = fs::canonicalize(root).ok()?;
+    let mut pending = vec![boundary.clone()];
+    let mut visited = std::collections::HashSet::new();
+    while let Some(directory) = pending.pop() {
+        let Ok(directory) = fs::canonicalize(directory) else {
+            continue;
+        };
+        if !directory.starts_with(&boundary) || !visited.insert(directory.clone()) {
+            continue;
         }
-        if path.is_dir() {
-            if let Some(found) = find_file_named(&path, name) {
-                return Some(found);
+        let Ok(entries) = fs::read_dir(directory) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Ok(resolved) = fs::canonicalize(&path) else {
+                continue;
+            };
+            if !resolved.starts_with(&boundary) {
+                continue;
+            }
+            if resolved.is_file() && path.file_name().and_then(|value| value.to_str()) == Some(name)
+            {
+                return Some(path);
+            }
+            if resolved.is_dir() {
+                pending.push(resolved);
             }
         }
     }
     None
 }
 
-pub(super) fn make_executable(path: &Path) -> Result<(), String> {
+pub(super) fn make_executable(_path: &Path) -> Result<(), String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut permissions = fs::metadata(path)
+        let mut permissions = fs::metadata(_path)
             .map_err(|err| err.to_string())?
             .permissions();
         permissions.set_mode(0o755);
-        fs::set_permissions(path, permissions).map_err(|err| err.to_string())?;
+        fs::set_permissions(_path, permissions).map_err(|err| err.to_string())?;
     }
     Ok(())
 }
@@ -140,6 +159,86 @@ pub(super) fn make_executable(path: &Path) -> Result<(), String> {
 mod tests {
     use super::*;
     use base64::Engine;
+
+    fn http_fixture(
+        body: &'static str,
+        length: usize,
+        delay_ms: u64,
+    ) -> (String, std::thread::JoinHandle<()>) {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let thread = std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(std::time::Duration::from_secs(2)))
+                .unwrap();
+            let mut request = [0u8; 4096];
+            let _ = socket.read(&mut request);
+            std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+            let _ = write!(
+                socket,
+                "HTTP/1.1 200 OK\r\nContent-Length: {length}\r\nConnection: close\r\n\r\n{body}"
+            );
+        });
+        (url, thread)
+    }
+
+    #[tokio::test]
+    async fn corrupted_first_source_is_rejected_before_verified_fallback() {
+        let (bad, bad_thread) = http_fixture("tampered", 8, 0);
+        let (good, good_thread) = http_fixture("verified", 8, 0);
+        let client = reqwest::Client::builder()
+            .no_proxy()
+            .timeout(std::time::Duration::from_secs(2))
+            .build()
+            .unwrap();
+        let digest = format!("{:x}", sha2::Sha256::digest(b"verified"));
+        assert_eq!(
+            download_verified_with_client(&client, &[bad, good], &digest)
+                .await
+                .unwrap(),
+            b"verified"
+        );
+        bad_thread.join().unwrap();
+        good_thread.join().unwrap();
+    }
+
+    #[tokio::test]
+    async fn oversized_and_stalled_downloads_fail_without_extraction() {
+        let (url, thread) = http_fixture("", MAX_DOWNLOAD_BYTES + 1, 0);
+        let client = reqwest::Client::builder()
+            .no_proxy()
+            .timeout(std::time::Duration::from_millis(40))
+            .build()
+            .unwrap();
+        assert!(download(&client, &url)
+            .await
+            .unwrap_err()
+            .contains("大小限制"));
+        thread.join().unwrap();
+        let (url, thread) = http_fixture("late", 4, 150);
+        assert!(download(&client, &url).await.is_err());
+        thread.join().unwrap();
+        assert!(verify_sha256(b"same", "").is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn file_search_handles_cycles_and_does_not_follow_external_links() {
+        let root = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        fs::write(outside.path().join("cli"), "external").unwrap();
+        std::os::unix::fs::symlink(root.path(), root.path().join("cycle")).unwrap();
+        std::os::unix::fs::symlink(outside.path(), root.path().join("outside")).unwrap();
+        assert!(find_file_named(root.path(), "cli").is_none());
+        fs::create_dir(root.path().join("nested")).unwrap();
+        fs::write(root.path().join("nested/cli"), "internal").unwrap();
+        assert_eq!(
+            find_file_named(root.path(), "cli"),
+            Some(fs::canonicalize(root.path().join("nested/cli")).unwrap())
+        );
+    }
 
     #[test]
     fn npm_integrity_accepts_only_matching_sha512() {

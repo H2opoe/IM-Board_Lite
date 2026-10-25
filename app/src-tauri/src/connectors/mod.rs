@@ -17,7 +17,7 @@ pub enum ConnectorKind {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProfileSyncMode {
     SessionHistory,
-    WindowMessagesWithGroupFallback,
+    WindowMessages,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -38,8 +38,6 @@ pub struct ConnectorAdapter {
     pub empty_session_warning: fn(&ImProfile) -> Option<String>,
     pub sessions_ready_message: fn(&ImProfile, i64) -> String,
     pub fetch_concurrency: fn() -> usize,
-    pub should_silence_message_error: fn(&str) -> bool,
-    pub fallback_group_search_queries: fn(&ImProfile) -> Vec<String>,
     pub capabilities: ConnectorCapabilities,
 }
 
@@ -55,7 +53,6 @@ pub struct ConnectorCapabilities {
     pub operating_systems: &'static [&'static str],
     pub architectures: &'static [&'static str],
     pub compatible_runtime_version: &'static str,
-    pub max_parallel_reads: usize,
 }
 
 #[derive(Clone, Serialize)]
@@ -109,7 +106,7 @@ pub fn capability_descriptors() -> Vec<ConnectorCapabilityDescriptor> {
             operating_systems: adapter.capabilities.operating_systems,
             architectures: adapter.capabilities.architectures,
             compatible_runtime_version: adapter.capabilities.compatible_runtime_version,
-            max_parallel_reads: adapter.capabilities.max_parallel_reads,
+            max_parallel_reads: (adapter.fetch_concurrency)(),
         })
         .collect()
 }
@@ -131,14 +128,6 @@ pub fn default_sessions_ready_message(profile: &ImProfile, total: i64) -> String
 
 pub fn official_cli_fetch_concurrency() -> usize {
     OFFICIAL_CLI_FETCH_CONCURRENCY
-}
-
-pub fn no_silent_message_error(_code: &str) -> bool {
-    false
-}
-
-pub fn no_fallback_group_search_queries(_profile: &ImProfile) -> Vec<String> {
-    Vec::new()
 }
 
 pub fn session_history_mode() -> ProfileSyncMode {
@@ -177,5 +166,18 @@ mod capability_tests {
             .map(|descriptor| descriptor.platform)
             .collect::<std::collections::HashSet<_>>();
         assert_eq!(platforms.len(), descriptors.len());
+    }
+}
+
+#[cfg(test)]
+mod concurrency_contract_tests {
+    use super::*;
+    #[test]
+    fn capability_reports_the_actual_adapter_read_limit() {
+        for descriptor in capability_descriptors() {
+            let adapter = find(descriptor.platform).unwrap();
+            assert_eq!(descriptor.max_parallel_reads, (adapter.fetch_concurrency)());
+            assert!(descriptor.max_parallel_reads > 0);
+        }
     }
 }

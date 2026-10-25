@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { releaseUnusedDraft } from "./useBindingDraft";
 import { testProfileRead } from "../../../api/profileReadApi";
 import { PROFILE_MESSAGES } from "../../../constants/messages";
 import { userErrorMessage } from "../../../utils/errors";
@@ -10,7 +12,6 @@ interface UseProfilesControllerParams {
   orderedProfiles: ImProfile[];
   selectedProfiles: ImProfile[];
   onProfilesChange: () => Promise<void>;
-  cleanupPlatformCliIfUnused: (platform: Platform) => Promise<void>;
   openOfficialCliSetup: (platform: OfficialCliBindPlatform, profile: ImProfile) => void;
   setDeletingProfileId: (profileId: string) => void;
   setFormMessage: (message: string) => void;
@@ -26,7 +27,6 @@ export function useProfilesController({
   orderedProfiles,
   selectedProfiles,
   onProfilesChange,
-  cleanupPlatformCliIfUnused,
   openOfficialCliSetup,
   setDeletingProfileId,
   setFormMessage,
@@ -37,14 +37,24 @@ export function useProfilesController({
   setProfileNotice,
   updateProfileReadNotice
 }: UseProfilesControllerParams) {
+  const addRequest = useRef(0);
+  useEffect(() => () => { addRequest.current += 1; }, []);
   async function addProfile(platform: Platform) {
+    const request = ++addRequest.current;
+    let unclaimedDraft: ImProfile | null = null;
     setFormMessage("");
     try {
       const draft = await createProfileDraft(platform, nextProfileSortOrder());
+      unclaimedDraft = draft;
+      if (request !== addRequest.current) { releaseUnusedDraft(draft.id); return; }
       if (isOfficialCliBindPlatform(platform)) {
         openOfficialCliSetup(platform, draft);
+        unclaimedDraft = null;
       }
+      if (unclaimedDraft) releaseUnusedDraft(unclaimedDraft.id);
     } catch (error) {
+      if (unclaimedDraft) releaseUnusedDraft(unclaimedDraft.id);
+      if (request !== addRequest.current) return;
       setFormMessage(userErrorMessage(error, "创建账号配置失败，请重试。"));
     }
   }
@@ -55,13 +65,18 @@ export function useProfilesController({
   }
 
   async function toggleProfile(profile: ImProfile) {
-    await upsertProfile({
-      ...profile,
-      enabled: !profile.enabled,
-      status: profile.enabled ? "disabled" : "normal",
-      updatedAt: new Date().toISOString()
-    });
-    await onProfilesChange();
+    try {
+      await upsertProfile({
+        ...profile,
+        enabled: !profile.enabled,
+        status: profile.enabled ? "disabled" : "normal",
+        updatedAt: profile.updatedAt
+      });
+      await onProfilesChange();
+    } catch (error) {
+      setProfileMessageIsError(true);
+      setProfileMessage(userErrorMessage(error, "账号状态保存失败，请刷新后重试。"));
+    }
   }
 
   async function removeProfile(profile: ImProfile) {
@@ -74,7 +89,6 @@ export function useProfilesController({
     setDeletingProfileId(profile.id);
     try {
       await deleteProfile(profile.id);
-      await cleanupPlatformCliIfUnused(profile.platform);
       setPendingDeleteId("");
       setProfileMessageIsError(false);
       setProfileMessage("");

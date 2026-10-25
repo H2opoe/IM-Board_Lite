@@ -3,29 +3,37 @@ async fn ensure_local_deepseek_runtime(
     state: &AppState,
     force_restart: bool,
 ) -> Result<String, String> {
-    let _startup_guard = state.local_model_runtime.startup_guard().await;
+    ensure_local_deepseek_runtime_with_cancel(app, state, force_restart, None).await
+}
+
+async fn ensure_local_deepseek_runtime_with_cancel(
+    app: &AppHandle,
+    state: &AppState,
+    force_restart: bool,
+    cancel: Option<&std::sync::atomic::AtomicBool>,
+) -> Result<String, String> {
+    use super::runtime_startup::{await_step, StartupProcessCleanup};
+    let _startup_guard = await_step(cancel, state.local_model_runtime.startup_guard()).await?;
+    let mut startup_cleanup = StartupProcessCleanup::new(&state.local_model_runtime);
     if !force_restart
-        && state
-            .local_model_runtime
-            .is_owned_runtime_ready(ai::LOCAL_DEEPSEEK_MODEL)
-            .await
+        && await_step(cancel, state.local_model_runtime.is_owned_runtime_ready(ai::LOCAL_DEEPSEEK_MODEL)).await?
     {
         return Ok(state.local_model_runtime.base_url());
     }
     if state.local_model_runtime.has_owned_process() {
-        let _ = state.local_model_runtime.stop();
+        state.local_model_runtime.stop()?;
     }
 
     SystemCapabilities::detect(&state.app_dir).ensure_local_model_disk_space()?;
     let model_path = state.app_dir.join("Models").join(LOCAL_DEEPSEEK_FILE_NAME);
-    if let Err(error) = verify_local_deepseek_model(&model_path).await {
+    if let Err(error) = await_step(cancel, verify_local_deepseek_model(&model_path)).await? {
         if model_path.exists() {
             move_corrupt_model_to_partial(&state.app_dir, &model_path)?;
         }
         return Err(format!("{error} 已转为可重试下载状态。"));
     }
     write_local_deepseek_verification_marker(&state.app_dir)?;
-    let server_path = ensure_llama_server_binary(app, &state.app_dir).await?;
+    let server_path = await_step(cancel, ensure_llama_server_binary(app, &state.app_dir)).await??;
     for attempt in 0..3 {
         state.local_model_runtime.renew_endpoint()?;
         start_llama_server_process(
@@ -34,15 +42,13 @@ async fn ensure_local_deepseek_runtime(
             &model_path,
             state.local_model_runtime.port(),
         )?;
-        if state
-            .local_model_runtime
-            .wait_until_ready(ai::LOCAL_DEEPSEEK_MODEL, Duration::from_secs(90))
-            .await
-        {
+        startup_cleanup.arm();
+        if await_step(cancel, state.local_model_runtime.wait_until_ready(ai::LOCAL_DEEPSEEK_MODEL, Duration::from_secs(90))).await? {
+            startup_cleanup.disarm();
             return Ok(state.local_model_runtime.base_url());
         }
         let exited_early = !state.local_model_runtime.has_owned_process();
-        let _ = state.local_model_runtime.stop();
+        state.local_model_runtime.stop()?;
         if !exited_early || attempt == 2 {
             break;
         }
@@ -218,25 +224,35 @@ fn start_llama_server_process(
         .arg(tuning.local_model_threads.to_string())
         .stdout(Stdio::null())
         .stderr(stderr);
-    #[cfg(unix)]
-    command.process_group(0);
-    let mut child = command
-        .spawn()
+    let (mut child, generation) = state.local_model_runtime.spawn(command)
         .map_err(|err| format!("启动本地DeepSeek推理服务失败：{err}"))?;
     let child_pid = child.id();
-    let state = app
-        .try_state::<AppState>()
-        .ok_or_else(|| "本地推理运行时状态不可用。".to_owned())?;
-    let generation = state.local_model_runtime.register(child_pid);
     let app_for_wait = app.clone();
     std::thread::spawn(move || {
+        #[cfg(unix)]
+        let exit_result = child.observe_exit();
+        #[cfg(windows)]
         let exit_result = child.wait();
         let Some(state) = app_for_wait.try_state::<AppState>() else {
             return;
         };
-        let was_active_server = state
+        let was_active_server = match state
             .local_model_runtime
-            .clear_if_owned(child_pid, generation);
+            .observe_wait(child_pid, generation, &exit_result)
+        {
+            Ok(active) => active,
+            Err(error) => {
+                crate::diagnostics::record_error_event(
+                    &state,
+                    crate::diagnostics::local_ai_error_event(
+                        "llama_server_cleanup",
+                        &error,
+                        serde_json::json!({ "pid": child_pid }),
+                    ),
+                );
+                return;
+            }
+        };
         if !was_active_server {
             return;
         }

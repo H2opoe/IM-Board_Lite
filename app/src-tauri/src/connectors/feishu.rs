@@ -1,6 +1,5 @@
 use super::{
-    default_sessions_ready_message, no_fallback_group_search_queries,
-    no_prepare_profile_sync_access, no_silent_message_error, official_cli_fetch_concurrency,
+    default_sessions_ready_message, no_prepare_profile_sync_access, official_cli_fetch_concurrency,
     session_history_mode, ConnectorAdapter, ConnectorCapabilities, ConnectorKind,
     SessionDiscoveryStep,
 };
@@ -19,8 +18,6 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
     empty_session_warning,
     sessions_ready_message: default_sessions_ready_message,
     fetch_concurrency,
-    should_silence_message_error: no_silent_message_error,
-    fallback_group_search_queries: no_fallback_group_search_queries,
     capabilities: ConnectorCapabilities {
         label: "飞书",
         auth_description: "使用官方CLI授权",
@@ -36,8 +33,7 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
         editions: &["full", "lite"],
         operating_systems: &["macos", "windows"],
         architectures: &["aarch64", "x86_64"],
-        compatible_runtime_version: "1.0.65",
-        max_parallel_reads: 4,
+        compatible_runtime_version: "1.0.98",
     },
 };
 

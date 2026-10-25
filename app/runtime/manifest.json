@@ -20,6 +20,24 @@
       "fileCount": 49,
       "sizeBytes": 26417618,
       "treeSha256": "413d8c4ce005d04d57a22c516dfd8e54b5bcebbc544a824d8d491adb2de1ea2e"
+    },
+    {
+      "id": "dws",
+      "version": "1.0.65-imboard.1",
+      "platform": "darwin-arm64",
+      "path": "dws/1.0.65-imboard.1/darwin-arm64",
+      "fileCount": 1,
+      "sizeBytes": 16448827,
+      "treeSha256": "f0d3cf1b8ad69f9e7a0efca05f8d5f865de8a0452865681f5ee01e25ea8e33b5"
+    },
+    {
+      "id": "dws",
+      "version": "1.0.65-imboard.1",
+      "platform": "darwin-x64",
+      "path": "dws/1.0.65-imboard.1/darwin-x64",
+      "fileCount": 1,
+      "sizeBytes": 17697247,
+      "treeSha256": "bc8b5f15d5e4b087f0db337266c8a0253a412bd9b80aad461d75726fba8f36d4"
     }
   ]
 }

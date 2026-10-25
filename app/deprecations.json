@@ -17,7 +17,7 @@
       "removeAfter": "4.0.0",
       "owner": "local-ai",
       "replacement": "当前本地 DeepSeek 模型配置",
-      "verification": "前端设置回归测试"
+      "verification": "src/pages/Settings/aiConfigDefaults.test.ts: upgrades only the retired built-in model and preserves custom models"
     },
     {
       "id": "legacy-sync-frequency-local-storage",
@@ -35,7 +35,16 @@
       "removeAfter": "4.0.0",
       "owner": "feishu-connector",
       "replacement": "当前飞书官方 CLI 配置目录",
-      "verification": "飞书授权状态端到端检查"
+      "verification": "bridge_runner::feishu_runner::config_compatibility_tests; native authorization acceptance remains pending"
+    },
+    {
+      "id": "legacy-ai-provider-aliases",
+      "purpose": "将旧提供商名称映射为现有名称，保留用户的模型名和服务地址。",
+      "introducedIn": "3.0.0",
+      "removeAfter": "4.0.0",
+      "owner": "ai-settings",
+      "replacement": "火山方舟及其他本地模型提供商名称",
+      "verification": "src/pages/Settings/aiConfigDefaults.test.ts: renames aliases without replacing endpoint or model"
     }
   ]
 }

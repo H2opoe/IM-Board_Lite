@@ -25,7 +25,7 @@ export function App() {
   const [activeView, setActiveView] = useState<AppView>("dashboard");
   const [drawerItem, setDrawerItem] = useState<ActionItem | null>(null);
   const demoMode = isDemoMode();
-  const { profiles, refreshProfiles } = useProfilesStore();
+  const { profiles, refreshProfiles, profilesError, isRefreshing, retryProfiles } = useProfilesStore();
   const { themeChoice, effectiveThemeMode, handleThemeChange } = useThemeController();
   const { dashboard, dashboardProfileId, setDashboard } = useDashboardStore(activeProfileId, activeView === "dashboard");
   const isDashboardReady = Boolean(dashboard && dashboardProfileId === activeProfileId);
@@ -46,6 +46,9 @@ export function App() {
   return (
     <AppShell
       profiles={profiles}
+      profilesError={profilesError}
+      isRefreshingProfiles={isRefreshing}
+      onReloadProfiles={() => void retryProfiles()}
       activeProfileId={activeProfileId}
       activeView={activeView}
       onSelectProfile={(profileId) => {

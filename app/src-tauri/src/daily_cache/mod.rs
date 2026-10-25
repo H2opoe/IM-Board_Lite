@@ -1,4 +1,8 @@
-use chrono::{Datelike, Duration, Local, TimeZone};
+pub(crate) mod action_day;
+mod day;
+use day::current_dashboard_day_info;
+pub use day::DashboardDay;
+
 use rusqlite::{params, Connection, OptionalExtension};
 
 pub const DEFAULT_CACHE_CLEAR_MINUTES: i64 = 0;
@@ -12,47 +16,75 @@ pub struct RolloverResult {
     pub current_day: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct DashboardDay {
-    pub day: String,
-    pub day_start_timestamp: i64,
-    pub day_start_text: String,
-    pub sync_end_timestamp: i64,
-    pub sync_end_text: String,
+pub fn detect_day_rollover(conn: &Connection) -> anyhow::Result<(RolloverResult, DashboardDay)> {
+    rollover_with(conn, current_dashboard_day_info)
 }
 
-pub fn detect_day_rollover(conn: &Connection) -> anyhow::Result<RolloverResult> {
-    let today = current_dashboard_day(conn)?;
-    let stored: String = conn.query_row(
+fn rollover_with(
+    conn: &Connection,
+    resolve_day: impl FnOnce(&Connection) -> anyhow::Result<DashboardDay>,
+) -> anyhow::Result<(RolloverResult, DashboardDay)> {
+    let tx = conn.unchecked_transaction()?;
+    let snapshot = resolve_day(&tx)?;
+    let today = snapshot.day.clone();
+    let stored: String = tx.query_row(
         "select value from app_meta where key = 'current_day'",
         [],
         |row| row.get(0),
     )?;
 
     if stored == today {
-        return Ok(RolloverResult {
-            rolled_over: false,
-            previous_day: stored,
-            current_day: today,
-        });
+        return Ok((
+            RolloverResult {
+                rolled_over: false,
+                previous_day: stored,
+                current_day: today,
+            },
+            snapshot,
+        ));
     }
 
-    clear_expired_daily_cache(conn, &today)?;
-    reset_daily_sync_state(conn, &today)?;
-    conn.execute(
+    clear_expired_daily_cache(&tx, &today)?;
+    reset_daily_sync_state(&tx, &today)?;
+    tx.execute(
         "insert into app_meta(key, value, updated_at) values('current_day', ?1, datetime('now'))
          on conflict(key) do update set value = excluded.value, updated_at = excluded.updated_at",
         params![today],
     )?;
 
-    Ok(RolloverResult {
-        rolled_over: true,
-        previous_day: stored,
-        current_day: today,
-    })
+    tx.commit()?;
+
+    Ok((
+        RolloverResult {
+            rolled_over: true,
+            previous_day: stored,
+            current_day: today,
+        },
+        snapshot,
+    ))
 }
 
-pub fn clear_expired_daily_cache(conn: &Connection, today: &str) -> anyhow::Result<()> {
+// Call while holding the database mutex, and keep it held through the write.
+// A completed rollover invalidates work that was started for another day.
+pub(crate) fn ensure_current_day(conn: &Connection, expected: &str) -> anyhow::Result<()> {
+    let current: String = conn.query_row(
+        "select value from app_meta where key = 'current_day'",
+        [],
+        |row| row.get(0),
+    )?;
+    anyhow::ensure!(
+        current == expected,
+        "看板日期已切换，请重新同步今天的数据。"
+    );
+    Ok(())
+}
+
+// Require the caller's transaction so cleanup cannot be accidentally split
+// across independently committed statements.
+pub(crate) fn clear_expired_daily_cache(
+    conn: &rusqlite::Transaction<'_>,
+    today: &str,
+) -> anyhow::Result<()> {
     clear_expired_action_items(conn, today)?;
     conn.execute("delete from daily_messages where day <> ?1", params![today])?;
     conn.execute("delete from daily_stats where day <> ?1", params![today])?;
@@ -66,55 +98,21 @@ pub fn clear_expired_daily_cache(conn: &Connection, today: &str) -> anyhow::Resu
 
 fn clear_expired_action_items(conn: &Connection, today: &str) -> anyhow::Result<()> {
     // 每日清理只延续历史未完成的待回复/待办；已完成、忽略和其他类型随过期看板数据一起移除。
-    conn.execute(
-        "delete from action_items
-         where not (
-           status = 'open'
-           and type in ('reply', 'task')
-           and carry_over = 1
-         )
-         and coalesce((
-           select max(daily_messages.day)
-           from daily_messages
-           where daily_messages.id in (
-             select value from json_each(action_items.source_message_ids)
-           )
-         ), date(first_detected_at)) <> ?1",
-        params![today],
-    )?;
+    for action in action_day::resolve_action_days(conn)? {
+        if action.day.expired_on(today) {
+            conn.execute(
+                "delete from action_items where id = ?1
+                 and not (status = 'open' and type in ('reply', 'task'))",
+                params![action.id],
+            )?;
+        }
+    }
     Ok(())
 }
 
 pub fn reset_daily_sync_state(conn: &Connection, today: &str) -> anyhow::Result<()> {
     conn.execute("delete from sync_state where day <> ?1", params![today])?;
     Ok(())
-}
-
-pub fn current_dashboard_day(conn: &Connection) -> anyhow::Result<String> {
-    Ok(current_dashboard_day_info(conn)?.day)
-}
-
-pub fn current_dashboard_day_info(conn: &Connection) -> anyhow::Result<DashboardDay> {
-    let minutes = cache_clear_minutes(conn)?;
-    let now = Local::now();
-    let day_date = if now < today_clear_at(minutes)? {
-        now.date_naive() - Duration::days(1)
-    } else {
-        now.date_naive()
-    };
-    let day_start = Local
-        .with_ymd_and_hms(day_date.year(), day_date.month(), day_date.day(), 0, 0, 0)
-        .single()
-        .ok_or_else(|| anyhow::anyhow!("无法计算看板日期开始时间。"))?;
-    let day = day_date.format("%Y-%m-%d").to_string();
-
-    Ok(DashboardDay {
-        day: day.clone(),
-        day_start_timestamp: day_start.timestamp(),
-        day_start_text: format!("{day} 00:00:00"),
-        sync_end_timestamp: now.timestamp(),
-        sync_end_text: now.format("%Y-%m-%d %H:%M:%S").to_string(),
-    })
 }
 
 pub fn cache_clear_minutes(conn: &Connection) -> anyhow::Result<i64> {
@@ -141,15 +139,6 @@ pub fn set_cache_clear_minutes(conn: &Connection, minutes: i64) -> anyhow::Resul
     Ok(())
 }
 
-fn today_clear_at(minutes: i64) -> anyhow::Result<chrono::DateTime<Local>> {
-    let now = Local::now();
-    let midnight = Local
-        .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
-        .single()
-        .ok_or_else(|| anyhow::anyhow!("无法计算缓存清理时间。"))?;
-    Ok(midnight + Duration::minutes(minutes))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -159,6 +148,8 @@ mod tests {
         let conn = Connection::open_in_memory().expect("in-memory sqlite");
         conn.execute_batch(include_str!("../../migrations/001_init.sql"))
             .expect("schema");
+        conn.execute_batch(include_str!("../../migrations/005_action_detected_day.sql"))
+            .expect("action detection schema");
         conn.execute(
             "insert into daily_messages(
                id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id,
@@ -195,7 +186,7 @@ mod tests {
                     '2026-05-09 11:30:00'),
                    ('act-legacy-open', 'reply', 'open', 'high', '旧版未完成', '旧版未完成描述',
                     'profile-1', 'feishu', 'chat-1', '旧群', '[]',
-                    '旧版未完成证据', 1, '2026-05-07 08:00:00', '2026-05-07 08:00:00', null),
+                    '旧版未完成证据', 0, '2026-05-07 08:00:00', '2026-05-07 08:00:00', null),
                    ('act-legacy-done', 'reply', 'done', 'high', '旧版已完成', '旧版已完成描述',
                     'profile-1', 'feishu', 'chat-1', '旧群', '[]',
                     '旧版已完成证据', 1, '2026-05-07 08:00:00', '2026-05-07 08:30:00',
@@ -204,7 +195,9 @@ mod tests {
         )
         .expect("action items");
 
-        clear_expired_daily_cache(&conn, "2026-05-09").expect("clear expired cache");
+        let tx = conn.unchecked_transaction().unwrap();
+        clear_expired_daily_cache(&tx, "2026-05-09").expect("clear expired cache");
+        tx.commit().unwrap();
 
         assert_eq!(
             action_item_ids(&conn),
@@ -233,3 +226,10 @@ mod tests {
             .expect("collect ids")
     }
 }
+
+#[cfg(test)]
+mod rollover_tests;
+
+#[cfg(test)]
+#[path = "action_day_rollover_tests.rs"]
+mod action_day_rollover_tests;

@@ -3,7 +3,7 @@ use anyhow::Context;
 use rusqlite::{params, Connection, OptionalExtension};
 
 #[cfg(not(test))]
-const AI_KEYRING_SERVICE: &str = "com.local.im-board.ai";
+const AI_KEYRING_SERVICE: &str = crate::edition::AI_KEYRING_SERVICE;
 #[cfg(not(test))]
 const AI_KEYRING_ACCOUNT: &str = "default-api-key";
 
@@ -72,6 +72,7 @@ pub fn migrate_legacy_ai_api_key(conn: &Connection) -> anyhow::Result<bool> {
     };
 
     store_ai_api_key(&legacy)?;
+    conn.pragma_update(None, "secure_delete", "ON")?;
     conn.execute(
         "update ai_config set api_key = '', updated_at = datetime('now') where id = 1",
         params![],

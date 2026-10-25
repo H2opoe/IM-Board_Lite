@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "IM-Board",
-  "mainBinaryName": "IM-Board",
+  "productName": "IM-Board Lite",
+  "mainBinaryName": "IM-Board-Lite",
   "version": "3.0.0",
-  "identifier": "com.local.im-board",
+  "identifier": "com.local.im-board-lite",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
@@ -44,10 +44,12 @@
       "../runtime/llama.cpp/*/darwin-arm64/**/*",
       "../runtime/llama.cpp/*/darwin-x64/**/*",
       "icons/icon-light.png",
-      "icons/icon-dark.png"
+      "icons/icon-dark.png",
+      "../runtime/dws/*/darwin-arm64/**/*",
+      "../runtime/dws/*/darwin-x64/**/*"
     ],
     "macOS": {
-      "bundleName": "IM-Board",
+      "bundleName": "IM-Board Lite",
       "bundleVersion": "30000"
     }
   }

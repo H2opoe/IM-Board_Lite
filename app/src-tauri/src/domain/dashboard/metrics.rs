@@ -216,6 +216,7 @@ mod tests {
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn insert_message_with_content(
         conn: &rusqlite::Connection,
         id: &str,

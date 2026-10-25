@@ -9,6 +9,10 @@ pub(super) fn persist_analysis_across_profiles(
     messages: &[AnalysisMessage],
     analysis: AiAnalysis,
 ) -> anyhow::Result<PersistedAnalysis> {
+    anyhow::ensure!(
+        crate::daily_cache::action_day::canonical_day(day).is_some(),
+        "事项检测日期格式无效。"
+    );
     let tx = conn.unchecked_transaction()?;
     let message_sources = analysis_message_sources(messages);
 
@@ -57,9 +61,9 @@ pub(super) fn persist_analysis_across_profiles(
             "insert into action_items(
                id, type, status, priority, title, description, suggested_reply, profile_id, platform,
                chat_id, chat_name, source_message_ids, evidence_summary, context_incomplete, carry_over,
-               first_detected_at, last_updated_at, completed_at
+               first_detected_at, last_updated_at, completed_at, detected_day
              )
-             values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 1, ?15, datetime('now'), ?16)
+             values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 1, ?15, datetime('now'), ?16, ?17)
              on conflict(id) do update set
                status = excluded.status,
                priority = excluded.priority,
@@ -88,6 +92,7 @@ pub(super) fn persist_analysis_across_profiles(
                 i64::from(item.context_incomplete),
                 first_detected_at,
                 completed_at,
+                day,
             ],
         )?;
         inserted += 1;

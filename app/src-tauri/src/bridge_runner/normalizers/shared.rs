@@ -56,26 +56,3 @@ pub(in crate::bridge_runner) fn parse_local_timestamp(value: &str) -> Option<i64
                 .map(|datetime| datetime.timestamp())
         })
 }
-
-pub(in crate::bridge_runner) fn today_start_text() -> String {
-    Local::now().format("%Y-%m-%d 00:00:00").to_string()
-}
-
-pub(in crate::bridge_runner) fn now_text() -> String {
-    Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
-}
-
-pub(in crate::bridge_runner) fn remove_empty_json_fields(
-    value: serde_json::Value,
-) -> serde_json::Value {
-    let Some(object) = value.as_object() else {
-        return value;
-    };
-    serde_json::Value::Object(
-        object
-            .iter()
-            .filter(|(_, value)| !value.as_str().is_some_and(str::is_empty))
-            .map(|(key, value)| (key.clone(), value.clone()))
-            .collect(),
-    )
-}

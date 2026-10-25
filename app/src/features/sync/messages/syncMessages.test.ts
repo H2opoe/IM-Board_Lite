@@ -18,6 +18,12 @@ function result(overrides: Partial<SyncResult> = {}): SyncResult {
 }
 
 describe("syncCompletionMessage", () => {
+  it("does not show an error or success toast for a skipped empty sync", () => {
+    for (const mode of ["incremental", "full_resync", "retry_analysis"] as const) {
+      expect(syncCompletionMessage(mode, result({ syncStatus: "idle" }))).toBe("");
+    }
+  });
+
   it("does not describe a total failure as success", () => {
     expect(syncCompletionMessage("incremental", result({ syncStatus: "failed" }))).toContain(
       "没有账号同步成功"

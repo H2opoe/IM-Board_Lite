@@ -4,16 +4,7 @@ use crate::security::sanitize_log;
 
 use super::{BridgeEnvelope, BridgeError};
 
-pub(super) fn classify_wecom_cli_error(detail: &str) -> Option<BridgeError> {
-    if detail.contains("暂不支持授权机器人") && detail.contains("消息") {
-        return Some(BridgeError {
-            code: "WECOM_MESSAGE_PERMISSION_UNSUPPORTED".to_owned(),
-            message: "当前企业或授权机器人暂不支持企业微信「消息」权限；IM看板需要读取会话列表和聊天记录，因此无法同步企业微信消息。请在企业微信管理后台确认API模式智能机器人是否开放消息能力，或更换支持消息权限的企业/机器人后重新绑定。".to_owned(),
-            recoverable: true,
-        });
-    }
-    None
-}
+pub(super) use super::wecom_errors::classify_wecom_cli_error;
 
 pub(super) fn not_authenticated_message(platform_label: &str) -> String {
     format!(
@@ -258,9 +249,7 @@ pub(super) fn classify_feishu_cli_structured_error(
     raw: &serde_json::Value,
     stderr: &str,
 ) -> Option<BridgeError> {
-    let Some(error) = raw.get("error") else {
-        return None;
-    };
+    let error = raw.get("error")?;
     let reason = error
         .get("reason")
         .and_then(|value| value.as_str())
@@ -479,7 +468,20 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
         .and_then(|value| value.pointer("/error/data/code"))
         .and_then(|value| value.as_str())
         .unwrap_or_default();
-    if reason == "not_authenticated"
+    let normalized_detail = detail.to_ascii_lowercase();
+    // Missing private token storage means login has not completed. Do not
+    // classify generic code 5, permission errors, or decryption failures as auth.
+    let missing_token_store = normalized_detail.contains("resolve access token")
+        && normalized_detail.contains("secure data file")
+        && normalized_detail.contains(".data")
+        && (normalized_detail.contains("no such file or directory")
+            || normalized_detail.contains("(os error 2)")
+            || normalized_detail.contains("the system cannot find the file specified")
+            || normalized_detail.contains("the system cannot find the path specified")
+            || normalized_detail.contains("系统找不到指定的文件")
+            || normalized_detail.contains("系统找不到指定的路径"));
+    if missing_token_store
+        || reason == "not_authenticated"
         || detail.contains("not_authenticated")
         || detail.contains("未登录")
     {
@@ -497,6 +499,13 @@ pub(super) fn classify_dingtalk_cli_error(stdout: &str, stderr: &str) -> Option<
         || detail.contains("该组织尚未开启 CLI数据访问权限")
         || compact_detail.contains("CLI数据访问权限")
         || detail.contains("TOKEN_VERIFIED_FAILED")
+        // 钉钉 group-chat 服务未订阅时，官方 CLI 会把组织侧能力未开通包装成 PARAM_ERROR。
+        || (detail.contains("McpService")
+            && detail.contains("not subscribed")
+            && detail.contains("group-chat"))
+        || (detail.contains("HSF_ILLEGALPARAMS")
+            && detail.contains("service with name")
+            && detail.contains("not subscribed"))
         || (detail.contains("business_error")
             && detail.contains("group-chat")
             && (detail.contains("developerSettings")

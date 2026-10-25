@@ -1,0 +1,10 @@
+{
+  "commit": "92c4f8c355c749ec470c68f998d862a00d7d1709",
+  "version": "1.0.65",
+  "url": "https://codeload.github.com/DingTalk-Real-AI/dingtalk-workspace-cli/tar.gz/92c4f8c355c749ec470c68f998d862a00d7d1709",
+  "sha256": "e6227e4541a86575a90ceb5ed08223223d7f1d8357b7d97aceeeb0810aad0ce7",
+  "patchSha256": "c07950823b6a8b3741a9c285aafc72c29881186be4b1b15255281c1b897acfb9",
+  "goVersion": "go1.27.1",
+  "adaptationVersion": "1.0.65-imboard.1",
+  "namespaceEnv": "IM_BOARD_DWS_NAMESPACE"
+}

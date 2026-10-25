@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { deleteProfile, upsertProfile } from "../api/profilesApi";
 import { APP_MESSAGES, PROFILE_MESSAGES } from "../../../constants/messages";
 import { userErrorMessage } from "../../../utils/errors";
-import type { ImProfile, Platform } from "../model/types";
+import type { ImProfile } from "../model/types";
 
 const BULK_DELETE_ID = "__bulk_delete__";
 
@@ -15,7 +15,6 @@ interface UseProfileBatchManagementParams {
   setIsBatchManaging: (value: boolean) => void;
   setProfileNotice: (message: string, isError?: boolean) => void;
   clearPendingDelete: () => void;
-  cleanupPlatformCliIfUnused: (platform: Platform) => Promise<void>;
 }
 
 export function useProfileBatchManagement({
@@ -27,8 +26,8 @@ export function useProfileBatchManagement({
   setIsBatchManaging,
   setProfileNotice,
   clearPendingDelete,
-  cleanupPlatformCliIfUnused
 }: UseProfileBatchManagementParams) {
+  const batchRunning = useRef(false);
   const [pendingBulkDeleteIds, setPendingBulkDeleteIds] = useState<string[]>([]);
   const [deletingProfileId, setDeletingProfileId] = useState("");
   const [selectedProfileIds, setSelectedProfileIds] = useState<Set<string>>(() => new Set());
@@ -94,35 +93,49 @@ export function useProfileBatchManagement({
     });
   }
 
+  async function showBatchResult(message: string, failed: boolean) {
+    try {
+      await onProfilesChange();
+      setProfileNotice(message, failed);
+    } catch (error) {
+      setProfileNotice(`${message} 刷新账号列表失败：${userErrorMessage(error, "请重新刷新。")}`, true);
+    }
+  }
+
   async function setSelectedProfilesEnabled(enabled: boolean) {
+    if (batchRunning.current) return;
     if (selectedProfiles.length === 0) {
       setProfileNotice(PROFILE_MESSAGES.selectForManage);
       return;
     }
-    const label = enabled ? "启用" : "暂停";
+    batchRunning.current = true;
     const profilesToUpdate = selectedProfiles;
+    const label = enabled ? "启用" : "暂停";
     setPendingBulkDeleteIds([]);
     setProfileNotice(PROFILE_MESSAGES.batchStatusStart(label, profilesToUpdate.length));
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         profilesToUpdate.map((profile) =>
           upsertProfile({
             ...profile,
             enabled,
             status: enabled ? "normal" : "disabled",
-            updatedAt: new Date().toISOString()
+            updatedAt: profile.updatedAt
           })
         )
       );
-      const successMessage = PROFILE_MESSAGES.batchStatusSuccess(label, profilesToUpdate.length);
-      setProfileNotice(successMessage);
-      await onProfilesChange();
-    } catch (error) {
-      setProfileNotice(userErrorMessage(error, PROFILE_MESSAGES.batchStatusFailed(label)), true);
+      const failures = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
+      const message = failures.length === 0
+        ? PROFILE_MESSAGES.batchStatusSuccess(label, results.length)
+        : `批量${label}：完成 ${results.length - failures.length} 个，未完成 ${failures.length} 个。${userErrorMessage(failures[0].reason, PROFILE_MESSAGES.batchStatusFailed(label))}`;
+      await showBatchResult(message, failures.length > 0);
+    } finally {
+      batchRunning.current = false;
     }
   }
 
   function requestBulkDeleteProfiles() {
+    if (batchRunning.current) return;
     if (selectedProfiles.length === 0) {
       setProfileNotice(PROFILE_MESSAGES.selectForDelete);
       return;
@@ -139,33 +152,40 @@ export function useProfileBatchManagement({
   }
 
   async function confirmBulkDeleteProfiles() {
+    if (batchRunning.current) return;
     const profilesToDelete = orderedProfiles.filter((profile) => pendingBulkDeleteIds.includes(profile.id));
     if (profilesToDelete.length === 0) {
       setPendingBulkDeleteIds([]);
       return;
     }
+    batchRunning.current = true;
     setDeletingProfileId(BULK_DELETE_ID);
+    const failedIds: string[] = [];
+    let firstError: unknown;
     try {
       for (const profile of profilesToDelete) {
-        await deleteProfile(profile.id);
+        try {
+          await deleteProfile(profile.id);
+        } catch (error) {
+          failedIds.push(profile.id);
+          firstError ??= error;
+        }
       }
-      for (const platform of new Set(profilesToDelete.map((profile) => profile.platform))) {
-        await cleanupPlatformCliIfUnused(platform);
-      }
-      setPendingBulkDeleteIds([]);
-      setSelectedProfileIds(new Set());
-      setProfileNotice(PROFILE_MESSAGES.bulkDeleteSuccess(profilesToDelete.length));
-      await onProfilesChange();
-    } catch (error) {
-      setProfileNotice(userErrorMessage(error, PROFILE_MESSAGES.bulkDeleteFailed), true);
+      setPendingBulkDeleteIds(failedIds);
+      setSelectedProfileIds(new Set(failedIds));
+      const message = failedIds.length === 0
+        ? PROFILE_MESSAGES.bulkDeleteSuccess(profilesToDelete.length)
+        : `批量删除：完成 ${profilesToDelete.length - failedIds.length} 个，未完成 ${failedIds.length} 个。${userErrorMessage(firstError, PROFILE_MESSAGES.bulkDeleteFailed)}`;
+      await showBatchResult(message, failedIds.length > 0);
     } finally {
       setDeletingProfileId("");
+      batchRunning.current = false;
     }
   }
 
   function handleBulkDeleteProfiles() {
     if (isBulkDeleteConfirming) {
-      void confirmBulkDeleteProfiles();
+      return confirmBulkDeleteProfiles();
       return;
     }
     requestBulkDeleteProfiles();

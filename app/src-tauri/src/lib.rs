@@ -1,13 +1,20 @@
 mod ai;
 mod analysis;
+mod bridge_registry;
 mod bridge_runner;
 mod commands;
 mod connectors;
 mod daily_cache;
 mod diagnostics;
 mod domain;
+mod edition;
+mod exit_cleanup;
 mod local_runtime_supervisor;
 mod messages;
+#[cfg(unix)]
+mod process_group;
+#[cfg(windows)]
+mod process_job;
 mod profile_manager;
 mod runtime;
 mod security;
@@ -96,17 +103,18 @@ pub fn run() {
             commands::profiles::list_profiles,
             commands::profiles::get_connector_capabilities,
             commands::profiles::create_profile_draft,
+            commands::profiles::release_profile_draft,
             commands::profiles::reorder_profiles,
             commands::profiles::upsert_profile,
             commands::profiles::delete_profile,
             commands::dashboard::get_dashboard,
             commands::dashboard::mark_action_item,
             commands::bridge::check_platform_cli_update,
-            commands::bridge::cleanup_unused_platform_cli,
             commands::bridge::deploy_platform_bridge,
             commands::bridge::run_bridge_command,
             commands::bridge::update_platform_cli,
             commands::app::get_app_settings,
+            commands::app::import_legacy_data,
             commands::app::open_macos_privacy_settings,
             commands::app::export_diagnostic_package,
             commands::app::save_app_settings,
@@ -122,6 +130,7 @@ pub fn run() {
             commands::ai::save_ai_config,
             commands::ai::test_ai_connection,
             commands::sync::cancel_sync,
+            commands::sync::get_sync_job_state,
             commands::sync::initialize_auto_sync_frequency_minutes,
             commands::sync::set_auto_sync_frequency_minutes,
             commands::sync::run_sync_job
@@ -143,8 +152,16 @@ pub fn run() {
             tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
         ) {
             if let Some(state) = app.try_state::<AppState>() {
-                let _ = sync::job::terminate_tracked_sync_bridges(&state);
-                let _ = state.local_model_runtime.stop();
+                let phase = if matches!(&event, tauri::RunEvent::ExitRequested { .. }) {
+                    exit_cleanup::ExitPhase::Requested
+                } else {
+                    exit_cleanup::ExitPhase::Exiting
+                };
+                let failures = exit_cleanup::collect_failures(
+                    || sync::job::terminate_tracked_sync_bridges(&state),
+                    || state.local_model_runtime.stop(),
+                );
+                exit_cleanup::report_failures(&state, phase, failures);
             }
         }
     });

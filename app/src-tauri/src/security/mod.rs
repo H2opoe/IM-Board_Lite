@@ -1,5 +1,7 @@
 pub mod credentials;
 mod redaction;
 
-#[allow(unused_imports)]
-pub use redaction::{redact_json_value, sanitize_log, truncate_sanitized};
+pub use redaction::sanitize_log;
+
+pub mod diagnostic_privacy;
+pub use diagnostic_privacy::diagnostic_metadata;
