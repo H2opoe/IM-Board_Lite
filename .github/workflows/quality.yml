@@ -20,6 +20,8 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -36,11 +38,78 @@ jobs:
         run: npm run verify:lite-boundary --if-present
       - name: Frontend tests
         run: npm test
+      - name: Build script regressions
+        run: npm run test:scripts
       - name: Frontend production build
-        run: npm run build
+        run: npm run verify:release-config && npm run verify:deprecations && npm run build:ui
+      - name: Verify runtime metadata on every host
+        run: npm run verify:runtime-manifest -- --metadata-only
+      - name: Verify release payload on target host
+        if: runner.os == 'Windows'
+        run: npm run verify:runtime-manifest
       - name: Rust formatting
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
       - name: Rust static analysis
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D clippy::correctness
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
+
+  rust-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install RustSec auditor
+        run: cargo install cargo-audit --version 0.22.2 --locked
+      - name: Audit locked Rust dependencies
+        run: cargo audit --file app/src-tauri/Cargo.lock
+
+  dws-isolation:
+    runs-on: windows-2022
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Rebuild isolated DWS and run native namespace fixtures
+        shell: pwsh
+        run: |
+          python scripts/build-dws-isolated.py --work-dir "$env:RUNNER_TEMP/dws-build" --output "$env:RUNNER_TEMP/dws-rebuilt.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $rebuilt = (Get-FileHash "$env:RUNNER_TEMP/dws-rebuilt.exe" -Algorithm SHA256).Hash
+          $bundled = (Get-FileHash "runtime/dws/1.0.65-imboard.1/win-x64/dws.exe" -Algorithm SHA256).Hash
+          if ($rebuilt -cne $bundled) { throw 'DWS reproducible build differs from bundled binary' }
+          foreach ($suffix in @('dependencies.json', 'THIRD-PARTY-NOTICES.txt')) {
+            $generated = (Get-FileHash "$env:RUNNER_TEMP/dws-rebuilt.$suffix" -Algorithm SHA256).Hash
+            $shipped = (Get-FileHash "runtime/dws/1.0.65-imboard.1/win-x64/$suffix" -Algorithm SHA256).Hash
+            if ($generated -cne $shipped) { throw "DWS dependency evidence differs: $suffix" }
+          }
+      - name: Audit bundled DWS against the Go vulnerability database
+        shell: pwsh
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $scanner = Join-Path (go env GOPATH) 'bin/govulncheck.exe'
+          & $scanner -mode=binary -show=verbose runtime/dws/1.0.65-imboard.1/win-x64/dws.exe | Tee-Object "$env:RUNNER_TEMP/dws-vulnerabilities.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Preserve isolated runtime provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dws-isolation-provenance
+          path: |
+            ${{ runner.temp }}/dws-rebuilt.provenance.json
+            ${{ runner.temp }}/dws-rebuilt.dependencies.json
+            ${{ runner.temp }}/dws-rebuilt.THIRD-PARTY-NOTICES.txt
+            ${{ runner.temp }}/dws-vulnerabilities.log
+          if-no-files-found: warn
