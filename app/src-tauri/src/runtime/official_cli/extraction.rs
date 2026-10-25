@@ -82,6 +82,11 @@ pub(super) fn extract_tgz_bytes(
 }
 
 fn safe_archive_path(path: &Path, strip_package_prefix: bool) -> Result<PathBuf, String> {
+    // Check the archive spelling before host-specific component parsing can
+    // reinterpret backslashes as separators on Windows.
+    if path.as_os_str().to_string_lossy().contains(['\\', ':']) {
+        return Err(format!("归档包含不安全路径：{}", path.display()));
+    }
     let mut parts = path.components();
     if strip_package_prefix && !matches!(parts.next(), Some(Component::Normal(p)) if p == "package")
     {
@@ -101,6 +106,9 @@ fn safe_archive_path(path: &Path, strip_package_prefix: bool) -> Result<PathBuf,
 }
 
 fn validate_symlink_target(link: &Path, target: &Path) -> Result<(), String> {
+    if target.as_os_str().to_string_lossy().contains(['\\', ':']) {
+        return Err(format!("归档链接包含不安全路径：{}", target.display()));
+    }
     if target.as_os_str().is_empty() {
         return Err("归档链接目标为空。".to_owned());
     }
@@ -154,6 +162,8 @@ mod tests {
             ("../outside", false),
             ("/tmp/outside", false),
             ("../outside", true),
+            ("..\\outside", false),
+            ("package\\outside", true),
         ] {
             let dir = tempfile::tempdir().unwrap();
             let dest = dir.path().join("install");
@@ -176,6 +186,7 @@ mod tests {
             "package/../../escape",
             "package/C:escape",
             "package/a\\b",
+            "package\\file",
         ] {
             assert!(safe_archive_path(Path::new(path), true).is_err(), "{path}");
         }

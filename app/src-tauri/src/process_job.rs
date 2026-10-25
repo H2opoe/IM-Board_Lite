@@ -1,25 +1,42 @@
-//! Owned Windows process tree. Never reopen a process by its numeric PID.
+//! Owned Windows process tree. Only signal the retained Job; PID hints require handle membership verification.
 use std::io;
 use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
 use std::os::windows::process::CommandExt;
 use std::process::{Child, Command};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use windows::Win32::Foundation::{ERROR_NO_MORE_FILES, HANDLE};
+use windows::Win32::Foundation::{
+    DuplicateHandle, DUPLICATE_SAME_ACCESS, ERROR_MORE_DATA, ERROR_NO_MORE_FILES, HANDLE,
+    WAIT_OBJECT_0, WAIT_TIMEOUT,
+};
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Thread32First, Thread32Next, TH32CS_SNAPTHREAD, THREADENTRY32,
 };
 use windows::Win32::System::JobObjects::{
-    AssignProcessToJobObject, CreateJobObjectW, JobObjectBasicAccountingInformation,
+    AssignProcessToJobObject, CreateJobObjectW, IsProcessInJob,
+    JobObjectBasicAccountingInformation, JobObjectBasicProcessIdList,
     JobObjectExtendedLimitInformation, QueryInformationJobObject, SetInformationJobObject,
-    TerminateJobObject, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
+    TerminateJobObject, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION, JOBOBJECT_BASIC_PROCESS_ID_LIST,
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 };
 use windows::Win32::System::Threading::{
-    GetProcessIdOfThread, OpenThread, ResumeThread, CREATE_NO_WINDOW, CREATE_SUSPENDED,
-    THREAD_QUERY_LIMITED_INFORMATION, THREAD_SUSPEND_RESUME,
+    GetCurrentProcess, GetProcessIdOfThread, OpenProcess, OpenThread, ResumeThread,
+    WaitForSingleObject, CREATE_NO_WINDOW, CREATE_SUSPENDED, PROCESS_QUERY_LIMITED_INFORMATION,
+    PROCESS_SYNCHRONIZE, THREAD_QUERY_LIMITED_INFORMATION, THREAD_SUSPEND_RESUME,
 };
 
-pub(crate) struct ProcessJob(OwnedHandle);
+pub(crate) struct ProcessJob {
+    handle: OwnedHandle,
+    exit: Mutex<ExitProof>,
+}
+#[derive(Default)]
+struct ExitProof {
+    leader: Option<OwnedHandle>,
+    members: Vec<OwnedHandle>,
+    requested: bool,
+    total_at_stop: Option<u32>,
+    incomplete: bool,
+}
 
 fn owned(handle: HANDLE) -> OwnedHandle {
     // Only called for successful APIs returning a newly owned, valid handle.
@@ -28,11 +45,14 @@ fn owned(handle: HANDLE) -> OwnedHandle {
 
 impl ProcessJob {
     fn handle(&self) -> HANDLE {
-        HANDLE(self.0.as_raw_handle())
+        HANDLE(self.handle.as_raw_handle())
     }
 
     pub(crate) fn new() -> io::Result<Self> {
-        let job = Self(owned(unsafe { CreateJobObjectW(None, None) }?));
+        let job = Self {
+            handle: owned(unsafe { CreateJobObjectW(None, None) }?),
+            exit: Mutex::new(ExitProof::default()),
+        };
         let mut limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
         limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
         unsafe {
@@ -54,7 +74,10 @@ impl ProcessJob {
         let assigned =
             unsafe { AssignProcessToJobObject(job.handle(), HANDLE(child.as_raw_handle())) }
                 .map_err(io::Error::other);
-        if let Err(error) = assigned.and_then(|()| resume_child(child.id())) {
+        if let Err(error) = assigned
+            .and_then(|()| job.retain_leader(HANDLE(child.as_raw_handle())))
+            .and_then(|()| resume_child(child.id()))
+        {
             // The Child handle is still owned, including assignment failures.
             let _ = child.kill();
             let _ = child.wait();
@@ -79,14 +102,17 @@ impl ProcessJob {
             .ok_or_else(|| io::Error::other("spawned child has no process identity"))?;
         let assigned = unsafe { AssignProcessToJobObject(self.handle(), HANDLE(handle)) }
             .map_err(io::Error::other);
-        if let Err(error) = assigned.and_then(|()| resume_child(pid)) {
+        if let Err(error) = assigned
+            .and_then(|()| self.retain_leader(HANDLE(handle)))
+            .and_then(|()| resume_child(pid))
+        {
             let _ = child.start_kill();
             return Err(error);
         }
         Ok(child)
     }
 
-    pub(crate) fn active_processes(&self) -> io::Result<u32> {
+    fn accounting(&self) -> io::Result<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION> {
         let mut info = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION::default();
         unsafe {
             QueryInformationJobObject(
@@ -97,12 +123,148 @@ impl ProcessJob {
                 None,
             )?;
         }
-        Ok(info.ActiveProcesses)
+        Ok(info)
+    }
+
+    pub(crate) fn active_processes(&self) -> io::Result<u32> {
+        Ok(self.accounting()?.ActiveProcesses)
+    }
+
+    fn retain_leader(&self, process: HANDLE) -> io::Result<()> {
+        let mut duplicate = HANDLE::default();
+        unsafe {
+            DuplicateHandle(
+                GetCurrentProcess(),
+                process,
+                GetCurrentProcess(),
+                &mut duplicate,
+                0,
+                false,
+                DUPLICATE_SAME_ACCESS,
+            )
+        }?;
+        self.exit.lock().unwrap_or_else(|e| e.into_inner()).leader = Some(owned(duplicate));
+        Ok(())
+    }
+
+    fn member_ids(&self) -> io::Result<Vec<u32>> {
+        let mut capacity = 16usize;
+        loop {
+            // usize storage provides alignment for the variable-length Win32 structure.
+            let mut buffer = vec![0usize; capacity + 2];
+            let list = buffer
+                .as_mut_ptr()
+                .cast::<JOBOBJECT_BASIC_PROCESS_ID_LIST>();
+            let result = unsafe {
+                QueryInformationJobObject(
+                    Some(self.handle()),
+                    JobObjectBasicProcessIdList,
+                    list.cast(),
+                    (buffer.len() * std::mem::size_of::<usize>()) as u32,
+                    None,
+                )
+            };
+            match result {
+                Ok(()) => {
+                    let (assigned, count) = unsafe {
+                        (
+                            (*list).NumberOfAssignedProcesses as usize,
+                            (*list).NumberOfProcessIdsInList as usize,
+                        )
+                    };
+                    if assigned <= capacity && count == assigned {
+                        let ids = unsafe {
+                            std::slice::from_raw_parts((*list).ProcessIdList.as_ptr(), count)
+                        };
+                        return ids
+                            .iter()
+                            .map(|&pid| u32::try_from(pid).map_err(io::Error::other))
+                            .collect();
+                    }
+                }
+                Err(error)
+                    if error.code() == windows::core::HRESULT::from_win32(ERROR_MORE_DATA.0) => {}
+                Err(error) => return Err(io::Error::other(error)),
+            }
+            capacity *= 2;
+            if capacity > 16384 {
+                return Err(io::Error::other(
+                    "runtime job membership exceeds supervision capacity",
+                ));
+            }
+        }
+    }
+
+    fn capture_members(&self) -> io::Result<(Vec<OwnedHandle>, u32)> {
+        for _ in 0..16 {
+            let before = self.accounting()?;
+            let ids = self.member_ids()?;
+            let expected = ids.len();
+            let mut handles = Vec::with_capacity(ids.len());
+            for pid in ids {
+                // The PID is only an enumeration hint. Verify membership on the
+                // retained handle; never terminate or trust an unrelated reused PID.
+                let Ok(handle) = (unsafe {
+                    OpenProcess(
+                        PROCESS_SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION,
+                        false,
+                        pid,
+                    )
+                }) else {
+                    break;
+                };
+                let handle = owned(handle);
+                let mut member = windows::core::BOOL::default();
+                unsafe {
+                    IsProcessInJob(
+                        HANDLE(handle.as_raw_handle()),
+                        Some(self.handle()),
+                        &mut member,
+                    )
+                }?;
+                if !member.as_bool() {
+                    break;
+                }
+                handles.push(handle);
+            }
+            let after = self.accounting()?;
+            if before.TotalProcesses == after.TotalProcesses
+                && handles.len() == expected
+                && handles.len() == after.ActiveProcesses as usize
+            {
+                return Ok((handles, after.TotalProcesses));
+            }
+        }
+        Err(io::Error::other(
+            "runtime job membership could not be captured consistently",
+        ))
     }
 
     pub(crate) fn request_termination(&self) -> io::Result<()> {
-        if self.active_processes()? != 0 {
-            unsafe { TerminateJobObject(self.handle(), 1) }?;
+        let mut proof = self.exit.lock().unwrap_or_else(|e| e.into_inner());
+        if !proof.requested {
+            match self.capture_members() {
+                Ok((members, total)) => {
+                    proof.members = members;
+                    proof.total_at_stop = Some(total);
+                }
+                Err(_) => proof.incomplete = true,
+            }
+            proof.requested = true;
+            // TerminateJobObject is asynchronous. An empty job accounting list
+            // is not proof that the retained process objects have been signaled.
+            if let Err(error) = unsafe { TerminateJobObject(self.handle(), 1) } {
+                proof.incomplete = true;
+                return Err(io::Error::other(error));
+            }
+            if Some(self.accounting()?.TotalProcesses) != proof.total_at_stop {
+                // A process joined between capture and termination. Preserve the
+                // uncertain-stop state instead of falsely releasing account access.
+                proof.incomplete = true;
+            }
+        }
+        if proof.incomplete {
+            return Err(io::Error::other("runtime job exit identity is unconfirmed"));
         }
         Ok(())
     }
@@ -112,19 +274,37 @@ impl ProcessJob {
         self.wait_until_empty()
     }
 
+    pub(crate) fn confirm_exit(&self) -> io::Result<bool> {
+        let proof = self.exit.lock().unwrap_or_else(|e| e.into_inner());
+        if !proof.requested
+            || proof.incomplete
+            || Some(self.accounting()?.TotalProcesses) != proof.total_at_stop
+        {
+            return Err(io::Error::other("runtime job exit identity is unconfirmed"));
+        }
+        for handle in proof.leader.iter().chain(&proof.members) {
+            match unsafe { WaitForSingleObject(HANDLE(handle.as_raw_handle()), 0) } {
+                WAIT_OBJECT_0 => {}
+                WAIT_TIMEOUT => return Ok(false),
+                _ => return Err(io::Error::last_os_error()),
+            }
+        }
+        Ok(self.active_processes()? == 0)
+    }
+
     pub(crate) fn wait_until_empty(&self) -> io::Result<()> {
-        let deadline = Instant::now() + Duration::from_secs(2);
+        let deadline = Instant::now() + Duration::from_secs(5);
         loop {
-            if self.active_processes()? == 0 {
+            if self.confirm_exit()? {
                 return Ok(());
             }
             if Instant::now() >= deadline {
                 return Err(io::Error::new(
                     io::ErrorKind::TimedOut,
-                    "runtime job still has active processes",
+                    "runtime job process handles have not exited",
                 ));
             }
-            std::thread::sleep(Duration::from_millis(25));
+            std::thread::sleep(Duration::from_millis(10));
         }
     }
 }

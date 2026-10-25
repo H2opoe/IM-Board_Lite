@@ -84,6 +84,7 @@ pub(super) fn stage(resource_dir: &Path, staging: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "macos")]
     #[tokio::test]
     async fn bundled_payload_installs_and_runs_version_without_account_access() {
         let dir = tempfile::tempdir().unwrap();

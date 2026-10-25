@@ -162,7 +162,7 @@ impl PendingExits {
         #[cfg(unix)]
         self.refresh_with(|owner| owner.confirm_exit().map(|exited| !exited));
         #[cfg(windows)]
-        self.refresh_with(|job| job.active_processes().map(|count| count > 0));
+        self.refresh_with(|job| job.confirm_exit().map(|exited| !exited));
     }
 
     fn refresh_with(&self, mut exists: impl FnMut(&ExitTarget) -> std::io::Result<bool>) {

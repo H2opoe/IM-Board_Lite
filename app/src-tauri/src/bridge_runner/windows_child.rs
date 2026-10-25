@@ -75,6 +75,10 @@ impl JobCleanup {
         self
     }
 
+    pub(super) fn owned_job(&self) -> Arc<ProcessJob> {
+        self.job.as_ref().expect("bridge owns its job").clone()
+    }
+
     pub(super) fn cancellation_requested(&self) -> bool {
         self.registration
             .as_ref()
@@ -103,9 +107,10 @@ impl JobCleanup {
     }
 
     pub(super) fn finish(mut self) -> io::Result<()> {
-        if let Some(job) = self.job.take() {
+        if let Some(job) = self.job.as_ref() {
             job.terminate()?;
         }
+        self.job = None;
         if let Some(ticket) = self.ticket.take() {
             ticket.confirm_exit();
         }
