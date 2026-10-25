@@ -249,7 +249,18 @@ async fn wait_for_output_with_limits(
     #[cfg(unix)]
     let wait_leader = owner.wait_async();
     #[cfg(windows)]
-    let wait_leader = child.wait();
+    let wait_leader = {
+        let job = group_cleanup.owned_job();
+        async move {
+            let status = child.wait().await?;
+            // A descendant may inherit stdout/stderr. Stop the owned tree when
+            // its leader exits, before waiting for those pipes to reach EOF.
+            tokio::task::spawn_blocking(move || job.terminate())
+                .await
+                .map_err(std::io::Error::other)??;
+            Ok::<_, std::io::Error>(status)
+        }
+    };
     let result = tokio::time::timeout(timeout, async {
         let (_, stdout, stderr, status) = tokio::try_join!(
             write_input,
