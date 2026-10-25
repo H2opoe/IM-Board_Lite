@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "application": {
     "name": "im-board",
-    "version": "3.0.1"
+    "version": "3.0.0"
   },
   "scope": "All package-lock v3 non-dev nodes are conservative frontend dependency candidates, including types and peer dependencies. This is not the Vite linked module graph or a license compatibility determination. Build-only dev nodes, Rust, CLI, models and Python are outside this inventory.",
   "inputs": {
-    "packageLockSha256": "cab3e6b04161ffa6efa7dc39fc0e17fca4940ccf6b33fa9121ef5b95c0d89160",
-    "packageJsonSha256": "58638f90343b1bce01b3da80ce21a3f08876ec554b33a38aa3f7a60fcd3080b3",
+    "packageLockSha256": "558f90d4ae47546ffd4c13b943bc917f27659cf10398bc62bbf6dcf8c371a1ac",
+    "packageJsonSha256": "32dfe16320263af6b2db9fb4ae1b1b5f838a9972c67f27cb95084b9a64e1434b",
     "supplementalSources": [
       {
         "path": "scripts/application-license-sources/frontend/lucide-react-0.468.0/Feather-LICENSE_MIT.txt",
