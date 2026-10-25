@@ -8,11 +8,6 @@
   "bundle": {
     "icon": [
       "icons/icon-dark.ico"
-    ],
-    "resources": [
-      "../runtime/llama.cpp/*/win-cpu-x64/**/*",
-      "icons/icon-light.png",
-      "icons/icon-dark.png"
     ]
   }
 }

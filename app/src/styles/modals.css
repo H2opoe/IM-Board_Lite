@@ -114,25 +114,10 @@
   --setup-content-indent: 26px;
 }
 
-.local-profile-modal {
-  --setup-content-indent: 26px;
-}
-
 .official-cli-modal .command-detail,
 .official-cli-modal .cli-version-box,
 .official-cli-modal .compact-grid,
 .official-cli-modal .license-note {
-  width: calc(100% - var(--setup-content-indent));
-  margin-left: var(--setup-content-indent);
-}
-
-.local-profile-modal .profile-candidate-list,
-.local-profile-modal .profile-db-candidate-list,
-.local-profile-modal .profile-path-editor,
-.local-profile-modal .profile-setup-section > .field-row,
-.local-profile-modal .profile-signing-guide,
-.local-profile-modal .profile-permission-actions,
-.local-profile-modal .license-note {
   width: calc(100% - var(--setup-content-indent));
   margin-left: var(--setup-content-indent);
 }
@@ -146,55 +131,6 @@
   column-gap: 8px;
 }
 
-.profile-candidate-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: 8px;
-}
-
-.profile-candidate {
-  display: grid;
-  gap: 3px;
-  border: 1px solid #deddd6;
-  border-radius: 8px;
-  min-height: auto;
-  padding: 9px 10px;
-  background: #fbfbf8;
-  color: #17201f;
-  cursor: pointer;
-  text-align: left;
-  line-height: 1.35;
-}
-
-.profile-candidate strong,
-.profile-db-candidate strong {
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.profile-candidate.selected {
-  border-color: #2f6f68;
-  box-shadow: 0 0 0 2px rgba(47, 111, 104, 0.14);
-}
-
-.profile-candidate span {
-  color: #697774;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.profile-candidate small {
-  color: #697774;
-}
-
-.profile-candidate small {
-  font-size: 11px;
-  line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .profile-setup-modal .field-row input,
 .profile-setup-modal .field-row select {
   min-height: 32px;
@@ -202,58 +138,6 @@
   font-size: 13px;
 }
 
-.profile-path-editor {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.profile-path-editor .field-row {
-  flex: 1;
-  margin: 0;
-}
-
-.profile-db-candidate-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: 6px;
-}
-
-.profile-permission-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.profile-db-candidate {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  border: 1px solid #deddd6;
-  border-radius: 8px;
-  padding: 8px 10px;
-  background: #ffffff;
-  color: #17201f;
-  cursor: pointer;
-  text-align: left;
-  line-height: 1.35;
-}
-
-.profile-db-candidate.selected {
-  border-color: #2f6f68;
-  box-shadow: 0 0 0 2px rgba(47, 111, 104, 0.12);
-}
-
-.profile-db-candidate span,
-.profile-db-candidate small {
-  overflow: hidden;
-  color: #697774;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wecom-deploy-status,
 .command-box {
   display: grid;
   gap: 5px;
@@ -279,12 +163,6 @@
   font-weight: 800;
 }
 
-.wecom-deploy-status span {
-  color: #697774;
-  font-size: 11px;
-}
-
-.wecom-deploy-status code,
 .command-box code {
   overflow-wrap: anywhere;
   color: #17201f;
@@ -423,52 +301,6 @@
   font-size: 12px;
 }
 
-.setup-checklist {
-  display: grid;
-  gap: 8px;
-  border: 1px solid #ecebe5;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fbfbf8;
-}
-
-.profile-signing-guide.attention {
-  border-color: rgba(177, 137, 43, 0.46);
-  background: #fffaf0;
-}
-
-.profile-signing-guide.ready {
-  border-color: rgba(47, 111, 104, 0.32);
-  background: #f7fbf8;
-}
-
-.setup-checkline {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: #3f4d4a;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.setup-checkline svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: #2f6f68;
-}
-
-.profile-restart-warning {
-  border: 1px solid rgba(177, 137, 43, 0.32);
-  border-radius: 7px;
-  padding: 8px;
-  background: rgba(255, 246, 219, 0.78);
-  color: #5c4317;
-}
-
-.profile-restart-warning svg {
-  color: #b68120;
-}
-
 .compact-grid {
   padding: 0;
 }
@@ -494,10 +326,6 @@
 .license-note button:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-.sudo-row {
-  max-width: 520px;
 }
 
 .modal-actions {

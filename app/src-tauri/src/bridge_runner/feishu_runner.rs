@@ -1,6 +1,6 @@
+use crate::bridge_registry::BridgeRegistry;
 use std::path::PathBuf;
 use std::process::Stdio;
-use std::sync::Mutex;
 use std::time::Instant;
 
 use super::errors::{
@@ -11,7 +11,7 @@ use super::normalizers::{
     feishu_time_arg, normalize_feishu_chats, normalize_feishu_message_sessions,
     normalize_feishu_messages,
 };
-use super::paths::{expand_home, resolve_official_cli_for_runtime};
+use super::paths::{expand_home, prepare_official_cli_for_runtime};
 use super::{
     apply_official_cli_env, official_cli_command, wait_for_official_cli_output, BridgeEnvelope,
     BridgeRequest, OFFICIAL_CLI_AUTH_TIMEOUT, OFFICIAL_CLI_COMMAND_TIMEOUT,
@@ -21,7 +21,7 @@ pub(super) async fn run_official_feishu_cli(
     request: BridgeRequest,
     resource_dir: PathBuf,
     cache_dir: PathBuf,
-    active_pids: Option<&Mutex<Vec<u32>>>,
+    active_bridges: Option<&BridgeRegistry>,
     started_at: Instant,
 ) -> anyhow::Result<BridgeEnvelope> {
     let Some(profile) = &request.profile else {
@@ -34,21 +34,26 @@ pub(super) async fn run_official_feishu_cli(
             started_at,
         ));
     };
-    let Some(cli_path) = resolve_official_cli_for_runtime(
+    let cli_path = match prepare_official_cli_for_runtime(
         &resource_dir,
         Some(profile),
         "feishu",
         "@larksuite/cli",
         "lark-cli",
-    ) else {
-        return Ok(bridge_error_for(
-            "feishu",
-            "https://github.com/larksuite/cli",
-            "FEISHU_CLI_MISSING",
-            "官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成，或重新安装IM-Board。",
-            true,
-            started_at,
-        ));
+    )
+    .await
+    {
+        Ok(path) => path,
+        Err(detail) => {
+            return Ok(bridge_error_for(
+                "feishu",
+                "https://github.com/larksuite/cli",
+                "FEISHU_CLI_MISSING",
+                &format!("官方CLI准备失败：{detail}"),
+                true,
+                started_at,
+            ));
+        }
     };
     let profile_name = profile
         .config_json
@@ -61,12 +66,14 @@ pub(super) async fn run_official_feishu_cli(
     if let Some(lark_config_dir) = &lark_config_dir {
         std::fs::create_dir_all(lark_config_dir)?;
     }
+    let mut self_open_id = None;
     if request.command != "auth-status" {
         if let Some(error) = run_feishu_auth_preflight(
             &cli_path,
             profile_name,
             lark_config_dir.as_deref(),
-            active_pids,
+            active_bridges,
+            &mut self_open_id,
         )
         .await?
         {
@@ -198,7 +205,7 @@ pub(super) async fn run_official_feishu_cli(
         &cli_args,
         lark_config_dir.as_deref(),
         &tmp_dir,
-        active_pids,
+        active_bridges,
     )
     .await
     {
@@ -225,7 +232,8 @@ pub(super) async fn run_official_feishu_cli(
                 &cli_path,
                 profile_name,
                 lark_config_dir.as_deref(),
-                active_pids,
+                active_bridges,
+                &mut self_open_id,
             )
             .await?
             .is_none()
@@ -235,7 +243,7 @@ pub(super) async fn run_official_feishu_cli(
                 &cli_args,
                 lark_config_dir.as_deref(),
                 &tmp_dir,
-                active_pids,
+                active_bridges,
             )
             .await?;
         }
@@ -326,7 +334,8 @@ pub(super) async fn run_official_feishu_cli(
         meta: serde_json::json!({
             "platform": "feishu",
             "source": "https://github.com/larksuite/cli",
-            "duration_ms": started_at.elapsed().as_millis()
+            "duration_ms": started_at.elapsed().as_millis(),
+            "selfOpenId": self_open_id
         }),
     })
 }
@@ -361,7 +370,7 @@ async fn run_feishu_cli_output(
     cli_args: &[String],
     lark_config_dir: Option<&std::path::Path>,
     tmp_dir: &std::path::Path,
-    active_pids: Option<&Mutex<Vec<u32>>>,
+    active_bridges: Option<&BridgeRegistry>,
 ) -> anyhow::Result<std::process::Output> {
     let mut command = official_cli_command(cli_path);
     apply_official_cli_env(&mut command);
@@ -375,15 +384,16 @@ async fn run_feishu_cli_output(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let child = command.spawn()?;
-    wait_for_official_cli_output(child, active_pids, OFFICIAL_CLI_COMMAND_TIMEOUT).await
+    let child = super::command::spawn_bridge(command)?;
+    wait_for_official_cli_output(child, active_bridges, OFFICIAL_CLI_COMMAND_TIMEOUT).await
 }
 
 async fn run_feishu_auth_preflight(
     cli_path: &std::path::Path,
     profile_name: &str,
     lark_config_dir: Option<&std::path::Path>,
-    active_pids: Option<&Mutex<Vec<u32>>>,
+    active_bridges: Option<&BridgeRegistry>,
+    self_open_id: &mut Option<String>,
 ) -> anyhow::Result<Option<super::BridgeError>> {
     let mut command = official_cli_command(cli_path);
     apply_official_cli_env(&mut command);
@@ -399,9 +409,9 @@ async fn run_feishu_auth_preflight(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let child = command.spawn()?;
+    let child = super::command::spawn_bridge(command)?;
     let output =
-        wait_for_official_cli_output(child, active_pids, OFFICIAL_CLI_AUTH_TIMEOUT).await?;
+        wait_for_official_cli_output(child, active_bridges, OFFICIAL_CLI_AUTH_TIMEOUT).await?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = sanitize_feishu_cli_output(&String::from_utf8_lossy(&output.stderr));
@@ -420,11 +430,81 @@ async fn run_feishu_auth_preflight(
 
     let raw = parse_feishu_cli_json(&stdout)
         .unwrap_or_else(|| serde_json::json!({ "text": sanitized_stdout.clone() }));
-    Ok(validate_feishu_auth_status(&raw))
+    let error = validate_feishu_auth_status(&raw);
+    *self_open_id = error.is_none().then(|| feishu_user_open_id(&raw)).flatten();
+    Ok(error)
+}
+
+fn feishu_user_open_id(raw: &serde_json::Value) -> Option<String> {
+    raw.pointer("/identities/user/openId")
+        .and_then(serde_json::Value::as_str)
+        .filter(|id| !id.trim().is_empty())
+        .map(str::to_owned)
 }
 
 fn apply_feishu_cli_env(command: &mut tokio::process::Command) {
     // lark-cli 在部分本机网络环境会自动走到不稳定代理链路，消息检索表现为
     // network/transport EOF。显式禁用代理探测后仍保留系统直连网络，避免误判为授权失效。
     command.env("LARK_CLI_NO_PROXY", "1");
+}
+
+#[cfg(test)]
+mod config_compatibility_tests {
+    use super::*;
+
+    #[test]
+    fn explicit_directory_wins_over_a_valid_legacy_directory() {
+        let root = tempfile::tempdir().unwrap();
+        let legacy = root.path().join(".lark-cli");
+        std::fs::create_dir(&legacy).unwrap();
+        std::fs::write(legacy.join("config.json"), "{}").unwrap();
+        let explicit = root.path().join("explicit");
+        let config = serde_json::json!({"larkConfigDir":explicit,"homeDir":root.path()});
+        assert_eq!(feishu_lark_config_dir(&config), Some(explicit));
+    }
+
+    #[test]
+    fn legacy_directory_requires_its_config_file() {
+        let root = tempfile::tempdir().unwrap();
+        let current = root.path().join("current");
+        let config =
+            serde_json::json!({"larkConfigDir":" ","homeDir":root.path(),"configDir":current});
+        assert_eq!(
+            feishu_lark_config_dir(&config),
+            Some(current.join(".lark-cli"))
+        );
+        let legacy = root.path().join(".lark-cli");
+        std::fs::create_dir(&legacy).unwrap();
+        assert_eq!(
+            feishu_lark_config_dir(&config),
+            Some(current.join(".lark-cli"))
+        );
+        std::fs::write(legacy.join("config.json"), "{}").unwrap();
+        assert_eq!(feishu_lark_config_dir(&config), Some(legacy));
+    }
+
+    #[test]
+    fn missing_or_blank_directories_do_not_select_a_global_home() {
+        assert_eq!(feishu_lark_config_dir(&serde_json::json!({})), None);
+        assert_eq!(
+            feishu_lark_config_dir(
+                &serde_json::json!({"larkConfigDir":" ","homeDir":" ","configDir":" "})
+            ),
+            None
+        );
+    }
+}
+
+#[cfg(test)]
+mod ranking_identity_tests {
+    use super::*;
+    #[test]
+    fn self_identity_is_taken_from_user_not_bot_or_app() {
+        let raw = serde_json::json!({"appId":"cli_app","identities":{"bot":{"openId":"ou_bot"},"user":{"openId":"ou_user","userName":"名字"}}});
+        assert_eq!(feishu_user_open_id(&raw).as_deref(), Some("ou_user"));
+        assert!(feishu_user_open_id(
+            &serde_json::json!({"identities":{"bot":{"openId":"ou_bot"}}})
+        )
+        .is_none());
+    }
 }

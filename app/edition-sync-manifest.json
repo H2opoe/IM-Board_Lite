@@ -1,0 +1,3107 @@
+{
+  "schemaVersion": 2,
+  "targets": {
+    "IM-Board-win": {
+      "edition": "full",
+      "branch": "win"
+    },
+    "IM-Board-lite": {
+      "edition": "lite",
+      "branch": "codex/lite"
+    },
+    "IM-Board-lite-win": {
+      "edition": "lite",
+      "branch": "codex/lite-win"
+    },
+    "IM-Board-demo": {
+      "edition": "demo",
+      "branch": "codex/demo"
+    }
+  },
+  "files": [
+    {
+      "source": "app/scripts/audit-python-runtime.py",
+      "destination": "app/scripts/audit-python-runtime.py",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/scripts/contracts.test.mjs",
+      "destination": "app/scripts/contracts.test.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/scripts/python-build-tools.txt",
+      "destination": "app/scripts/python-build-tools.txt",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/scripts/python-runtime-inventory.py",
+      "destination": "app/scripts/python-runtime-inventory.py",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/scripts/python-vendor-advisories.json",
+      "destination": "app/scripts/python-vendor-advisories.json",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/scripts/test_python_runtime_audit.py",
+      "destination": "app/scripts/test_python_runtime_audit.py",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/scripts/test_python_runtime_inventory.py",
+      "destination": "app/scripts/test_python_runtime_inventory.py",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/scripts/verify-deprecations.mjs",
+      "destination": "app/scripts/verify-deprecations.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/scripts/verify-runtime-manifest.mjs",
+      "destination": "app/scripts/verify-runtime-manifest.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/scripts/verify-runtime-manifest.test.mjs",
+      "destination": "app/scripts/verify-runtime-manifest.test.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/ARCHITECTURE.md",
+      "destination": "app/shared/ARCHITECTURE.md",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/OFFICIAL-CLI.md",
+      "destination": "app/shared/OFFICIAL-CLI.md",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/action_item_completion.rs",
+      "destination": "app/src-tauri/src/ai/action_item_completion.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/action_item_merge.rs",
+      "destination": "app/src-tauri/src/ai/action_item_merge.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/action_item_repository.rs",
+      "destination": "app/src-tauri/src/ai/action_item_repository.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/action_item_sources.rs",
+      "destination": "app/src-tauri/src/ai/action_item_sources.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/action_items.rs",
+      "destination": "app/src-tauri/src/ai/action_items.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/analysis_loader.rs",
+      "destination": "app/src-tauri/src/ai/analysis_loader.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/batching.rs",
+      "destination": "app/src-tauri/src/ai/batching.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/config.rs",
+      "destination": "app/src-tauri/src/ai/config.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/json_utils.rs",
+      "destination": "app/src-tauri/src/ai/json_utils.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/keyword_refine.rs",
+      "destination": "app/src-tauri/src/ai/keyword_refine.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/message_cleaning.rs",
+      "destination": "app/src-tauri/src/ai/message_cleaning.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/mod.rs",
+      "destination": "app/src-tauri/src/ai/mod.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/prompts.rs",
+      "destination": "app/src-tauri/src/ai/prompts.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/provider_adapters.rs",
+      "destination": "app/src-tauri/src/ai/provider_adapters.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/request.rs",
+      "destination": "app/src-tauri/src/ai/request.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/request_diagnostics.rs",
+      "destination": "app/src-tauri/src/ai/request_diagnostics.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/request_tests.rs",
+      "destination": "app/src-tauri/src/ai/request_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/request_transport.rs",
+      "destination": "app/src-tauri/src/ai/request_transport.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/response_parsing.rs",
+      "destination": "app/src-tauri/src/ai/response_parsing.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/stats_persistence.rs",
+      "destination": "app/src-tauri/src/ai/stats_persistence.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/summary_candidates.rs",
+      "destination": "app/src-tauri/src/ai/summary_candidates.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests.rs",
+      "destination": "app/src-tauri/src/ai/tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/action_items.rs",
+      "destination": "app/src-tauri/src/ai/tests/action_items.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/batching_config.rs",
+      "destination": "app/src-tauri/src/ai/tests/batching_config.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/keywords.rs",
+      "destination": "app/src-tauri/src/ai/tests/keywords.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/message_summary.rs",
+      "destination": "app/src-tauri/src/ai/tests/message_summary.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/topic_merge.rs",
+      "destination": "app/src-tauri/src/ai/tests/topic_merge.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/topic_merge.rs",
+      "destination": "app/src-tauri/src/ai/topic_merge.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/context_backfill.rs",
+      "destination": "app/src-tauri/src/analysis/context_backfill.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/local_keywords.rs",
+      "destination": "app/src-tauri/src/analysis/local_keywords.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/local_keywords/candidates.rs",
+      "destination": "app/src-tauri/src/analysis/local_keywords/candidates.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/local_keywords/dictionary.rs",
+      "destination": "app/src-tauri/src/analysis/local_keywords/dictionary.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/local_keywords/policy.rs",
+      "destination": "app/src-tauri/src/analysis/local_keywords/policy.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/local_keywords/repository.rs",
+      "destination": "app/src-tauri/src/analysis/local_keywords/repository.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/local_keywords/scoring.rs",
+      "destination": "app/src-tauri/src/analysis/local_keywords/scoring.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/local_keywords/text_cleaning.rs",
+      "destination": "app/src-tauri/src/analysis/local_keywords/text_cleaning.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/local_keywords/types.rs",
+      "destination": "app/src-tauri/src/analysis/local_keywords/types.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/message_noise.rs",
+      "destination": "app/src-tauri/src/analysis/message_noise.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/mod.rs",
+      "destination": "app/src-tauri/src/analysis/mod.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/orchestrator.rs",
+      "destination": "app/src-tauri/src/analysis/orchestrator.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/progress.rs",
+      "destination": "app/src-tauri/src/analysis/progress.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/run_tracking.rs",
+      "destination": "app/src-tauri/src/analysis/run_tracking.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/analysis/summary_stage.rs",
+      "destination": "app/src-tauri/src/analysis/summary_stage.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/command.rs",
+      "destination": "app/src-tauri/src/bridge_runner/command.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/command_windows_tests.rs",
+      "destination": "app/src-tauri/src/bridge_runner/command_windows_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/dingtalk_runner.rs",
+      "destination": "app/src-tauri/src/bridge_runner/dingtalk_runner.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/envelope_contract_tests.rs",
+      "destination": "app/src-tauri/src/bridge_runner/envelope_contract_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/feishu_runner.rs",
+      "destination": "app/src-tauri/src/bridge_runner/feishu_runner.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/normalizers.rs",
+      "destination": "app/src-tauri/src/bridge_runner/normalizers.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/normalizers/dingtalk.rs",
+      "destination": "app/src-tauri/src/bridge_runner/normalizers/dingtalk.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/normalizers/feishu.rs",
+      "destination": "app/src-tauri/src/bridge_runner/normalizers/feishu.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/normalizers/shared.rs",
+      "destination": "app/src-tauri/src/bridge_runner/normalizers/shared.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/normalizers/wecom.rs",
+      "destination": "app/src-tauri/src/bridge_runner/normalizers/wecom.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/wecom_runner.rs",
+      "destination": "app/src-tauri/src/bridge_runner/wecom_runner.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/ai.rs",
+      "destination": "app/src-tauri/src/commands/ai.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/ai_local_download.rs",
+      "destination": "app/src-tauri/src/commands/ai_local_download.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/ai_local_model.rs",
+      "destination": "app/src-tauri/src/commands/ai_local_model.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/ai_local_runtime.rs",
+      "destination": "app/src-tauri/src/commands/ai_local_runtime.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/dashboard.rs",
+      "destination": "app/src-tauri/src/commands/dashboard.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/mod.rs",
+      "destination": "app/src-tauri/src/commands/mod.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/runtime_startup.rs",
+      "destination": "app/src-tauri/src/commands/runtime_startup.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/sync.rs",
+      "destination": "app/src-tauri/src/commands/sync.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/connectors/feishu.rs",
+      "destination": "app/src-tauri/src/connectors/feishu.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/connectors/mod.rs",
+      "destination": "app/src-tauri/src/connectors/mod.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/connectors/wecom.rs",
+      "destination": "app/src-tauri/src/connectors/wecom.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/diagnostics/ai_classification.rs",
+      "destination": "app/src-tauri/src/diagnostics/ai_classification.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/diagnostics/repository.rs",
+      "destination": "app/src-tauri/src/diagnostics/repository.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/actions.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/actions.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/activity.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/activity.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/metrics.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/metrics.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/mod.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/mod.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/projection.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/projection.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/rankings.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/rankings.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/service.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/service.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/stats.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/stats.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/mod.rs",
+      "destination": "app/src-tauri/src/domain/mod.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/local_runtime_supervisor.rs",
+      "destination": "app/src-tauri/src/local_runtime_supervisor.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/main.rs",
+      "destination": "app/src-tauri/src/main.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/mod.rs",
+      "destination": "app/src-tauri/src/messages/mod.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/repository.rs",
+      "destination": "app/src-tauri/src/messages/repository.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/wechat_accounts.rs",
+      "destination": "app/src-tauri/src/messages/wechat_accounts.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/profile_manager/cleanup_queue.rs",
+      "destination": "app/src-tauri/src/profile_manager/cleanup_queue.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/profile_manager/drafts.rs",
+      "destination": "app/src-tauri/src/profile_manager/drafts.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/profile_manager/mod.rs",
+      "destination": "app/src-tauri/src/profile_manager/mod.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/profile_manager/runtime_paths.rs",
+      "destination": "app/src-tauri/src/profile_manager/runtime_paths.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/mod.rs",
+      "destination": "app/src-tauri/src/runtime/mod.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/archives.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli/archives.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/extraction.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli/extraction.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/installer.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli/installer.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/native-artifacts.json",
+      "destination": "app/src-tauri/src/runtime/official_cli/native-artifacts.json",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/native_artifacts.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli/native_artifacts.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/platform_binaries.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli/platform_binaries.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/resolver.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli/resolver.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/security/credentials.rs",
+      "destination": "app/src-tauri/src/security/credentials.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/security/diagnostic_privacy.rs",
+      "destination": "app/src-tauri/src/security/diagnostic_privacy.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/security/mod.rs",
+      "destination": "app/src-tauri/src/security/mod.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/security/redaction.rs",
+      "destination": "app/src-tauri/src/security/redaction.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/storage/backup.rs",
+      "destination": "app/src-tauri/src/storage/backup.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/storage/mod.rs",
+      "destination": "app/src-tauri/src/storage/mod.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/storage/models.rs",
+      "destination": "app/src-tauri/src/storage/models.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/sync/fetch_dingtalk.rs",
+      "destination": "app/src-tauri/src/sync/fetch_dingtalk.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/sync/fetch_recent.rs",
+      "destination": "app/src-tauri/src/sync/fetch_recent.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/sync/job.rs",
+      "destination": "app/src-tauri/src/sync/job.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/sync/mod.rs",
+      "destination": "app/src-tauri/src/sync/mod.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/sync/status.rs",
+      "destination": "app/src-tauri/src/sync/status.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/system_capabilities.rs",
+      "destination": "app/src-tauri/src/system_capabilities.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/version.rs",
+      "destination": "app/src-tauri/src/version.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/App.tsx",
+      "destination": "app/src/App.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/aiApi.ts",
+      "destination": "app/src/api/aiApi.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/appVersion.ts",
+      "destination": "app/src/api/appVersion.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/demoMode.ts",
+      "destination": "app/src/api/demoMode.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/profileReadApi.ts",
+      "destination": "app/src/api/profileReadApi.ts",
+      "targets": [
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/tauri.ts",
+      "destination": "app/src/api/tauri.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/ActionListCard.tsx",
+      "destination": "app/src/components/cards/ActionListCard.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/ActivityChartCard.tsx",
+      "destination": "app/src/components/cards/ActivityChartCard.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/ChatRankCard.tsx",
+      "destination": "app/src/components/cards/ChatRankCard.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/MessageTypePieCard.tsx",
+      "destination": "app/src/components/cards/MessageTypePieCard.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/MetricCard.tsx",
+      "destination": "app/src/components/cards/MetricCard.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/SpeakerTopCard.tsx",
+      "destination": "app/src/components/cards/SpeakerTopCard.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/TopicCard.tsx",
+      "destination": "app/src/components/cards/TopicCard.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/WordCloudCard.tsx",
+      "destination": "app/src/components/cards/WordCloudCard.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/dashboardAnimations.tsx",
+      "destination": "app/src/components/cards/dashboardAnimations.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/shared/AppIcon.tsx",
+      "destination": "app/src/components/shared/AppIcon.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/shared/FloatingNotice.tsx",
+      "destination": "app/src/components/shared/FloatingNotice.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/shared/PagedTextBlock.tsx",
+      "destination": "app/src/components/shared/PagedTextBlock.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/shared/PlatformIcon.tsx",
+      "destination": "app/src/components/shared/PlatformIcon.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/components/shared/noticeStack.ts",
+      "destination": "app/src/components/shared/noticeStack.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/constants/messages.ts",
+      "destination": "app/src/constants/messages.ts",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src/demo/demoData.ts",
+      "destination": "app/src/demo/demoData.ts",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src/features/ai/model/types.ts",
+      "destination": "app/src/features/ai/model/types.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/app-settings/model/types.ts",
+      "destination": "app/src/features/app-settings/model/types.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/dashboard/api/dashboardApi.ts",
+      "destination": "app/src/features/dashboard/api/dashboardApi.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/dashboard/hooks/useDashboardStore.ts",
+      "destination": "app/src/features/dashboard/hooks/useDashboardStore.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/dashboard/model/types.ts",
+      "destination": "app/src/features/dashboard/model/types.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/bind-flows/officialCli.tsx",
+      "destination": "app/src/features/profiles/bind-flows/officialCli.tsx",
+      "targets": [
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/bind-flows/profileList.tsx",
+      "destination": "app/src/features/profiles/bind-flows/profileList.tsx",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useConnectorCapabilities.ts",
+      "destination": "app/src/features/profiles/hooks/useConnectorCapabilities.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useCopiedCommandStatus.ts",
+      "destination": "app/src/features/profiles/hooks/useCopiedCommandStatus.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useModalEnterGuard.test.tsx",
+      "destination": "app/src/features/profiles/hooks/useModalEnterGuard.test.tsx",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useModalEnterGuard.ts",
+      "destination": "app/src/features/profiles/hooks/useModalEnterGuard.ts",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useOfficialCliBindController.test.tsx",
+      "destination": "app/src/features/profiles/hooks/useOfficialCliBindController.test.tsx",
+      "targets": [
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useOfficialCliBindController.ts",
+      "destination": "app/src/features/profiles/hooks/useOfficialCliBindController.ts",
+      "targets": [
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/usePlatformCliDeployment.ts",
+      "destination": "app/src/features/profiles/hooks/usePlatformCliDeployment.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useProfileBatchManagement.ts",
+      "destination": "app/src/features/profiles/hooks/useProfileBatchManagement.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useProfileBatchManagement.test.tsx",
+      "destination": "app/src/features/profiles/hooks/useProfileBatchManagement.test.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useProfileDragOrdering.ts",
+      "destination": "app/src/features/profiles/hooks/useProfileDragOrdering.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useProfileReadNotices.ts",
+      "destination": "app/src/features/profiles/hooks/useProfileReadNotices.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useProfilesStore.ts",
+      "destination": "app/src/features/profiles/hooks/useProfilesStore.ts",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/model/profileOrdering.ts",
+      "destination": "app/src/features/profiles/model/profileOrdering.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/model/types.ts",
+      "destination": "app/src/features/profiles/model/types.ts",
+      "targets": [
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/api/syncApi.test.ts",
+      "destination": "app/src/features/sync/api/syncApi.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/api/syncApi.ts",
+      "destination": "app/src/features/sync/api/syncApi.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/hooks/syncJobStateMachine.test.ts",
+      "destination": "app/src/features/sync/hooks/syncJobStateMachine.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/hooks/syncJobStateMachine.ts",
+      "destination": "app/src/features/sync/hooks/syncJobStateMachine.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/hooks/useDashboardRefreshCoordinator.ts",
+      "destination": "app/src/features/sync/hooks/useDashboardRefreshCoordinator.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/hooks/useSyncController.test.tsx",
+      "destination": "app/src/features/sync/hooks/useSyncController.test.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/hooks/useSyncController.ts",
+      "destination": "app/src/features/sync/hooks/useSyncController.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/hooks/useSyncFrequency.ts",
+      "destination": "app/src/features/sync/hooks/useSyncFrequency.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/hooks/useSyncJobObserver.ts",
+      "destination": "app/src/features/sync/hooks/useSyncJobObserver.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/hooks/useSyncProgressNotices.ts",
+      "destination": "app/src/features/sync/hooks/useSyncProgressNotices.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/messages/syncMessages.test.ts",
+      "destination": "app/src/features/sync/messages/syncMessages.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/messages/syncMessages.ts",
+      "destination": "app/src/features/sync/messages/syncMessages.ts",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src/features/sync/model/types.ts",
+      "destination": "app/src/features/sync/model/types.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/hooks/useThemeController.ts",
+      "destination": "app/src/hooks/useThemeController.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/main.tsx",
+      "destination": "app/src/main.tsx",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src/pages/AppSettings/AppSettingsPage.tsx",
+      "destination": "app/src/pages/AppSettings/AppSettingsPage.tsx",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Dashboard/DashboardPage.tsx",
+      "destination": "app/src/pages/Dashboard/DashboardPage.tsx",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src/pages/Profiles/ProfilesPageModals.tsx",
+      "destination": "app/src/pages/Profiles/ProfilesPageModals.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Profiles/useProfilesPageLifecycle.ts",
+      "destination": "app/src/pages/Profiles/useProfilesPageLifecycle.ts",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Profiles/useProfilesPageState.ts",
+      "destination": "app/src/pages/Profiles/useProfilesPageState.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Settings/SettingsPage.tsx",
+      "destination": "app/src/pages/Settings/SettingsPage.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Settings/aiConfigDefaults.ts",
+      "destination": "app/src/pages/Settings/aiConfigDefaults.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Settings/localModelUiState.ts",
+      "destination": "app/src/pages/Settings/localModelUiState.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Settings/useAiConfigDraft.ts",
+      "destination": "app/src/pages/Settings/useAiConfigDraft.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Settings/useAiSettingsController.ts",
+      "destination": "app/src/pages/Settings/useAiSettingsController.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Settings/useLocalModelProgressSubscription.ts",
+      "destination": "app/src/pages/Settings/useLocalModelProgressSubscription.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Settings/useSettingsNotices.ts",
+      "destination": "app/src/pages/Settings/useSettingsNotices.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/styles/app-shell.css",
+      "destination": "app/src/styles/app-shell.css",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/styles/base.css",
+      "destination": "app/src/styles/base.css",
+      "targets": [
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/styles/dashboard.css",
+      "destination": "app/src/styles/dashboard.css",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/styles/drawer.css",
+      "destination": "app/src/styles/drawer.css",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/styles/notices.css",
+      "destination": "app/src/styles/notices.css",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/styles/page-overrides.css",
+      "destination": "app/src/styles/page-overrides.css",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/styles/profiles.css",
+      "destination": "app/src/styles/profiles.css",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src/styles/settings.css",
+      "destination": "app/src/styles/settings.css",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/styles/theme-core.css",
+      "destination": "app/src/styles/theme-core.css",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/utils/dates.ts",
+      "destination": "app/src/utils/dates.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/utils/errors.ts",
+      "destination": "app/src/utils/errors.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/utils/logging.ts",
+      "destination": "app/src/utils/logging.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/utils/profiles.ts",
+      "destination": "app/src/utils/profiles.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/utils/sources.ts",
+      "destination": "app/src/utils/sources.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/vite-env.d.ts",
+      "destination": "app/src/vite-env.d.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/dws_bundle.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli/dws_bundle.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/scripts/build-dws-isolated.py",
+      "destination": "app/scripts/build-dws-isolated.py",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/scripts/collect-dws-notices.py",
+      "destination": "app/scripts/collect-dws-notices.py",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/scripts/dws_macos_bundle.py",
+      "destination": "app/scripts/dws_macos_bundle.py",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/cli-adapters/dws-isolation/source-lock.json",
+      "destination": "app/cli-adapters/dws-isolation/source-lock.json",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/cli-adapters/dws-isolation/isolation.patch",
+      "destination": "app/cli-adapters/dws-isolation/isolation.patch",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/cli-adapters/dws-isolation/LICENSE",
+      "destination": "app/cli-adapters/dws-isolation/LICENSE",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/cli-adapters/dws-isolation/README.md",
+      "destination": "app/cli-adapters/dws-isolation/README.md",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/file_integrity.rs",
+      "destination": "app/src-tauri/src/runtime/file_integrity.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useBindingDraft.ts",
+      "destination": "app/src/features/profiles/hooks/useBindingDraft.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useProfilesController.test.tsx",
+      "destination": "app/src/features/profiles/hooks/useProfilesController.test.tsx",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/shared/third-party/process-wrap/LICENSE-APACHE",
+      "destination": "app/shared/third-party/process-wrap/LICENSE-APACHE",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/third-party/process-wrap/LICENSE-MIT",
+      "destination": "app/shared/third-party/process-wrap/LICENSE-MIT",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/third-party/process-wrap/COPYRIGHT",
+      "destination": "app/shared/third-party/process-wrap/COPYRIGHT",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/third-party/process-wrap/NOTICE.txt",
+      "destination": "app/shared/third-party/process-wrap/NOTICE.txt",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/process_group.rs",
+      "destination": "app/src-tauri/src/process_group.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/Settings/aiConfigDefaults.test.ts",
+      "destination": "app/src/pages/Settings/aiConfigDefaults.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/profiles/hooks/useProfilesStore.test.tsx",
+      "destination": "app/src/features/profiles/hooks/useProfilesStore.test.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/import_window.rs",
+      "destination": "app/src-tauri/src/messages/import_window.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/sync/outcome.rs",
+      "destination": "app/src-tauri/src/sync/outcome.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/daily_cache/day.rs",
+      "destination": "app/src-tauri/src/daily_cache/day.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/daily_cache/rollover_tests.rs",
+      "destination": "app/src-tauri/src/daily_cache/rollover_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/stale_day_tests.rs",
+      "destination": "app/src-tauri/src/messages/stale_day_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/dingtalk_error_tests.rs",
+      "destination": "app/src-tauri/src/bridge_runner/dingtalk_error_tests.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/wecom_errors.rs",
+      "destination": "app/src-tauri/src/bridge_runner/wecom_errors.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/wecom_error_tests.rs",
+      "destination": "app/src-tauri/src/bridge_runner/wecom_error_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/constants/platforms.ts",
+      "destination": "app/src/constants/platforms.ts",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/sync/fetch.rs",
+      "destination": "app/src-tauri/src/sync/fetch.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/process_job.rs",
+      "destination": "app/src-tauri/src/process_job.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/process_job/tests.rs",
+      "destination": "app/src-tauri/src/process_job/tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/windows_child.rs",
+      "destination": "app/src-tauri/src/bridge_runner/windows_child.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_registry.rs",
+      "destination": "app/src-tauri/src/bridge_registry.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/prompt_config.rs",
+      "destination": "app/src-tauri/src/ai/tests/prompt_config.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/keyword_refine_scope.rs",
+      "destination": "app/src-tauri/src/ai/tests/keyword_refine_scope.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/keyword_refine_accounts.rs",
+      "destination": "app/src-tauri/src/ai/tests/keyword_refine_accounts.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/scripts/frontend-notices.mjs",
+      "destination": "app/scripts/frontend-notices.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/collect-frontend-notices.mjs",
+      "destination": "app/scripts/collect-frontend-notices.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/verify-frontend-notices.mjs",
+      "destination": "app/scripts/verify-frontend-notices.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/frontend-notices.test.mjs",
+      "destination": "app/scripts/frontend-notices.test.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/application-license-sources/frontend/lucide-react-0.468.0/Feather-LICENSE_MIT.txt",
+      "destination": "app/scripts/application-license-sources/frontend/lucide-react-0.468.0/Feather-LICENSE_MIT.txt",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/application-license-sources/frontend/sources.json",
+      "destination": "app/scripts/application-license-sources/frontend/sources.json",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/application-license-sources/frontend/tauri-apps-plugin-dialog-2.7.0/LICENSE_APACHE-2.0.txt",
+      "destination": "app/scripts/application-license-sources/frontend/tauri-apps-plugin-dialog-2.7.0/LICENSE_APACHE-2.0.txt",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/application-license-sources/frontend/tauri-apps-plugin-dialog-2.7.0/LICENSE_MIT.txt",
+      "destination": "app/scripts/application-license-sources/frontend/tauri-apps-plugin-dialog-2.7.0/LICENSE_MIT.txt",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/application-license-sources/frontend/victory-vendor-36.9.2/LICENSE_MIT.txt",
+      "destination": "app/scripts/application-license-sources/frontend/victory-vendor-36.9.2/LICENSE_MIT.txt",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/sync-edition-worktrees.test.mjs",
+      "destination": "app/scripts/sync-edition-worktrees.test.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/cli_candidate.rs",
+      "destination": "app/src-tauri/src/runtime/cli_candidate.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/prompt_defaults.rs",
+      "destination": "app/src-tauri/src/ai/prompt_defaults.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/ai/prompt-default-fingerprints.json",
+      "destination": "app/shared/ai/prompt-default-fingerprints.json",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/fixtures/legacy_analysis_default.txt",
+      "destination": "app/src-tauri/src/ai/tests/fixtures/legacy_analysis_default.txt",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/message_type.rs",
+      "destination": "app/src-tauri/src/messages/message_type.rs",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/fixtures/history_types.json",
+      "destination": "app/src-tauri/src/messages/fixtures/history_types.json",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/third_party/wechat_bridge/wechat-cli-source/tests/test_history_types.py",
+      "destination": "app/third_party/wechat_bridge/wechat-cli-source/tests/test_history_types.py",
+      "targets": [
+        "IM-Board-win"
+      ]
+    },
+    {
+      "source": "app/scripts/rust-notices.py",
+      "destination": "app/scripts/rust-notices.py",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/test_rust_notices.py",
+      "destination": "app/scripts/test_rust_notices.py",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/RUST-NOTICES.md",
+      "destination": "app/scripts/RUST-NOTICES.md",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/features/dashboard/hooks/useDashboardActions.ts",
+      "destination": "app/src/features/dashboard/hooks/useDashboardActions.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/features/dashboard/hooks/useDashboardActions.test.tsx",
+      "destination": "app/src/features/dashboard/hooks/useDashboardActions.test.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/bridgeApi.test.ts",
+      "destination": "app/src/api/bridgeApi.test.ts",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src/components/layout/AppShell.test.tsx",
+      "destination": "app/src/components/layout/AppShell.test.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/pages/AppSettings/AppSettingsPage.test.tsx",
+      "destination": "app/src/pages/AppSettings/AppSettingsPage.test.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/third-party/application/upstream/rust/sources/dropbox--rust-brotli/769efcbca153bfc4737f1986459da5d9d23368b8/LICENSE.BSD-3-Clause",
+      "destination": "app/shared/third-party/application/upstream/rust/sources/dropbox--rust-brotli/769efcbca153bfc4737f1986459da5d9d23368b8/LICENSE.BSD-3-Clause",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/third-party/application/upstream/rust/sources/jedisct1--rust-siphash/55ff379462517d8ec790bd9ce5382d2a1c364ee0/COPYING",
+      "destination": "app/shared/third-party/application/upstream/rust/sources/jedisct1--rust-siphash/55ff379462517d8ec790bd9ce5382d2a1c364ee0/COPYING",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/third-party/application/upstream/rust/sources/jedisct1--rust-siphash/db8172048a1c9bdef0dcec782d965c236161af13/COPYING",
+      "destination": "app/shared/third-party/application/upstream/rust/sources/jedisct1--rust-siphash/db8172048a1c9bdef0dcec782d965c236161af13/COPYING",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/scripts/verify-release-config.mjs",
+      "destination": "app/scripts/verify-release-config.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/release-config.test.mjs",
+      "destination": "app/scripts/release-config.test.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/runtime-download.mjs",
+      "destination": "app/scripts/runtime-download.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/scripts/runtime-download.test.mjs",
+      "destination": "app/scripts/runtime-download.test.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/scripts/macos-package-artifacts.mjs",
+      "destination": "app/scripts/macos-package-artifacts.mjs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/scripts/macos-package-artifacts.test.mjs",
+      "destination": "app/scripts/macos-package-artifacts.test.mjs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/scripts/check-debug-env.mjs",
+      "destination": "app/scripts/check-debug-env.mjs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/unix_child.rs",
+      "destination": "app/src-tauri/src/bridge_runner/unix_child.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/unix_lifecycle_tests.rs",
+      "destination": "app/src-tauri/src/bridge_runner/unix_lifecycle_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/exit_cleanup.rs",
+      "destination": "app/src-tauri/src/exit_cleanup.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/build.rs",
+      "destination": "app/src-tauri/build.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/utils/dates.test.ts",
+      "destination": "app/src/utils/dates.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src/demo/demoData.date.test.ts",
+      "destination": "app/src/demo/demoData.date.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/components/cards/ActionListCard.sort.test.tsx",
+      "destination": "app/src/components/cards/ActionListCard.sort.test.tsx",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/migrations/005_action_detected_day.sql",
+      "destination": "app/src-tauri/migrations/005_action_detected_day.sql",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/daily_cache/action_day.rs",
+      "destination": "app/src-tauri/src/daily_cache/action_day.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/daily_cache/action_day_tests.rs",
+      "destination": "app/src-tauri/src/daily_cache/action_day_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/daily_cache/action_day_rollover_tests.rs",
+      "destination": "app/src-tauri/src/daily_cache/action_day_rollover_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/ai/tests/action_day.rs",
+      "destination": "app/src-tauri/src/ai/tests/action_day.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/commands/app_action_day_tests.rs",
+      "destination": "app/src-tauri/src/commands/app_action_day_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/ACTION-DAY-SCHEMA.md",
+      "destination": "app/shared/ACTION-DAY-SCHEMA.md",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/native/macos-owned-process/Cargo.toml",
+      "destination": "app/native/macos-owned-process/Cargo.toml",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/native/macos-owned-process/Cargo.lock",
+      "destination": "app/native/macos-owned-process/Cargo.lock",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/native/macos-owned-process/build.rs",
+      "destination": "app/native/macos-owned-process/build.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/native/macos-owned-process/README.md",
+      "destination": "app/native/macos-owned-process/README.md",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/native/macos-owned-process/src/lib.rs",
+      "destination": "app/native/macos-owned-process/src/lib.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/native/macos-owned-process/src/process_group_owner.rs",
+      "destination": "app/native/macos-owned-process/src/process_group_owner.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/native/macos-owned-process/src/process_group_owner_tests.rs",
+      "destination": "app/native/macos-owned-process/src/process_group_owner_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/native/macos-owned-process/src/process_group_macos.c",
+      "destination": "app/native/macos-owned-process/src/process_group_macos.c",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/runtime/official_cli/healthcheck.rs",
+      "destination": "app/src-tauri/src/runtime/official_cli/healthcheck.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/dingtalk_read_contract.rs",
+      "destination": "app/src-tauri/src/bridge_runner/dingtalk_read_contract.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/profileReadApi.test.ts",
+      "destination": "app/src/api/profileReadApi.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/wecom_read_compat/mod.rs",
+      "destination": "app/src-tauri/src/bridge_runner/wecom_read_compat/mod.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/wecom_read_compat/credentials.rs",
+      "destination": "app/src-tauri/src/bridge_runner/wecom_read_compat/credentials.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/wecom_read_compat/transport.rs",
+      "destination": "app/src-tauri/src/bridge_runner/wecom_read_compat/transport.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/wecom_read_compat/tests.rs",
+      "destination": "app/src-tauri/src/bridge_runner/wecom_read_compat/tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/wecom_read_compat/names.rs",
+      "destination": "app/src-tauri/src/bridge_runner/wecom_read_compat/names.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/contact_names.rs",
+      "destination": "app/src-tauri/src/messages/contact_names.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/domain/dashboard/ranking_identity_tests.rs",
+      "destination": "app/src-tauri/src/domain/dashboard/ranking_identity_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/messages/account_identity.rs",
+      "destination": "app/src-tauri/src/messages/account_identity.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/dingtalk_identity_lookup.rs",
+      "destination": "app/src-tauri/src/bridge_runner/dingtalk_identity_lookup.rs",
+      "targets": [
+        "IM-Board-lite"
+      ]
+    },
+    {
+      "source": "app/scripts/release-build-env.mjs",
+      "destination": "app/scripts/release-build-env.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/scripts/release-build-env.test.mjs",
+      "destination": "app/scripts/release-build-env.test.mjs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win",
+        "IM-Board-demo"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/profile_id_validation_tests.rs",
+      "destination": "app/src-tauri/src/bridge_runner/profile_id_validation_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/diagnostics/runtime_missing_tests.rs",
+      "destination": "app/src-tauri/src/diagnostics/runtime_missing_tests.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    }
+  ],
+  "manualReview": [
+    {
+      "paths": [
+        "app/src-tauri/src/storage/**",
+        "app/src-tauri/migrations/**",
+        "app/src-tauri/src/security/credentials.rs",
+        "app/src-tauri/src/edition.rs"
+      ],
+      "reason": "Edition data isolation and schema versions differ; adapt and run migration tests instead of copying."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/messages/repository.rs",
+        "app/src-tauri/src/daily_cache/**",
+        "app/src-tauri/src/sync/fetch_dingtalk.rs"
+      ],
+      "reason": "Historical action preservation and permission fallback are adapted across editions; check behavior and platform fixtures."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/bridge_runner/**",
+        "app/src-tauri/src/runtime/**",
+        "app/src-tauri/src/commands/app.rs",
+        "app/src-tauri/src/profile_manager/**"
+      ],
+      "reason": "Platform process handling, registry authorization and edition resources require explicit review when paths are absent from the shared list."
+    },
+    {
+      "paths": [
+        "app/package*.json",
+        "app/src-tauri/Cargo.*",
+        "app/src-tauri/tauri*.json",
+        ".github/**",
+        "app/release-manifest.json",
+        "app/scripts/**"
+      ],
+      "reason": "Dependency, product identity, release and CI changes require target-specific adaptation; do not copy package locks alone."
+    },
+    {
+      "paths": [
+        "app/src/App.tsx",
+        "app/src/pages/**",
+        "app/src/api/**",
+        "app/src/features/**"
+      ],
+      "reason": "Demo has presentation-only entries; other non-shared UI changes need lifecycle and capability review."
+    },
+    {
+      "paths": [
+        "app/bridges/**",
+        "app/runtime/**",
+        "app/third_party/**"
+      ],
+      "reason": "Runtime/source inventories are edition and platform specific; Lite and Demo boundaries must remain intact."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/diagnostics.rs",
+        "app/src-tauri/src/diagnostics/bridge_classification.rs",
+        "app/src-tauri/src/diagnostics/tests.rs",
+        "app/src-tauri/src/sync/orchestrator_tests.rs",
+        "app/src-tauri/src/commands/bridge.rs",
+        "app/src-tauri/src/commands/bridge/**"
+      ],
+      "reason": "Diagnostic categories, synchronization fixtures and binding implementations reflect edition/platform capabilities; adapt explicitly. Windows personal WeChat binding modules must never be copied into Lite or Demo."
+    },
+    {
+      "paths": [
+        "app/cli-adapters/**"
+      ],
+      "reason": "Pinned DWS source adaptations share audited source, patches and build scripts across formal editions; target payloads, host digests and native validation require explicit review. These adapters must never enter Demo."
+    },
+    {
+      "paths": [
+        "app/src/features/profiles/hooks/useProfilesController.test.tsx"
+      ],
+      "reason": "Lite fixtures omit the personal account callback present in the macOS Full hook contract. Keep lifecycle assertions aligned, but never copy the Full test fixture into Lite."
+    },
+    {
+      "paths": [
+        "app/src/features/profiles/model/profileBuilders.test.ts"
+      ],
+      "reason": "macOS Full personal account builder regression. Windows Full uses its separate CLI builder; Lite and Demo must not receive this test or implementation."
+    },
+    {
+      "paths": [
+        "app/src/features/profiles/hooks/useMacWechatBindController.test.tsx"
+      ],
+      "reason": "macOS Full personal binding lifecycle regression. Other variants use separate binding flows; Lite and Demo must exclude this test and implementation."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/ai/keyword_refine.rs",
+        "app/public/third-party/application/frontend/**"
+      ],
+      "reason": "Full keyword refinement applies a personal-account source filter; Lite has no such module. Align platform provenance and general keyword behavior explicitly. Frontend notices are generated separately from each edition package and lock inputs; regenerate and verify static output instead of copying another edition inventory."
+    },
+    {
+      "paths": [
+        "app/shared/third-party/application/upstream/rust/**",
+        "app/scripts/application-license-sources/rust/**"
+      ],
+      "reason": "Rust supplemental license materials differ by host/target dependency candidates and remaining copyright gaps. Keep pinned text hashes and per-edition applicableTargets together. Demo uses static build inputs outside shared; do not copy a Full material manifest over another edition."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/runtime/mod.rs",
+        "app/src-tauri/src/runtime/official_cli/resolver.rs",
+        "app/src-tauri/src/bridge_runner/paths.rs",
+        "app/src-tauri/src/messages/message_type.rs",
+        "app/src-tauri/src/messages/mod.rs"
+      ],
+      "reason": "CLI resolver call sites keep platform-specific entry paths and DWS integrity policies. Register the shared candidate checker in each runtime module. System message types share enterprise aliases, while Full-only personal protocol metadata and fixtures must stay out of Lite and Demo; align consumers explicitly."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/analysis/context_backfill.rs"
+      ],
+      "reason": "Full history reads prefer owned structured message_items only for personal profiles. Lite retains enterprise container behavior and has no personal history selector. Align shared backfill/window behavior manually; never copy Full-only selector calls into Lite."
+    },
+    {
+      "paths": [
+        "app/src/api/bridgeApi.personal.test.ts",
+        "app/src/App.tsx",
+        "app/src/components/layout/AppShell.tsx",
+        "app/src/features/profiles/hooks/useProfilesController.ts"
+      ],
+      "reason": "Personal discovery/init fixture is macOS Full only. Account error/retry presentation and profile lifecycle wiring must respect each platform/edition and Demo UI-only state; align shared behavior explicitly."
+    },
+    {
+      "path": "app/shared/third-party/application/upstream/rust/materials.json",
+      "reason": "Each edition records its actual target graph; supplement source files may be shared but this manifest must preserve edition/target applicability. Demo maintains build-only materials at app/scripts/application-license-sources/rust and must not receive a formal backend resource manifest."
+    },
+    {
+      "path": "app/src-tauri/src/analysis/orchestrator.rs",
+      "reason": "Full context_backfill reads compact personal history; Lite retains generic value_array through include! and requires its import in the enclosing orchestrator. Preserve those edition-specific imports rather than copying Full orchestrator into Lite."
+    },
+    {
+      "path": "app/src/styles/modals.css",
+      "reason": "Each edition now contains only its verified active modal/presentation selectors. Preserve macOS personal styles in main, Windows CLI styles in win, enterprise-only Lite variants and presentation-only Demo; copying entire main stylesheet would restore removed obsolete or excluded styles."
+    },
+    {
+      "path": "app/src/styles/responsive.css",
+      "reason": "Each edition now contains only its verified active modal/presentation selectors. Preserve macOS personal styles in main, Windows CLI styles in win, enterprise-only Lite variants and presentation-only Demo; copying entire main stylesheet would restore removed obsolete or excluded styles."
+    },
+    {
+      "path": "app/src/styles/theme-light.css",
+      "reason": "Each edition now contains only its verified active modal/presentation selectors. Preserve macOS personal styles in main, Windows CLI styles in win, enterprise-only Lite variants and presentation-only Demo; copying entire main stylesheet would restore removed obsolete or excluded styles."
+    },
+    {
+      "path": "app/src/styles/theme-overrides.css",
+      "reason": "Each edition now contains only its verified active modal/presentation selectors. Preserve macOS personal styles in main, Windows CLI styles in win, enterprise-only Lite variants and presentation-only Demo; copying entire main stylesheet would restore removed obsolete or excluded styles."
+    },
+    {
+      "path": "app/src/styles/theme-core.css",
+      "reason": "Formal editions share theme-core. Demo removes obsolete modal/command selectors while preserving every active theme declaration; compare its presentation scope manually rather than restoring the Full CSS."
+    },
+    {
+      "paths": [
+        "app/scripts/runtime-downloads.json",
+        "app/scripts/prepare-macos-deps.mjs",
+        "app/scripts/prepare-windows-deps.mjs"
+      ],
+      "reason": "Archive SHA/size inputs are pinned from official release assets and differ by OS and edition. Lite carries only model archives. Align common verified-download behavior and retain edition-specific preparation and manifest assets."
+    },
+    {
+      "paths": [
+        "app/scripts/debug-wechat-discover.mjs",
+        "app/scripts/debug-wechat-discover.test.mjs",
+        "app/REAL_WECHAT_DEBUG.md"
+      ],
+      "reason": "macOS Full-only personal discovery uses the manifest-selected bundled interpreter. Lite and Demo must exclude this code; Windows Full uses a separate deployment flow."
+    },
+    {
+      "paths": [
+        "app/scripts/windows-dev-env.mjs",
+        "app/scripts/windows-dev-env.test.mjs",
+        "app/scripts/run-windows-dev-env.mjs",
+        "app/scripts/build-windows-xwin.mjs",
+        "app/scripts/build-windows-xwin.test.mjs",
+        "app/scripts/windows-portable.mjs",
+        "app/scripts/windows-portable.test.mjs",
+        "app/scripts/package-windows-portable.mjs"
+      ],
+      "reason": "Windows Full and LiteWin align common build and packaging helpers explicitly; main has no source for direct automatic copies. Preserve the per-edition resource validation and raw/named executable policy, and synchronize helper tests in both Windows branches."
+    },
+    {
+      "paths": [
+        "app/src/components/modals/DeveloperFeedbackModal.test.tsx",
+        "app/src/pages/Profiles/ProfilesPage.batchNotice.test.tsx",
+        "app/src-tauri/src/runtime/wechat_runtime.rs",
+        "app/src-tauri/src/runtime/wechat_runtime_tests.rs"
+      ],
+      "reason": "Lite feedback Escape regressions apply to both Lite editions; the Windows batch notice fixture is currently Windows Full-only. The personal Windows runtime cache and its tests are FullWin-only and must be excluded from both Lite editions and Demo."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/profile_manager/activity.rs",
+        "app/src-tauri/src/lib.rs",
+        "app/src-tauri/src/commands/bridge.rs",
+        "app/src-tauri/src/commands/bridge/macos_init.rs",
+        "app/src-tauri/src/macos_wechat_signing.rs",
+        "app/src-tauri/src/macos_wechat_signing/process.rs",
+        "app/src-tauri/src/macos_wechat_signing/resource_gate.rs"
+      ],
+      "reason": "Shared Unix owners and exit failure reporting must be registered in each formal edition. macOS Full personal signing/init additionally holds a canonical application path, directory identity and profile resource lease in BridgeActivityContext/PendingExit until owned group exit is confirmed. Adapt activity and command integration explicitly instead of copying this Full-only personal flow into Windows, Lite or Demo; Windows keeps its distinct personal binding path. Demo must exclude all production lifecycle modules."
+    },
+    {
+      "paths": [
+        "app/scripts/python-target-install.mjs",
+        "app/scripts/python-target-install.test.mjs"
+      ],
+      "reason": "Windows Full-only personal Python target preparation transaction and its regressions. main has no source for automatic copying; Lite and Demo must exclude these dependencies and implementation. Preserve the existing Windows preparation/runtime-download manifest adaptation and candidate-publication behavior."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/bridge_runner/wechat_windows_errors.rs",
+        "app/src-tauri/src/bridge_runner/wechat_windows_output_tests.rs"
+      ],
+      "reason": "Windows Full personal raw CLI JSON and error decoding are platform-specific; align shared strict protocol validation through each actual producer/envelope adapter. Lite and Demo must exclude these personal files and fixtures."
+    },
+    {
+      "paths": [
+        "app/src/main.tsx"
+      ],
+      "reason": "Windows Full and Windows Lite keep their Windows platform detection at the frontend entry point. Preserve and review win/lite-win implementations explicitly; automatic main copying only targets macOS Lite and must not overwrite Windows detection. Demo retains its UI-only entry and is excluded from this production mapping."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/bridge_runner/validation.rs"
+      ],
+      "reason": "macOS Full accepts the fixed managed-prechecked signing policy only for personal init after Rust preflight. Windows Full keeps its own personal contract and does not inject this policy; Lite validators exclude personal commands. Adapt validation explicitly with actual producer/consumer tests; do not automatically overwrite Windows or copy personal policy into Lite/Demo."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/macos_wechat_signing/app_instances/**"
+      ],
+      "reason": "macOS Full-only retained NSRunningApplication actor and managed fixed-resource lifecycle session. Rust owns an inherited socketpair, persistent launch-return objects, cancellation/late callbacks and capture pending until explicit successful detach acknowledgment. Register all managed modules and fixtures here; adapt AppHandle/signing/activity integration explicitly. Windows keeps its platform lifecycle; Lite and Demo must exclude personal AppKit and Frida lifecycle code. Kernel PID paths/birth are read-only identity evidence, never signal targets or a fallback. Standalone auto remains a supported separate unresolved lifecycle path."
+    },
+    {
+      "paths": [
+        "app/src/demo/demoData.date.test.ts"
+      ],
+      "reason": "Formal editions share this static sample-date regression automatically. Demo already carries the identical UI/sample-data-only fixture; keep it under explicit presentation review because the current Demo automatic whitelist excludes app/src/demo. Never copy a full edition demoData.ts into Lite or restore business demo initialization."
+    },
+    {
+      "paths": [
+        "app/src/components/cards/ActionListCard.sort.test.tsx"
+      ],
+      "reason": "Formal editions automatically share the action timestamp ordering regression. Demo already has identical UI/sample-data-only bytes; retain explicit Demo review because the automatic Demo whitelist does not include cards. Do not copy backend migrations or AI writers into Demo."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/storage/action_day_migration_tests.rs",
+        "app/src-tauri/src/storage/legacy_import_day_tests.rs",
+        "app/shared/EDITION-MIGRATION.md"
+      ],
+      "reason": "Formal editions share action detected-day behavior but Full migration fixtures start at schema v4 with 004 while Lite starts at v3. Keep that version-chain fixture adaptation explicit. Lite/LiteWin legacy import and its new day regression are shared between those editions only; main has no source for automatic copies. Demo must exclude schema, storage, migration and business import code."
+    },
+    {
+      "paths": [
+        "app/scripts/test_python_runtime_bridge_managed_lifecycle.py",
+        "app/third_party/wechat_bridge/wechat-cli-source/wechat_cli/keys/lifecycle_rpc.py",
+        "app/third_party/wechat_bridge/wechat-cli-source/tests/test_managed_lifecycle.py",
+        "app/runtime/python/20260414/darwin-arm64/python/lib/python3.10/site-packages/wechat_cli/keys/lifecycle_rpc.py",
+        "app/runtime/python/20260414/darwin-x64/python/lib/python3.10/site-packages/wechat_cli/keys/lifecycle_rpc.py"
+      ],
+      "reason": "macOS Full managed-only Python producer/client and actual pipeline regressions. Source and both Darwin payload copies must retain exact v2 schemas, immutable birth evidence, ticket pending/detach acknowledgment and owned reader entry policy together with RECORD/runtime inventory hashes. Windows Full does not use the macOS managed session; Lite and Demo must exclude these personal modules, fixtures and dependencies. Do not synchronize as automatic files or restore ps/kill fallback on channel failure."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/sync/orchestrator.rs"
+      ],
+      "reason": "SyncFetchContext is shared, but each edition keeps platform-specific orchestration, storage preparation and user-facing progress text. Adapt its construction and call site with cargo checks; do not copy the entire orchestrator over platform-specific behavior."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/runtime/dws_native.ps1",
+        "app/src-tauri/src/runtime/dws_auth.ps1",
+        "app/src-tauri/src/runtime/dws_auth.rs"
+      ],
+      "reason": "Windows Full and LiteWin share the native DWS invocation wrapper. Keep Stop for hash/DPAPI/registry checks, scope Continue to native stderr only, preserve LASTEXITCODE and fail on launch failure. macOS uses its separate shell implementation; Demo excludes auth/runtime code."
+    },
+    {
+      "paths": [
+        "app/scripts/lite-package-boundary.mjs",
+        "app/scripts/lite-package-boundary.test.mjs"
+      ],
+      "reason": "Windows Lite packaging inspects the native DWS executable. The audited 1.0.65 CGO SDK contains generic encryptFileHelper symbols and DingTalk enterprise invitation metadata, not personal WeChat code. Only the exact vetted binary hash can use the invitation-text exception; tampered/new binaries and all other personal markers remain blocked. Review against source/module inventory when upgrading the SDK; do not copy this target-only gate into Demo. The LiteWin host executable and im_board_lib.dll may contain the official enterprise API domain from the reviewed read adapter; other files and personal markers still fail. Regression-test both source and packaged-resource gates."
+    },
+    {
+      "paths": [
+        "app/scripts/verify-lite-boundary.mjs",
+        "app/scripts/lite-enterprise-domains.mjs",
+        "app/scripts/lite-enterprise-domains.test.mjs"
+      ],
+      "reason": "Lite and LiteWin keep a narrowly scoped official enterprise Tencent API domain exception only for the reviewed Wecom read adapter and its fixtures. Source paths, every other personal marker and unreviewed files remain gated; reachable-history scan applies the same rule. Keep both Lite implementations aligned; Demo excludes the enterprise adapter."
+    },
+    {
+      "paths": [
+        "app/scripts/package-macos.mjs",
+        "app/scripts/lite-macos-package-boundary.mjs",
+        "app/scripts/lite-macos-package-boundary.test.mjs"
+      ],
+      "reason": "macOS Lite retains a separate bundle-layout gate: allow the official enterprise API domain only in Contents/MacOS/IM-Board-Lite; keep all other personal source/runtime markers forbidden. Test fixture host/non-host paths and personal-marker rejection; adapt rather than copy the Windows layout."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/messages/mod.rs",
+        "app/src-tauri/src/sync/fetch.rs"
+      ],
+      "reason": "Register shared contact_names repair in each formal edition and invoke it only after successful Wecom directory discovery. Preserve Lite-specific sync/context paths and exclude personal modules. Demo must exclude business DB and contact-name repair."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/messages/mod.rs",
+        "app/src-tauri/src/sync/fetch.rs"
+      ],
+      "reason": "Register account_identity and persist the validated Feishu user OpenID after successful search discovery in each formal edition. Keep the existing two-sided direct-chat filter, profile isolation, and Lite-specific synchronization architecture; Demo excludes business storage and auth."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/messages/repository.rs"
+      ],
+      "reason": "On message upsert, update is_group from the confirmed import projection as well as display metadata. This corrects prior DingTalk window imports which used a constant false fallback. Adapt each edition repository without copying Full personal-message test fixtures into Lite; preserve message ID, contents and the two-sided direct-chat ranking requirement."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/bridge_runner/errors.rs"
+      ],
+      "reason": "Reuse existing DINGTALK_NOT_AUTHENTICATED and common unfinished-authorization message for resolve-access-token failures where the private .data secure file is missing. Preserve platform_command_shell_name and platform/edition-specific error rules; do not classify generic code 5, permission failures, or decryption failures as missing authorization."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/bridge_runner/dingtalk_runner.rs"
+      ],
+      "reason": "Windows Full and LiteWin retain isolated_dws::resolve hash-verified runtime selection before invocation; preserve it while adapting shared sender-ID lookup and copied profile-scoped child environments. Main-to-Windows whole-file auto-copy is excluded because it would remove this platform guard. Mac Lite may share main automatically; Demo excludes the runner."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/bridge_runner/dingtalk_runner.rs",
+        "app/src-tauri/src/bridge_runner/dingtalk_identity_lookup.rs"
+      ],
+      "reason": "Windows Full and LiteWin must wrap BOTH the main DWS command and the optional exact-user ID lookup with runtime::dws_auth::wrap_command and the same profile configDir. This preserves the DPAPI registry namespace, verified native invoker, tenant checks and legacy migration; never use a naked Windows DWS child. Mac editions use their own native keychain path, so automatic main-to-Windows whole-file copy is excluded."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/runtime/dws_auth.ps1",
+        "app/src-tauri/src/runtime/dws_auth.rs",
+        "app/src-tauri/src/runtime/dws_bounded.ps1",
+        "app/src-tauri/src/runtime/official_cli/bind_commands.rs",
+        "app/src-tauri/src/bridge_runner/errors.rs",
+        "app/src/api/bridgeApi.ts",
+        "app/scripts/test-dws-bounded.ps1",
+        "app/scripts/dws-bounded.test.mjs"
+      ],
+      "reason": "Windows Full and LiteWin retain account-scoped DPAPI locking. Detect a busy account immediately rather than wait five minutes; keep bounded PAT granting with phase prompts, owned process exit and existing credentials. Preserve the same limited permanent message scope. Native PowerShell 5.1 tests remain required on Windows; do not copy the Windows wrapper into macOS or Demo."
+    },
+    {
+      "paths": [
+        "app/shared/OFFICIAL-CLI.md",
+        "app/src-tauri/src/bridge_runner/dingtalk_error_tests.rs",
+        "app/src/api/bridgeApi.test.ts"
+      ],
+      "reason": "Windows Full and LiteWin contain specific authorization busy mapping tests and bounded PowerShell grant documentation. Preserve these additions while adapting shared assertions and official CLI documentation; main-to-Windows whole-file copies would erase platform regressions."
+    },
+    {
+      "paths": [
+        "app/src/features/profiles/hooks/useModalEnterGuard.ts",
+        "app/scripts/package-macos.mjs",
+        "app/scripts/build-windows-xwin.mjs",
+        "app/scripts/run-windows-dev-env.mjs",
+        "app/src-tauri/src/commands/app.rs"
+      ],
+      "reason": "Windows Full and LiteWin use the Windows IME composition guard duration; macOS keeps its platform timing. Release build entry points must use compiler path remapping and avoid release source-directory icon fallbacks, while preserving platform-specific packaging."
+    },
+    {
+      "paths": [
+        "app/scripts/windows-portable.mjs",
+        "app/scripts/windows-release-resources.mjs",
+        "app/scripts/windows-release-resources.test.mjs",
+        "app/scripts/package-windows-portable.mjs",
+        "app/src-tauri/tauri.conf.json"
+      ],
+      "reason": "Windows releases must use fresh template/resource modes and assemble only declared current source/runtime inputs. Full stages its own production reader modules; Lite omits that source rule. Preserve byte verification, account-data exclusion and platform packaging differences."
+    }
+  ]
+}

@@ -85,7 +85,6 @@ export const OFFICIAL_CLI_MESSAGES = {
   versionCheckFailed: (platform: Platform) => `${platformCliDisplayName(platform)}版本核查失败。`,
   waitReady: (platform: Platform) => `请先等待${platformCliDisplayName(platform)}准备完成。`,
   updateFailed: (platform: Platform) => `${platformCliDisplayName(platform)}更新失败。`,
-  cleanupFailed: (platform: Platform) => `清理${platformCliDisplayName(platform)}失败。`,
   placeholder: (platform: Platform) => `正在准备${platformCliDisplayName(platform)}…`
 };
 

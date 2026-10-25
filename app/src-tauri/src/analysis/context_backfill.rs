@@ -103,6 +103,9 @@ async fn backfill_context_for_requests(
             }
             let target_day = today - Duration::days(offset);
             let target_day_text = target_day.format("%Y-%m-%d").to_string();
+            let Some(window) = MessageImportWindow::natural_day(&target_day_text) else {
+                continue;
+            };
             let mut args = HashMap::new();
             args.insert("chat".to_owned(), request.chat_id.clone());
             args.insert("chat_name".to_owned(), request.chat_name.clone());
@@ -142,7 +145,7 @@ async fn backfill_context_for_requests(
                 if let Some(line) = normalize_context_evidence(
                     profile,
                     message,
-                    &target_day_text,
+                    &window,
                     &request.chat_id,
                     &request.chat_name,
                     request.is_group,
@@ -155,7 +158,7 @@ async fn backfill_context_for_requests(
         if evidence.is_empty() {
             continue;
         }
-        apply_context_evidence(state, &request.action_id, &evidence)
+        apply_context_evidence(state, day, &request.action_id, &evidence)
             .map_err(|err| err.to_string())?;
         completed += 1;
     }
@@ -193,6 +196,9 @@ async fn fetch_context_history_for_targets(
             }
             let target_day = today - Duration::days(offset);
             let target_day_text = target_day.format("%Y-%m-%d").to_string();
+            let Some(window) = MessageImportWindow::natural_day(&target_day_text) else {
+                continue;
+            };
             let mut args = HashMap::new();
             args.insert("chat".to_owned(), target.chat_id.clone());
             args.insert("chat_name".to_owned(), target.chat_name.clone());
@@ -232,7 +238,7 @@ async fn fetch_context_history_for_targets(
                 if let Some(context_message) = normalize_historical_context_message(
                     profile,
                     message,
-                    &target_day_text,
+                    &window,
                     &target.chat_id,
                     &target.chat_name,
                     target.is_group,
@@ -249,16 +255,15 @@ async fn fetch_context_history_for_targets(
 fn normalize_context_evidence(
     profile: &ImProfile,
     value: &serde_json::Value,
-    expected_day: &str,
+    window: &MessageImportWindow,
     fallback_chat_id: &str,
     fallback_chat_name: &str,
     fallback_is_group: bool,
 ) -> Option<String> {
-    let window = MessageImportWindow::natural_day(expected_day)?;
     let message = normalize_message(
         profile,
         value,
-        &window,
+        window,
         fallback_chat_id,
         fallback_chat_name,
         fallback_is_group,
@@ -275,16 +280,15 @@ fn normalize_context_evidence(
 fn normalize_historical_context_message(
     profile: &ImProfile,
     value: &serde_json::Value,
-    expected_day: &str,
+    window: &MessageImportWindow,
     fallback_chat_id: &str,
     fallback_chat_name: &str,
     fallback_is_group: bool,
 ) -> Option<ai::HistoricalContextMessage> {
-    let window = MessageImportWindow::natural_day(expected_day)?;
     let message = normalize_message(
         profile,
         value,
-        &window,
+        window,
         fallback_chat_id,
         fallback_chat_name,
         fallback_is_group,
@@ -301,6 +305,7 @@ fn normalize_historical_context_message(
 
 fn apply_context_evidence(
     state: &State<'_, AppState>,
+    day: &str,
     action_id: &str,
     evidence: &[String],
 ) -> anyhow::Result<()> {
@@ -308,6 +313,7 @@ fn apply_context_evidence(
         .db
         .lock()
         .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    crate::daily_cache::ensure_current_day(&conn, day)?;
     apply_context_evidence_conn(&conn, action_id, evidence)
 }
 

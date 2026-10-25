@@ -1,13 +1,10 @@
-import type { Platform } from "../features/profiles/model/types";
+import type { ConnectorCapability, Platform } from "../features/profiles/model/types";
 
-export interface PlatformBindingOption {
+export interface PlatformBindingOption
+  extends Partial<Omit<ConnectorCapability, "platform" | "label" | "authDescription">> {
   id: Platform;
   label: string;
   auth: string;
-  runtimeDependency?: string;
-  permissions?: string[];
-  commands?: string[];
-  healthCheck?: string;
   disabled?: boolean;
   disabledReason?: string;
 }

@@ -22,3 +22,15 @@ export interface SyncResult {
   startedAt: string;
   finishedAt: string;
 }
+
+export interface SyncJobSnapshot {
+  revision: number;
+  jobId: string;
+  profileId: string;
+  mode: string;
+  running: boolean;
+  busy: boolean;
+  progress: SyncProgress | null;
+  result: SyncResult | null;
+  error: string | null;
+}

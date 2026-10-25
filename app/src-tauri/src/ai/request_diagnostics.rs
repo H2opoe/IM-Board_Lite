@@ -11,6 +11,9 @@ impl AiCallDiagnostics {
     }
 }
 
+// Provider adapters expose protocol fields independently; grouping them would
+// obscure which optional response field was actually observed.
+#[allow(clippy::too_many_arguments)]
 fn build_ai_call_diagnostics(
     config: &AiConfig,
     endpoint: &str,

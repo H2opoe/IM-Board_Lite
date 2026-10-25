@@ -1,0 +1,537 @@
+--- a/cmd/main.go
++++ b/cmd/main.go
+@@ -14,6 +14,7 @@
+ package main
+ 
+ import (
++	"fmt"
+ 	"os"
+ 	"path/filepath"
+ 	"slices"
+@@ -39,6 +40,12 @@
+ }
+ 
+ func run() int {
++	// IM-Board does not submit CLI identity or usage telemetry.
++	_ = os.Setenv("DO_NOT_TRACK", "1")
++	if len(os.Args) == 2 && os.Args[1] == "--im-board-isolation-version" {
++		fmt.Println("im-board-dws-isolation-v1")
++		return 0
++	}
+ 	if handled, code := runSchemaCacheBuilder(os.Args[1:], os.Stdout); handled {
+ 		return code
+ 	}
+--- a/go.mod
++++ b/go.mod
+@@ -20,7 +20,7 @@
+ 	github.com/ebitengine/purego v0.10.2
+ 	github.com/fatih/color v1.18.0
+ 	github.com/google/uuid v1.6.0
+-	github.com/gorilla/websocket v1.5.0
++	github.com/gorilla/websocket v1.5.3
+ 	github.com/itchyny/gojq v0.12.18
+ 	github.com/mattn/go-isatty v0.0.20
+ 	github.com/muesli/termenv v0.16.0
+@@ -30,10 +30,9 @@
+ 	github.com/yuin/goldmark v1.8.5
+ 	github.com/zalando/go-keyring v0.2.8
+ 	gitlab.alibaba-inc.com/aes/aem-go-sdk v0.4.0
+-	golang.org/x/crypto v0.49.0
+ 	golang.org/x/image v0.31.0
+-	golang.org/x/sys v0.42.0
+-	golang.org/x/text v0.35.0
++	golang.org/x/sys v0.47.0
++	golang.org/x/text v0.41.0
+ 	google.golang.org/protobuf v1.36.12
+ 	safechat-go-sdk v0.0.0
+ )
+@@ -64,7 +63,7 @@
+ 	github.com/muesli/cancelreader v0.2.2 // indirect
+ 	github.com/rivo/uniseg v0.4.7 // indirect
+ 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+-	golang.org/x/sync v0.20.0 // indirect
++	golang.org/x/sync v0.22.0 // indirect
+ )
+ 
+ require (
+--- a/go.sum
++++ b/go.sum
+@@ -67,8 +67,8 @@
+ github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
+ github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+ github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+-github.com/gorilla/websocket v1.5.0 h1:PPwGk2jz7EePpoHN/+ClbZu8SPxiqlu12wZP/3sWmnc=
+-github.com/gorilla/websocket v1.5.0/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
++github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
++github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
+ github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+ github.com/itchyny/gojq v0.12.18 h1:gFGHyt/MLbG9n6dqnvlliiya2TaMMh6FFaR2b1H6Drc=
+@@ -116,21 +116,19 @@
+ github.com/zalando/go-keyring v0.2.8 h1:6sD/Ucpl7jNq10rM2pgqTs0sZ9V3qMrqfIIy5YPccHs=
+ github.com/zalando/go-keyring v0.2.8/go.mod h1:tsMo+VpRq5NGyKfxoBVjCuMrG47yj8cmakZDO5QGii0=
+ go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
+-golang.org/x/crypto v0.49.0 h1:+Ng2ULVvLHnJ/ZFEq4KdcDd/cfjrrjjNSXNzxg0Y4U4=
+-golang.org/x/crypto v0.49.0/go.mod h1:ErX4dUh2UM+CFYiXZRTcMpEcN8b/1gxEuv3nODoYtCA=
+ golang.org/x/exp v0.0.0-20231006140011-7918f672742d h1:jtJma62tbqLibJ5sFQz8bKtEM8rJBtfilJ2qTU199MI=
+ golang.org/x/exp v0.0.0-20231006140011-7918f672742d/go.mod h1:ldy0pHrwJyGW56pPQzzkH36rKxoZW1tw7ZJpeKx+hdo=
+ golang.org/x/image v0.31.0 h1:mLChjE2MV6g1S7oqbXC0/UcKijjm5fnJLUYKIYrLESA=
+ golang.org/x/image v0.31.0/go.mod h1:R9ec5Lcp96v9FTF+ajwaH3uGxPH4fKfHHAVbUILxghA=
+-golang.org/x/sync v0.20.0 h1:e0PTpb7pjO8GAtTs2dQ6jYa5BWYlMuX047Dco/pItO4=
+-golang.org/x/sync v0.20.0/go.mod h1:9xrNwdLfx4jkKbNva9FpL6vEN7evnE43NNNJQ2LF3+0=
++golang.org/x/sync v0.22.0 h1:SZjpbeLmrCk4xhRSZFNZW5gFUeCeFgjekvI/+gfScek=
++golang.org/x/sync v0.22.0/go.mod h1:9xrNwdLfx4jkKbNva9FpL6vEN7evnE43NNNJQ2LF3+0=
+ golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+-golang.org/x/sys v0.42.0 h1:omrd2nAlyT5ESRdCLYdm3+fMfNFE/+Rf4bDIQImRJeo=
+-golang.org/x/sys v0.42.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
+-golang.org/x/text v0.35.0 h1:JOVx6vVDFokkpaq1AEptVzLTpDe9KGpj5tR4/X+ybL8=
+-golang.org/x/text v0.35.0/go.mod h1:khi/HExzZJ2pGnjenulevKNX1W67CUy0AsXcNubPGCA=
++golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=
++golang.org/x/sys v0.47.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
++golang.org/x/text v0.41.0 h1:vz/seA0lnX87Othu2f/0L24RcgrXD9/YFTSuGjj3rH8=
++golang.org/x/text v0.41.0/go.mod h1:jvf1O8ajNzZqhSrQBPbutR/EB83Cc0CFrezNQIwbb5M=
+ google.golang.org/protobuf v1.36.12 h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc=
+ google.golang.org/protobuf v1.36.12/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
+ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
+--- a/internal/keychain/auth_entries_windows.go
++++ b/internal/keychain/auth_entries_windows.go
+@@ -30,7 +30,10 @@
+ // every auth-token account so orphaned slots that are not present in
+ // profiles.json are still validated before a login can overwrite credentials.
+ func platformValidateAuthTokenEntries(service string) error {
+-	keyPath := registryPathForService(service)
++	keyPath, pathErr := registryPathForService(service)
++	if pathErr != nil {
++		return pathErr
++	}
+ 	k, err := registryOpenReadKey(registry.CURRENT_USER, keyPath, registry.QUERY_VALUE)
+ 	if err != nil {
+ 		if errors.Is(err, registry.ErrNotExist) {
+--- /dev/null
++++ b/internal/keychain/imboard_namespace.go
+@@ -0,0 +1,19 @@
++// IM-Board Windows adaptation. This helper performs no OS access.
++package keychain
++
++import (
++	"fmt"
++	"regexp"
++	"strings"
++)
++
++const imBoardNamespaceEnv = "IM_BOARD_DWS_NAMESPACE"
++
++var imBoardNamespacePattern = regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
++
++func imBoardNamespaceRoot(namespace string) (string, error) {
++	if !imBoardNamespacePattern.MatchString(namespace) {
++		return "", fmt.Errorf("IM-Board DWS requires an explicit 64-hex account namespace")
++	}
++	return `Software\IMBoard\DwsCli\Profiles\` + strings.ToLower(namespace), nil
++}
+--- /dev/null
++++ b/internal/keychain/imboard_namespace_test.go
+@@ -0,0 +1,25 @@
++package keychain
++
++import (
++	"strings"
++	"testing"
++)
++
++func TestIMBoardNamespaceRejectsMissingAndUnsafeInputs(t *testing.T) {
++	for _, value := range []string{"", "..", `C:\profile`, strings.Repeat("a", 63), strings.Repeat("a", 65), strings.Repeat("a", 63) + "/", " " + strings.Repeat("a", 64)} {
++		if _, err := imBoardNamespaceRoot(value); err == nil {
++			t.Fatalf("accepted invalid namespace %q", value)
++		}
++	}
++}
++func TestIMBoardNamespacesAreDistinctAndNeverUseGlobalDWSRoot(t *testing.T) {
++	a, err := imBoardNamespaceRoot(strings.Repeat("A", 64))
++	if err != nil {
++		t.Fatal(err)
++	}
++	same, _ := imBoardNamespaceRoot(strings.Repeat("a", 64))
++	b, _ := imBoardNamespaceRoot(strings.Repeat("b", 64))
++	if a != same || a == b || !strings.HasPrefix(a, `Software\IMBoard\DwsCli\Profiles\`) || strings.Contains(a, `Software\DwsCli\keychain`) {
++		t.Fatalf("bad namespace mapping: %s", a)
++	}
++}
+--- /dev/null
++++ b/internal/keychain/imboard_namespace_windows_test.go
+@@ -0,0 +1,70 @@
++//go:build windows
++
++package keychain
++
++import (
++	"crypto/rand"
++	"encoding/hex"
++	"golang.org/x/sys/windows/registry"
++	"os"
++	"testing"
++)
++
++func TestIMBoardWindowsAllTokenSlotsAreIsolated(t *testing.T) {
++	namespaces := make([]string, 2)
++	for i := range namespaces {
++		bytes := make([]byte, 32)
++		if _, err := rand.Read(bytes); err != nil {
++			t.Fatal(err)
++		}
++		namespaces[i] = hex.EncodeToString(bytes)
++	}
++	defer func() {
++		for _, ns := range namespaces {
++			os.Setenv(imBoardNamespaceEnv, ns)
++			path, _ := registryPathForService("fixture-service")
++			_ = registry.DeleteKey(registry.CURRENT_USER, path)
++		}
++	}()
++	for i, ns := range namespaces {
++		t.Setenv(imBoardNamespaceEnv, ns)
++		for _, slot := range []string{"auth-token", "auth-token:fixture-corp"} {
++			value := "fixture-" + namespaces[i]
++			if err := platformSet("fixture-service", slot, value); err != nil {
++				t.Fatal(err)
++			}
++		}
++	}
++	for i, ns := range namespaces {
++		os.Setenv(imBoardNamespaceEnv, ns)
++		for _, slot := range []string{"auth-token", "auth-token:fixture-corp"} {
++			value, err := platformGet("fixture-service", slot)
++			if err != nil || value != "fixture-"+namespaces[i] {
++				t.Fatalf("cross-account result: %v", err)
++			}
++		}
++	}
++	os.Unsetenv(imBoardNamespaceEnv)
++	if _, err := platformGet("fixture-service", "auth-token"); err == nil {
++		t.Fatal("missing namespace allowed read")
++	}
++	if err := platformSet("fixture-service", "auth-token", "fixture"); err == nil {
++		t.Fatal("missing namespace allowed write")
++	}
++	if err := platformRemove("fixture-service", "auth-token"); err == nil {
++		t.Fatal("missing namespace allowed removal")
++	}
++}
++
++func TestIMBoardWindowsMissingNamespaceRejectsNewCredentialOperations(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "")
++	if err := platformValidateAuthTokenEntries("fixture"); err == nil {
++		t.Fatal("validation used a global registry")
++	}
++	if err := registryRemoveAuthTokenEntries("fixture"); err == nil {
++		t.Fatal("token cleanup used a global registry")
++	}
++	if err := registryRemoveAccountEntriesWithPrefixes("fixture", []string{"auth-"}); err == nil {
++		t.Fatal("account cleanup used a global registry")
++	}
++}
+--- a/internal/keychain/keychain_windows.go
++++ b/internal/keychain/keychain_windows.go
+@@ -67,11 +67,15 @@
+ 	return filepath.Join(home, "AppData", "Local", service)
+ }
+ 
+-func registryPathForService(service string) string {
+-	path := regRootPath + `\` + safeRegistryComponent(service)
++func registryPathForService(service string) (string, error) {
++	base, err := imBoardNamespaceRoot(os.Getenv(imBoardNamespaceEnv))
++	if err != nil {
++		return "", err
++	}
++	path := base + `\` + safeRegistryComponent(service)
+ 	namespace := strings.TrimSpace(os.Getenv(TestNamespaceEnv))
+ 	if namespace == "" {
+-		return path
++		return path, nil
+ 	}
+ 
+ 	// Windows stores credentials in HKCU instead of DWS_KEYCHAIN_DIR. Tests set
+@@ -83,7 +87,7 @@
+ 		namespace = absolute
+ 	}
+ 	sum := sha256.Sum256([]byte(strings.ToLower(namespace)))
+-	return fmt.Sprintf(`%s\test-%x`, path, sum[:16])
++	return fmt.Sprintf(`%s\test-%x`, path, sum[:16]), nil
+ }
+ 
+ var safeRegRe = regexp.MustCompile(`[^a-zA-Z0-9._-]`)
+@@ -185,7 +189,10 @@
+ }
+ 
+ func registryGet(service, account string) (string, bool, error) {
+-	keyPath := registryPathForService(service)
++	keyPath, pathErr := registryPathForService(service)
++	if pathErr != nil {
++		return "", false, pathErr
++	}
+ 	k, err := registryOpenReadKey(registry.CURRENT_USER, keyPath, registry.QUERY_VALUE)
+ 	if err != nil {
+ 		if errors.Is(err, registry.ErrNotExist) {
+@@ -221,7 +228,10 @@
+ }
+ 
+ func registrySet(service, account string, protected []byte) error {
+-	keyPath := registryPathForService(service)
++	keyPath, pathErr := registryPathForService(service)
++	if pathErr != nil {
++		return pathErr
++	}
+ 	k, _, err := registry.CreateKey(registry.CURRENT_USER, keyPath, registry.SET_VALUE)
+ 	if err != nil {
+ 		return fmt.Errorf("registry create/open failed: %w", err)
+@@ -236,7 +246,10 @@
+ }
+ 
+ func registryRemove(service, account string) error {
+-	keyPath := registryPathForService(service)
++	keyPath, pathErr := registryPathForService(service)
++	if pathErr != nil {
++		return pathErr
++	}
+ 	k, err := registryOpenDeleteKey(keyPath, registry.SET_VALUE)
+ 	if err != nil {
+ 		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) {
+@@ -259,7 +272,10 @@
+ }
+ 
+ func registryRemoveAuthTokenEntries(service string) error {
+-	keyPath := registryPathForService(service)
++	keyPath, pathErr := registryPathForService(service)
++	if pathErr != nil {
++		return pathErr
++	}
+ 	k, err := registryOpenDeleteKey(keyPath, registry.QUERY_VALUE|registry.SET_VALUE)
+ 	if err != nil {
+ 		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) {
+@@ -290,7 +306,10 @@
+ }
+ 
+ func registryRemoveAccountEntriesWithPrefixes(service string, prefixes []string) error {
+-	keyPath := registryPathForService(service)
++	keyPath, pathErr := registryPathForService(service)
++	if pathErr != nil {
++		return pathErr
++	}
+ 	k, err := registryOpenDeleteKey(keyPath, registry.QUERY_VALUE|registry.SET_VALUE)
+ 	if err != nil {
+ 		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) {
+--- a/internal/keychain/keychain_windows_test.go
++++ b/internal/keychain/keychain_windows_test.go
+@@ -25,17 +25,19 @@
+ )
+ 
+ func TestCrossPlatformCoverageRegistryPathForServiceHonorsTestNamespace(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+ 	t.Setenv(TestNamespaceEnv, "")
+-	defaultPath := registryPathForService("service")
+-	if defaultPath != regRootPath+`\service` {
+-		t.Fatalf("default registry path = %q, want historical path %q", defaultPath, regRootPath+`\service`)
++	defaultPath, _ := registryPathForService("service")
++	expectedRoot, _ := imBoardNamespaceRoot(strings.Repeat("f", 64))
++	if defaultPath != expectedRoot+`\service` {
++		t.Fatalf("default registry path = %q, want account path %q", defaultPath, expectedRoot+`\service`)
+ 	}
+ 
+ 	t.Setenv(TestNamespaceEnv, t.TempDir())
+-	firstPath := registryPathForService("service")
++	firstPath, _ := registryPathForService("service")
+ 
+ 	t.Setenv(TestNamespaceEnv, t.TempDir())
+-	secondPath := registryPathForService("service")
++	secondPath, _ := registryPathForService("service")
+ 
+ 	if firstPath == defaultPath || secondPath == defaultPath {
+ 		t.Fatalf("isolated registry paths = %q, %q; want paths distinct from %q", firstPath, secondPath, defaultPath)
+@@ -49,6 +51,7 @@
+ }
+ 
+ func TestDeleteRegistryValuePropagatesFailure(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+ 	originalDelete := registryDeleteValue
+ 	failure := errors.New("delete failed")
+ 	registryDeleteValue = func(registry.Key, string) error { return failure }
+@@ -60,6 +63,7 @@
+ }
+ 
+ func TestRegistryRemoveAuthTokenEntriesPropagatesOpenFailure(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+ 	originalOpen := registryOpenDeleteKey
+ 	failure := windows.ERROR_ACCESS_DENIED
+ 	registryOpenDeleteKey = func(string, uint32) (registry.Key, error) {
+@@ -73,6 +77,7 @@
+ }
+ 
+ func TestCrossPlatformCoverageWindowsPrefixCleanupFailureEdges(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+ 	originalOpen := registryOpenDeleteKey
+ 	t.Cleanup(func() { registryOpenDeleteKey = originalOpen })
+ 	failure := windows.ERROR_ACCESS_DENIED
+@@ -89,7 +94,7 @@
+ 	writeRawRegistryString(t, service, "appsecret:id", "value")
+ 	writeRawRegistryNamedString(t, service, "%%%invalid-account%%%", "value")
+ 	t.Cleanup(func() { _ = Remove(service, "appsecret:id") })
+-	keyPath := registryPathForService(service)
++	keyPath, _ := registryPathForService(service)
+ 
+ 	registryOpenDeleteKey = func(string, uint32) (registry.Key, error) {
+ 		return registry.OpenKey(registry.CURRENT_USER, keyPath, registry.SET_VALUE)
+@@ -107,9 +112,10 @@
+ }
+ 
+ func TestCrossPlatformCoverageWindowsPrefixCleanupSkipsMalformedAccountNames(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+ 	t.Setenv(TestNamespaceEnv, t.TempDir())
+ 	service := "prefix-malformed-" + t.Name()
+-	keyPath := registryPathForService(service)
++	keyPath, _ := registryPathForService(service)
+ 	const malformedName = "%%%invalid-account%%%"
+ 	const matchingAccount = "appsecret:client"
+ 	const unrelatedAccount = "auth-token:corp"
+--- a/internal/keychain/keychain_windows_validation_test.go
++++ b/internal/keychain/keychain_windows_validation_test.go
+@@ -34,7 +34,7 @@
+ 	t.Helper()
+ 	k, _, err := registry.CreateKey(
+ 		registry.CURRENT_USER,
+-		registryPathForService(service),
++		imBoardTestRegistryPath(t, service),
+ 		registry.SET_VALUE,
+ 	)
+ 	if err != nil {
+@@ -50,7 +50,7 @@
+ 	t.Helper()
+ 	k, _, err := registry.CreateKey(
+ 		registry.CURRENT_USER,
+-		registryPathForService(service),
++		imBoardTestRegistryPath(t, service),
+ 		registry.SET_VALUE,
+ 	)
+ 	if err != nil {
+@@ -63,6 +63,7 @@
+ }
+ 
+ func TestCrossPlatformCoverageWindowsRegistryDistinguishesMissingFromUnreadable(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+ 	service := "test-service-" + t.Name()
+ 	account := AccountToken + ":legacy-corp"
+ 	t.Cleanup(func() { _ = Remove(service, account) })
+@@ -98,6 +99,7 @@
+ }
+ 
+ func TestCrossPlatformCoverageWindowsAuthTokenInventoryValidatesOrphanSlots(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+ 	service := "test-service-" + t.Name()
+ 	const unrelated = "app-secret:client"
+ 	orphan := AccountToken + ":orphan-corp"
+@@ -137,6 +139,7 @@
+ }
+ 
+ func TestCrossPlatformCoverageWindowsRegistryReadFailuresFailClosed(t *testing.T) {
++	t.Setenv(imBoardNamespaceEnv, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+ 	t.Run("open failure", func(t *testing.T) {
+ 		originalOpen := registryOpenReadKey
+ 		failure := windows.ERROR_ACCESS_DENIED
+@@ -192,3 +195,12 @@
+ 		}
+ 	})
+ }
++
++func imBoardTestRegistryPath(t *testing.T, service string) string {
++	t.Helper()
++	path, err := registryPathForService(service)
++	if err != nil {
++		t.Fatal(err)
++	}
++	return path
++}
+--- a/internal/security/crypto.go
++++ b/internal/security/crypto.go
+@@ -21,7 +21,7 @@
+ 	"fmt"
+ 	"io"
+ 
+-	"golang.org/x/crypto/pbkdf2"
++	"crypto/pbkdf2"
+ )
+ 
+ const (
+@@ -45,7 +45,11 @@
+ 
+ // DeriveKey derives a KeySize-byte key from password and salt using PBKDF2-SHA256.
+ func DeriveKey(password, salt []byte) []byte {
+-	return pbkdf2.Key(password, salt, Iterations, KeySize, sha256.New)
++	key, err := pbkdf2.Key(sha256.New, string(password), salt, Iterations, KeySize)
++	if err != nil {
++		panic(err)
++	} // Preserve the upstream wrapper's invalid-parameter/FIPS behavior.
++	return key
+ }
+ 
+ // Encrypt encrypts plaintext using PBKDF2-derived AES-256-GCM.
+--- /dev/null
++++ b/internal/security/imboard_crypto_test.go
+@@ -0,0 +1,23 @@
++package security
++
++import (
++	"encoding/hex"
++	"testing"
++)
++
++func TestIMBoardPBKDF2Compatibility(t *testing.T) {
++	// Independent PBKDF2-HMAC-SHA256 vectors, including non-UTF8 and empty passwords.
++	cases := []struct {
++		password, salt []byte
++		want           string
++	}{
++		{password: []byte{102, 105, 120, 116, 117, 114, 101}, salt: []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}, want: "f1f7897a37241bd682eeda822671e640a1caa4d0d8e066d19e94ffd67d71b14f"},
++		{password: []byte{0, 255, 128, 102, 105, 120, 116, 117, 114, 101}, salt: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, want: "8d5ad208bd54523dcaaeae63f2802c38ca54837e85f1f287b7853b08e8d8d472"},
++		{password: []byte{}, salt: []byte{102, 105, 120, 116, 117, 114, 101, 45, 115, 97, 108, 116}, want: "f600dfb532c6ab2359566ff654c6e1ed55f86692815ef742651bc77d25107df3"},
++	}
++	for _, test := range cases {
++		if got := hex.EncodeToString(DeriveKey(test.password, test.salt)); got != test.want {
++			t.Fatalf("PBKDF2 output changed: %s", got)
++		}
++	}
++}
+--- a/internal/shortcut/chatmsg/chatmsg.go
++++ b/internal/shortcut/chatmsg/chatmsg.go
+@@ -357,6 +357,12 @@
+ 	if value := ConversationID(m); value != nil {
+ 		row["conversationId"] = value
+ 	}
++	// IM-Board needs explicit conversation metadata for direct/group display.
++	for _, key := range []string{"conversationTitle", "singleChat", "conversationType"} {
++		if value, exists := m[key]; exists {
++			row[key] = value
++		}
++	}
+ 	if value := ThreadID(m); value != nil {
+ 		row["threadId"] = value
+ 	}
+--- /dev/null
++++ b/internal/shortcut/chatmsg/imboard_projection_test.go
+@@ -0,0 +1,16 @@
++package chatmsg
++
++import "testing"
++
++func TestIMBoardProjectionPreservesConversationFacts(t *testing.T) {
++	for _, single := range []bool{true, false} {
++		row := ProjectMessageV1(map[string]any{"openMessageId": "fixture-msg", "openConversationId": "fixture-chat", "singleChat": single, "conversationTitle": "fixture-name"}, false)
++		if row["singleChat"] != single || row["conversationTitle"] != "fixture-name" {
++			t.Fatal("conversation facts lost")
++		}
++	}
++	row := ProjectMessageV1(map[string]any{}, false)
++	if _, exists := row["singleChat"]; exists {
++		t.Fatal("invented type")
++	}
++}

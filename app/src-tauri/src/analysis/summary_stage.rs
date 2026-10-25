@@ -1,3 +1,6 @@
+// Summary owns independent progress, batching and warning sinks; callers keep
+// these values explicit to prevent cross-profile state leakage.
+#[allow(clippy::too_many_arguments)]
 async fn run_summary_stage(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -16,11 +19,13 @@ async fn run_summary_stage(
             .collect::<Vec<_>>();
         let plan = {
             let conn = state.db.lock().map_err(|err| err.to_string())?;
+            crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
             ai::build_keyword_refine_plan(&conn, day, &profile_ids, analysis_message_count)
                 .map_err(|err| err.to_string())?
         };
         if let Some(plan) = &plan {
             let conn = state.db.lock().map_err(|err| err.to_string())?;
+            crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
             ai::mark_keyword_refine_pending(&conn, day, plan).map_err(|err| err.to_string())?;
         }
         plan
@@ -47,6 +52,7 @@ async fn run_summary_stage(
         .collect::<Vec<_>>();
     let summary_candidates = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
+        crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
         if target_profiles.len() > 1 {
             ai::load_summary_candidates_for_profiles(&conn, day, &profile_ids)
         } else {
@@ -71,6 +77,7 @@ async fn run_summary_stage(
 
     let existing_topics = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
+        crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
         ai::load_existing_summary_topics(&conn, day, &summary_profile_id)
             .map_err(|err| err.to_string())?
     };
@@ -158,6 +165,7 @@ async fn run_summary_stage(
                 );
                 if let Some(plan) = keyword_refine_for_batch {
                     if let Ok(conn) = state.db.lock() {
+                        crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
                         let _ = ai::mark_keyword_refine_failed(&conn, day, plan);
                     }
                 }
@@ -182,6 +190,7 @@ async fn run_summary_stage(
 
         let persist_result = {
             let conn = state.db.lock().map_err(|err| err.to_string())?;
+            crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
             if let Some(plan) = keyword_refine_for_batch {
                 match ai::persist_refined_keywords_from_analysis(
                     &conn,

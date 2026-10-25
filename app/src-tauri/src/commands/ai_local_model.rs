@@ -284,6 +284,7 @@ mod local_model_integrity_tests {
     }
 }
 
+#[allow(clippy::items_after_test_module)] // integrity fixture stays next to the marker helpers it exercises.
 async fn wait_for_local_model_download_cancel(app: &AppHandle) {
     loop {
         if is_local_model_download_cancel_requested(app) {

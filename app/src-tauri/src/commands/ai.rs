@@ -8,8 +8,6 @@ use std::sync::atomic::Ordering;
 
 use futures::StreamExt;
 use sha2::{Digest, Sha256};
-#[cfg(unix)]
-use std::os::unix::process::CommandExt;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::time::{interval, sleep, Duration};
 
@@ -102,12 +100,14 @@ async fn runtime_config_for_analysis_with_recovery(
     if !is_managed_local_deepseek_config(config) {
         return Ok(config.clone());
     }
-    let base_url = ensure_local_deepseek_runtime(app, state, force_restart)
-        .await
-        .map_err(|err| {
-            record_local_ai_error(state, "ensure_runtime_for_analysis", &err);
-            err
-        })?;
+    let base_url = ensure_local_deepseek_runtime_with_cancel(
+        app,
+        state,
+        force_restart,
+        Some(&state.sync_cancel_requested),
+    )
+    .await
+    .inspect_err(|err| record_local_ai_error(state, "ensure_runtime_for_analysis", err))?;
     let mut runtime_config = config.clone();
     runtime_config.base_url = base_url;
     Ok(runtime_config)
@@ -129,18 +129,16 @@ pub async fn test_ai_connection(
     if is_managed_local_deepseek_config(&config) {
         if !verified_local_deepseek_status(&state).await.installed {
             SystemCapabilities::detect(&state.app_dir).ensure_local_model_disk_space()?;
-            start_local_deepseek_download(&app, &state).map_err(|err| {
-                record_local_ai_error(&state, "start_local_deepseek_download", &err);
-                err
+            start_local_deepseek_download(&app, &state).inspect_err(|err| {
+                record_local_ai_error(&state, "start_local_deepseek_download", err)
             })?;
             return Ok("downloading".to_owned());
         }
         if config.enabled {
             config.base_url = ensure_local_deepseek_runtime(&app, &state, false)
                 .await
-                .map_err(|err| {
-                    record_local_ai_error(&state, "ensure_local_deepseek_runtime", &err);
-                    err
+                .inspect_err(|err| {
+                    record_local_ai_error(&state, "ensure_local_deepseek_runtime", err)
                 })?;
         }
     }
@@ -275,9 +273,8 @@ pub async fn install_local_deepseek_model(
     if installed.installed {
         ensure_local_deepseek_runtime(&app, &state, false)
             .await
-            .map_err(|err| {
-                record_local_ai_error(&state, "ensure_local_deepseek_runtime", &err);
-                err
+            .inspect_err(|err| {
+                record_local_ai_error(&state, "ensure_local_deepseek_runtime", err)
             })?;
         emit_local_deepseek_progress(
             &app,
@@ -288,10 +285,8 @@ pub async fn install_local_deepseek_model(
         return Ok(local_deepseek_status(&state));
     }
     SystemCapabilities::detect(&state.app_dir).ensure_local_model_disk_space()?;
-    start_local_deepseek_download(&app, &state).map_err(|err| {
-        record_local_ai_error(&state, "start_local_deepseek_download", &err);
-        err
-    })?;
+    start_local_deepseek_download(&app, &state)
+        .inspect_err(|err| record_local_ai_error(&state, "start_local_deepseek_download", err))?;
     Ok(local_deepseek_status(&state))
 }
 

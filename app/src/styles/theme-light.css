@@ -51,7 +51,6 @@
 .theme-light .drawer-block strong,
 .theme-light .cli-version-box strong,
 .theme-light .command-box code,
-.theme-light .wecom-deploy-status code,
 .theme-light .about-section h2 {
   color: var(--im-light-text);
 }
@@ -82,11 +81,6 @@
 .theme-light .bind-card span,
 .theme-light .profile-platform span,
 .theme-light .profile-step-title span,
-.theme-light .profile-candidate span,
-.theme-light .profile-candidate small,
-.theme-light .profile-db-candidate span,
-.theme-light .profile-db-candidate small,
-.theme-light .wecom-deploy-status span,
 .theme-light .license-note,
 .theme-light .profile-delete-confirm,
 .theme-light .drawer-body,
@@ -238,11 +232,7 @@
 .theme-light .profile-row,
 .theme-light .action-item,
 .theme-light .drawer-source-meta span,
-.theme-light .profile-candidate,
-.theme-light .profile-db-candidate,
-.theme-light .wecom-deploy-status,
 .theme-light .command-box,
-.theme-light .setup-checklist,
 .theme-light .cli-version-box,
 .theme-light .drawer-meta,
 .theme-light .empty-state,
@@ -326,11 +316,7 @@
 .theme-light .action-item,
 .theme-light .bind-card,
 .theme-light .profile-row,
-.theme-light .profile-candidate,
-.theme-light .profile-db-candidate,
-.theme-light .wecom-deploy-status,
 .theme-light .command-box,
-.theme-light .setup-checklist,
 .theme-light .cli-version-box {
   background: rgba(255, 255, 255, 0.62);
   box-shadow: none;
@@ -381,29 +367,6 @@
   border-color: rgba(44, 143, 120, 0.18);
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 10px 24px rgba(38, 35, 28, 0.08);
-}
-
-.theme-light .profile-candidate.selected,
-.theme-light .profile-db-candidate.selected {
-  border-color: rgba(44, 143, 120, 0.82);
-  background:
-    linear-gradient(180deg, rgba(219, 248, 240, 0.98), rgba(205, 242, 232, 0.96)),
-    #dcf7ef;
-  box-shadow:
-    inset 0 0 0 1px rgba(44, 143, 120, 0.2),
-    0 12px 28px rgba(44, 143, 120, 0.16);
-}
-
-.theme-light .profile-candidate.selected strong,
-.theme-light .profile-db-candidate.selected strong {
-  color: #174f45;
-}
-
-.theme-light .profile-candidate.selected span,
-.theme-light .profile-candidate.selected small,
-.theme-light .profile-db-candidate.selected span,
-.theme-light .profile-db-candidate.selected small {
-  color: #3f756b;
 }
 
 .theme-light .action-main blockquote {

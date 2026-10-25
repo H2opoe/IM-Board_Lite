@@ -78,6 +78,9 @@ where
     await_ai_call_or_cancel(state, build_call(&recovered_config)).await
 }
 
+// This is the persistence boundary. Inputs intentionally mirror the immutable
+// request facts recorded in diagnostics rather than a mutable orchestration bag.
+#[allow(clippy::too_many_arguments)]
 fn start_ai_analysis_run(
     state: &State<'_, AppState>,
     day: &str,
@@ -110,6 +113,7 @@ fn start_ai_analysis_run(
     let input_message_ids_json = serde_json::to_string(&input_message_ids).ok()?;
     let diagnostic_json = serde_json::to_string(&diagnostic).ok()?;
     let conn = state.db.lock().ok()?;
+    crate::daily_cache::ensure_current_day(&conn, day).ok()?;
     conn.execute(
         "insert into ai_analysis_runs(
            id, day, profile_id, input_message_ids, status, model, diagnostic_json, created_at
@@ -150,7 +154,7 @@ fn finish_ai_analysis_run(
     let token_usage_json = diagnostic
         .as_ref()
         .and_then(|value| value.get("usage").cloned())
-        .and_then(|value| serde_json::to_string(&value).ok());
+        .and_then(|value| serde_json::to_string(&crate::security::diagnostic_metadata(value)).ok());
     let diagnostic_json = serde_json::to_string(&diagnostic_for_run_status(
         status,
         run.diagnostic,
@@ -158,7 +162,7 @@ fn finish_ai_analysis_run(
         duration_ms,
     ))
     .ok();
-    let sanitized_error = error.map(crate::security::sanitize_log);
+    let sanitized_error = error.map(|text| crate::diagnostics::classify_ai_user_message(text, diagnostic_for_event.as_ref()));
     if let Ok(conn) = state.db.lock() {
         let _ = conn.execute(
             "update ai_analysis_runs
@@ -191,28 +195,14 @@ fn finish_ai_analysis_run(
 }
 
 fn diagnostic_for_run_status(
-    status: &str,
+    _status: &str,
     mut run_diagnostic: serde_json::Value,
     call_diagnostic: Option<serde_json::Value>,
     duration_ms: u128,
 ) -> serde_json::Value {
     if let Some(object) = run_diagnostic.as_object_mut() {
         object.insert("durationMs".to_owned(), serde_json::json!(duration_ms));
-        if let Some(mut call_diagnostic) = call_diagnostic {
-            if status == "done" {
-                if let Some(call_object) = call_diagnostic.as_object_mut() {
-                    call_object.remove("contentSnippet");
-                    call_object.remove("responseBodySnippet");
-                }
-            }
-            object.insert("call".to_owned(), call_diagnostic);
-        }
+        if let Some(call) = call_diagnostic { object.insert("call".to_owned(), call); }
     }
-    if status == "done" {
-        if let Some(object) = run_diagnostic.as_object_mut() {
-            object.remove("contentSnippet");
-            object.remove("responseBodySnippet");
-        }
-    }
-    run_diagnostic
+    crate::security::diagnostic_metadata(run_diagnostic)
 }

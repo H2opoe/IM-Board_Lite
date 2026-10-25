@@ -24,17 +24,17 @@ export function buildWecomProfile(
       configDir: deployment.configDir,
       officialSource: deployment.source,
       cliVersion: deployment.currentVersion,
-      configPath: joinNativePath(deployment.configDir, "bot.enc"),
+      configPath: joinNativePath(deployment.configDir, "credentials.enc"),
       cacheDir,
       tmpDir: joinNativePath(cacheDir, "tmp"),
       cliCommands: {
-        listChats: "msg get_msg_chat_list",
-        fetchMessages: "msg get_message",
-        fetchMedia: "msg get_msg_media"
+        listChats: "chat groups list",
+        fetchMessages: "chat messages list",
+        fetchMedia: "message files get"
       },
       timeWindowLimitDays: 7
     },
-    updatedAt: new Date().toISOString()
+    updatedAt: profile.updatedAt
   };
 }
 
@@ -82,7 +82,7 @@ export function buildFeishuProfile(
         }
       }
     },
-    updatedAt: new Date().toISOString()
+    updatedAt: profile.updatedAt
   };
 }
 
@@ -117,9 +117,9 @@ export function buildDingtalkProfile(
       cacheDir,
       tmpDir: joinNativePath(cacheDir, "tmp"),
       cliCommands: {
-        listChats: "chat list-top-conversations",
-        fetchMessages: "chat message search",
-        searchMessages: "chat message list-all",
+        listChats: "chat +recent-conversations",
+        fetchMessages: "chat +chat-messages",
+        searchMessages: "chat +search-msg",
         authStatus: "auth status"
       },
       cliArgs: {
@@ -134,6 +134,6 @@ export function buildDingtalkProfile(
         }
       }
     },
-    updatedAt: new Date().toISOString()
+    updatedAt: profile.updatedAt
   };
 }

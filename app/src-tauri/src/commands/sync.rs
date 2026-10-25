@@ -53,5 +53,15 @@ pub async fn run_sync_job(
     profile_id: String,
     mode: SyncJobMode,
 ) -> Result<SyncResult, String> {
-    crate::sync::orchestrator::run_sync_job(app, state, profile_id, mode).await
+    Box::pin(crate::sync::orchestrator::run_sync_job(
+        app, state, profile_id, mode,
+    ))
+    .await
+}
+
+#[tauri::command]
+pub fn get_sync_job_state(
+    state: State<'_, AppState>,
+) -> Result<crate::sync::status::SyncJobSnapshot, String> {
+    crate::sync::status::current(&state)
 }

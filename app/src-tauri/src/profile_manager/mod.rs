@@ -1,4 +1,7 @@
+pub mod activity;
+pub mod cleanup_queue;
 pub mod drafts;
+pub mod runtime_paths;
 
 use chrono::Local;
 use rusqlite::{params, Connection};
@@ -30,7 +33,9 @@ pub fn list_profiles(conn: &mut Connection) -> anyhow::Result<Vec<ImProfile>> {
 }
 
 pub fn upsert_profile(conn: &Connection, profile: ImProfile) -> anyhow::Result<ImProfile> {
-    let now = Local::now().to_rfc3339();
+    runtime_paths::validate_profile_id(&profile.id).map_err(anyhow::Error::msg)?;
+    let previous = profile_by_id(conn, &profile.id)?;
+    let now = next_profile_timestamp(previous.as_ref().map(|p| p.updated_at.as_str()))?;
     let created_at = if profile.created_at.is_empty() {
         now.clone()
     } else {
@@ -59,10 +64,18 @@ pub fn upsert_profile(conn: &Connection, profile: ImProfile) -> anyhow::Result<I
             now
         ],
     )?;
-    Ok(ImProfile {
-        updated_at: now,
-        ..profile
-    })
+    profile_by_id(conn, &profile.id)?.ok_or_else(|| anyhow::anyhow!("保存后未找到账号。"))
+}
+
+fn next_profile_timestamp(previous: Option<&str>) -> anyhow::Result<String> {
+    let now = Local::now().fixed_offset();
+    let next = match previous.and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok()) {
+        Some(previous) if previous >= now => previous
+            .checked_add_signed(chrono::Duration::nanoseconds(1))
+            .ok_or_else(|| anyhow::anyhow!("账号版本时间无效，无法保存。"))?,
+        _ => now,
+    };
+    Ok(next.to_rfc3339())
 }
 
 pub fn reorder_profiles(conn: &mut Connection, profile_ids: &[String]) -> anyhow::Result<()> {
@@ -101,9 +114,13 @@ pub fn reorder_profiles(conn: &mut Connection, profile_ids: &[String]) -> anyhow
 pub fn delete_profile(
     conn: &mut Connection,
     profile_id: &str,
+    pending_cleanup: Option<&str>,
 ) -> anyhow::Result<Option<ImProfile>> {
     let profile = profile_by_id(conn, profile_id)?;
     let tx = conn.transaction()?;
+    if let Some(encoded) = pending_cleanup {
+        cleanup_queue::enqueue(&tx, profile_id, encoded)?;
+    }
     tx.execute("delete from profiles where id = ?1", params![profile_id])?;
     for table in [
         "sync_state",
@@ -210,7 +227,7 @@ mod tests {
         )
         .expect("insert action");
 
-        let deleted = delete_profile(&mut conn, "dingtalk-a").expect("delete profile");
+        let deleted = delete_profile(&mut conn, "dingtalk-a", None).expect("delete profile");
         assert_eq!(deleted.expect("deleted profile").id, "dingtalk-a");
         for table in [
             "profiles",
@@ -272,5 +289,38 @@ mod tests {
         let ordered = list_profiles(&mut conn).expect("list profiles");
         assert_eq!(ordered[0].id, "dingtalk-a");
         assert_eq!(ordered[1].id, "feishu-a");
+    }
+}
+
+#[cfg(test)]
+mod save_return_tests {
+    use super::*;
+    #[test]
+    fn save_returns_actual_persisted_creation_and_update_timestamps() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+            .unwrap();
+        let profile = ImProfile {
+            id: "p".into(),
+            platform: "feishu".into(),
+            label: "fixture".into(),
+            enabled: true,
+            config_json: serde_json::json!({}),
+            status: "normal".into(),
+            sort_order: 0,
+            created_at: String::new(),
+            updated_at: "stale".into(),
+        };
+        let saved = upsert_profile(&conn, profile).unwrap();
+        assert!(!saved.created_at.is_empty());
+        assert_ne!(saved.updated_at, "stale");
+        let created = saved.created_at.clone();
+        let mut edited = saved;
+        edited.created_at = "invalid replacement".into();
+        edited.updated_at = "stale".into();
+        let saved = upsert_profile(&conn, edited).unwrap();
+        let persisted = profile_by_id(&conn, "p").unwrap().unwrap();
+        assert_eq!(saved.created_at, created);
+        assert_eq!(saved.updated_at, persisted.updated_at);
     }
 }

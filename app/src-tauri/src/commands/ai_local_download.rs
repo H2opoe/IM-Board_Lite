@@ -15,10 +15,8 @@ async fn download_local_deepseek_model(app: AppHandle, app_dir: PathBuf) -> Resu
         .build()
         .map_err(|err| format!("构建本地DeepSeek下载客户端失败：{err}"))?;
     let download_response = tokio::select! {
-        result = request_local_deepseek_download(&client, existing_partial_bytes) => result.map_err(|err| {
-            emit_local_deepseek_progress(&app, "failed", existing_partial_bytes, LOCAL_DEEPSEEK_EXPECTED_SIZE_BYTES);
-            err
-        })?,
+        result = request_local_deepseek_download(&client, existing_partial_bytes) => result
+            .inspect_err(|_| emit_local_deepseek_progress(&app, "failed", existing_partial_bytes, LOCAL_DEEPSEEK_EXPECTED_SIZE_BYTES))?,
         _ = wait_for_local_model_download_cancel(&app) => {
             return cancel_local_deepseek_download_file(&app, &partial_path, existing_partial_bytes, LOCAL_DEEPSEEK_EXPECTED_SIZE_BYTES);
         }

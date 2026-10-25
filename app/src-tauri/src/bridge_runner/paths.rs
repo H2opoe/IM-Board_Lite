@@ -201,22 +201,31 @@ fn resolve_existing_command(command: &str) -> Option<PathBuf> {
 }
 
 pub(super) fn is_dependency_free_cli(path: &Path) -> bool {
-    let extension = path
-        .extension()
-        .and_then(|value| value.to_str())
-        .unwrap_or_default()
-        .to_ascii_lowercase();
-    if matches!(extension.as_str(), "js" | "cmd" | "bat") {
-        return false;
-    }
-    if extension != "exe" {
-        return false;
-    }
-    if let Ok(bytes) = std::fs::read(path) {
-        let head = String::from_utf8_lossy(&bytes[..bytes.len().min(96)]).to_ascii_lowercase();
-        if head.contains("/usr/bin/env node") || head.contains("node ") {
-            return false;
+    crate::runtime::cli_candidate::is_dependency_free_cli(path, true)
+}
+
+/// Reconcile pre-upgrade accounts with the pinned CLI contract before execution.
+/// Installs only managed binaries; account configuration and credentials stay put.
+pub(super) async fn prepare_official_cli_for_runtime(
+    resource_dir: &Path,
+    profile: Option<&ImProfile>,
+    platform: &str,
+    package: &str,
+    bin: &str,
+) -> Result<PathBuf, String> {
+    let spec = crate::runtime::official_cli::cli_spec(platform).ok_or("不支持的官方CLI平台。")?;
+    if let Some(path) =
+        resolve_official_cli_for_runtime(resource_dir, profile, platform, package, bin)
+    {
+        if crate::runtime::official_cli::official_cli_version(&path, spec).as_deref()
+            == Some(spec.compatible_version)
+        {
+            return Ok(path);
         }
     }
-    true
+    let app_dir = dirs::data_dir()
+        .ok_or("无法确定应用数据目录。")?
+        .join(APP_DATA_DIR_NAME);
+    crate::runtime::official_cli::ensure_platform_cli_ready(resource_dir, &app_dir, spec, None)
+        .await
 }

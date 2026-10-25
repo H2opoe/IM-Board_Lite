@@ -1,8 +1,7 @@
 use super::{
-    default_should_run_session_list, no_fallback_group_search_queries,
-    no_prepare_profile_sync_access, no_silent_message_error, official_cli_fetch_concurrency,
-    platform_label, profile_remark, session_history_mode, ConnectorAdapter, ConnectorCapabilities,
-    ConnectorKind, SessionDiscoveryStep,
+    default_should_run_session_list, no_prepare_profile_sync_access,
+    official_cli_fetch_concurrency, platform_label, profile_remark, session_history_mode,
+    ConnectorAdapter, ConnectorCapabilities, ConnectorKind, SessionDiscoveryStep,
 };
 use crate::storage::models::ImProfile;
 
@@ -19,8 +18,6 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
     empty_session_warning,
     sessions_ready_message,
     fetch_concurrency,
-    should_silence_message_error: no_silent_message_error,
-    fallback_group_search_queries: no_fallback_group_search_queries,
     capabilities: ConnectorCapabilities {
         label: "企业微信",
         auth_description: "使用官方CLI授权",
@@ -37,8 +34,7 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
         editions: &["full", "lite"],
         operating_systems: &["macos", "windows"],
         architectures: &["aarch64", "x86_64"],
-        compatible_runtime_version: "0.1.9",
-        max_parallel_reads: 4,
+        compatible_runtime_version: "1.3.4",
     },
 };
 
@@ -52,14 +48,14 @@ fn session_discovery_steps() -> &'static [SessionDiscoveryStep] {
 
 fn empty_session_warning(_profile: &ImProfile) -> Option<String> {
     Some(
-        "企业微信：通讯录和内部群聊列表均为空，无法自动拉取消息。请确认当前授权用户可见通讯录和最近7天内有可读消息。"
+        "企业微信：授权可见通讯录和会话列表均为空，请确认当前账号可见范围以及最近7天内的可读消息。"
             .to_owned(),
     )
 }
 
 fn sessions_ready_message(profile: &ImProfile, total: i64) -> String {
     format!(
-        "已准备检查【{} · {}】{}个通讯录成员/群聊。",
+        "已准备检查【{} · {}】{}个通讯录成员/会话。",
         platform_label(&profile.platform),
         profile_remark(profile),
         total

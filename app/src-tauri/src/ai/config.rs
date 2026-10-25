@@ -3,6 +3,10 @@ use rusqlite::{params, OptionalExtension};
 
 use crate::storage::models::AiConfig;
 
+#[path = "prompt_defaults.rs"]
+mod prompt_defaults;
+use prompt_defaults::{is_known_default_analysis_prompt, is_known_default_summary_prompt};
+
 use super::{
     ANALYSIS_REQUEST_RESERVED_TOKENS, DEFAULT_ANALYSIS_PROMPT, DEFAULT_SUMMARY_PROMPT,
     LOCAL_DEEPSEEK_ANALYSIS_BATCH_ESTIMATED_TOKENS, LOCAL_DEEPSEEK_ANALYSIS_BATCH_SIZE,
@@ -115,11 +119,11 @@ pub fn save_config(conn: &rusqlite::Connection, config: AiConfig) -> anyhow::Res
 }
 
 pub(crate) fn normalize_config(config: AiConfig) -> AiConfig {
-    // 后端是内置提示词的唯一来源；只有明确标记为自定义的内容才不跟随内置版本升级。
+    // 明确的自定义标记优先于旧默认值迁移判断；空白内容仍使用当前内置提示词。
     let analysis_prompt_custom =
-        config.analysis_prompt_custom && !is_known_default_analysis_prompt(&config.analysis_prompt);
+        config.analysis_prompt_custom && !config.analysis_prompt.trim().is_empty();
     let summary_prompt_custom =
-        config.summary_prompt_custom && !is_known_default_summary_prompt(&config.summary_prompt);
+        config.summary_prompt_custom && !config.summary_prompt.trim().is_empty();
     let analysis_prompt = if analysis_prompt_custom {
         config.analysis_prompt.clone()
     } else {
@@ -235,78 +239,7 @@ fn infer_prompt_custom(
     is_known_default: fn(&str) -> bool,
 ) -> bool {
     match stored_flag {
-        Some(flag) => flag == 1 && !is_known_default(value),
+        Some(flag) => flag == 1 && !value.trim().is_empty(),
         None => !value.trim().is_empty() && !is_known_default(value),
     }
-}
-
-fn is_known_default_analysis_prompt(value: &str) -> bool {
-    let trimmed = value.trim();
-    let is_old_default = value.contains("话题识别和计数规则")
-        && value.contains("关键词词云识别和计数规则")
-        && value.contains("openActionItems");
-    let missing_language_constraint = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && !value.contains("所有输出字段必须使用简体中文")
-        && !value.contains("主要语言");
-    let fixed_chinese_only_language_constraint = trimmed
-        .starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && value.contains("所有输出字段必须使用简体中文")
-        && !value.contains("主要语言");
-    let date_limited_default = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && (value.contains("今天聊天消息")
-            || value.contains("尚未分析的今天消息")
-            || value.contains("今天已有的待回复/待办"));
-    let missing_single_chat_file_reply_rule = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && value.contains("待我回复")
-        && value.contains("批内去重与历史参考规则")
-        && !value.contains("单聊里对方发送文件");
-    trimmed.is_empty()
-        || trimmed == DEFAULT_ANALYSIS_PROMPT.trim()
-        || is_old_default
-        || missing_language_constraint
-        || fixed_chinese_only_language_constraint
-        || date_limited_default
-        || missing_single_chat_file_reply_rule
-}
-
-fn is_known_default_summary_prompt(value: &str) -> bool {
-    let trimmed = value.trim();
-    let old_frontend_default = trimmed
-        .starts_with("你是一个本地即时通讯工作助理。请根据输入的今天聊天消息生成看板话题。")
-        && value.contains("existingTopics是今天已经汇总好的热门话题")
-        && value.contains("sourceChats只能使用existingTopics或candidateTopics中的chatName");
-    let date_limited_default = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && value.contains("candidateTopics")
-        && (value.contains("今天聊天消息")
-            || value.contains("今天已经汇总好的热门话题")
-            || value.contains("群聊当天总消息数"));
-    let missing_primary_language_constraint = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && value.contains("candidateTopics")
-        && !value.contains("主要语言");
-    let missing_keyword_refine_section = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && value.contains("candidateTopics")
-        && !value.contains("keywordRefine");
-    let old_keyword_refine_candidates_prompt = trimmed
-        .starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && value.contains("keywordRefine.candidates");
-    let old_mixed_dedup_prompt = trimmed.starts_with("你是一个本地即时通讯工作助理。")
-        && value.contains("请返回严格 JSON")
-        && (value.contains("不要参考本地识别词，不要合并旧关键词")
-            || !value.contains("旧话题去重合并规则"));
-    trimmed.is_empty()
-        || trimmed == DEFAULT_SUMMARY_PROMPT.trim()
-        || old_frontend_default
-        || date_limited_default
-        || missing_primary_language_constraint
-        || missing_keyword_refine_section
-        || old_keyword_refine_candidates_prompt
-        || old_mixed_dedup_prompt
 }

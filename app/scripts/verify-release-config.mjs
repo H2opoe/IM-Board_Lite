@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { releaseConfig } from "./release-config.mjs";
@@ -27,6 +27,18 @@ if (!new Set(["full", "lite", "demo"]).has(config.edition)) {
 }
 if (!new Set(["macos", "windows"]).has(config.target)) {
   throw new Error(`release-manifest.json target 无效：${config.target}`);
+}
+if (config.target === "windows") {
+  const platformConfigPath = join(config.appRoot, "src-tauri", "tauri.windows.conf.json");
+  if (existsSync(platformConfigPath)) {
+    const platformConfig = JSON.parse(readFileSync(platformConfigPath, "utf8"));
+    if (Object.hasOwn(platformConfig.bundle ?? {}, "resources")) {
+      throw new Error("Windows 打包资源须继承 tauri.conf.json，平台配置不能覆盖资源清单。");
+    }
+    if (platformConfig.build?.beforeBuildCommand !== "npm run build") {
+      throw new Error("Windows beforeBuildCommand 必须执行 npm run build 的完整门禁。");
+    }
+  }
 }
 const tauriMacosBundleVersion = tauriConfig.bundle?.macOS?.bundleVersion;
 if (tauriMacosBundleVersion !== undefined) {

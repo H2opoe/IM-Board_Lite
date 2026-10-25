@@ -1,3 +1,4 @@
+import { shouldHandleOutsideMouseDetection } from "../utils/windowActivity";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { displayAppVersion, getAppVersion } from "../api/appVersion";
@@ -44,7 +45,7 @@ export function AboutModal({ onClose }: Props) {
   }, []);
 
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
+    <div className="modal-backdrop" onMouseDown={() => { if (shouldHandleOutsideMouseDetection()) onClose(); }}>
       <article className="profile-modal about-modal" onMouseDown={(event) => event.stopPropagation()}>
         <header className="modal-header">
           <div>

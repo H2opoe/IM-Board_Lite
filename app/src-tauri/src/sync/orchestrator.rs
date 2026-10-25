@@ -1,5 +1,4 @@
 use std::fs;
-use std::sync::atomic::Ordering;
 
 use crate::analysis::orchestrator::{emit_sync_progress, ensure_sync_not_cancelled};
 use rusqlite::params;
@@ -8,13 +7,14 @@ use tauri::{Manager, State};
 use crate::analysis::orchestrator::analyze_pending_messages;
 use crate::bridge_runner::{self, BridgeRequest};
 use crate::daily_cache;
+use crate::messages::import_window::MessageImportWindow;
 use crate::messages::repository::{
     clear_dashboard_cache, clear_profile_dashboard_cache, reset_ai_generated_cache,
     resolve_all_profiles, resolve_target_profiles,
 };
 use crate::storage::models::SyncResult;
 use crate::storage::AppState;
-use crate::sync::fetch::{sync_target_profiles_messages, MessageImportWindow};
+use crate::sync::fetch::sync_target_profiles_messages;
 use crate::sync::job::SyncJobMode;
 
 pub async fn run_sync_job(
@@ -23,43 +23,42 @@ pub async fn run_sync_job(
     profile_id: String,
     mode: SyncJobMode,
 ) -> Result<SyncResult, String> {
-    let _guard = SyncJobRunGuard::acquire(state.clone())?;
-    match mode {
-        SyncJobMode::Incremental => run_manual_sync_inner(app, state, profile_id, true).await,
+    // No enabled accounts is a normal first-launch state. Check before
+    // publishing a job or entering maintenance paths that clear cached data.
+    {
+        let conn = state.db.lock().map_err(|err| err.to_string())?;
+        let targets = resolve_target_profiles(&conn, &profile_id).map_err(|err| err.to_string())?;
+        if targets.is_empty() {
+            let config = crate::ai::get_config(&conn).map_err(|err| err.to_string())?;
+            let ai_status =
+                if crate::commands::ai::is_configured_for_current_runtime(&config, &state) {
+                    "ready"
+                } else {
+                    "not_configured"
+                };
+            return Ok(empty_sync_result(profile_id, ai_status));
+        }
+    }
+    let mut guard = crate::sync::status::JobRunGuard::acquire(
+        app.clone(),
+        state.clone(),
+        profile_id.clone(),
+        mode,
+    )?;
+    let result = match mode {
+        SyncJobMode::Incremental => run_manual_sync_inner(app, state, profile_id).await,
         SyncJobMode::FullResync => run_full_resync(app, state, profile_id).await,
         SyncJobMode::RetryAnalysis => retry_ai_analysis(app, state, profile_id).await,
-    }
-}
-
-struct SyncJobRunGuard<'a> {
-    state: State<'a, AppState>,
-}
-
-impl<'a> SyncJobRunGuard<'a> {
-    fn acquire(state: State<'a, AppState>) -> Result<Self, String> {
-        state
-            .sync_job_running
-            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-            .map_err(|_| "已有同步任务正在运行，请稍后再试。".to_owned())?;
-        Ok(Self { state })
-    }
-}
-
-impl Drop for SyncJobRunGuard<'_> {
-    fn drop(&mut self) {
-        self.state.sync_job_running.store(false, Ordering::SeqCst);
-    }
+    };
+    guard.finish(&result);
+    result
 }
 
 async fn run_manual_sync_inner(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     profile_id: String,
-    reset_cancel_flag: bool,
 ) -> Result<SyncResult, String> {
-    if reset_cancel_flag {
-        state.sync_cancel_requested.store(false, Ordering::SeqCst);
-    }
     let started_at = chrono::Local::now().to_rfc3339();
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let cache_dir = state.cache_dir.clone();
@@ -67,14 +66,17 @@ async fn run_manual_sync_inner(
 
     let (target_profiles, dashboard_day) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
-        daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
-        let dashboard_day =
-            daily_cache::current_dashboard_day_info(&conn).map_err(|err| err.to_string())?;
+        let (_, dashboard_day) =
+            daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
         let target_profiles =
             resolve_target_profiles(&conn, &profile_id).map_err(|err| err.to_string())?;
         (target_profiles, dashboard_day)
     };
-    let sync_window = MessageImportWindow::from_dashboard_day(&dashboard_day);
+    let sync_window = MessageImportWindow {
+        day: dashboard_day.day.clone(),
+        start_timestamp: dashboard_day.day_start_timestamp,
+        end_timestamp: dashboard_day.sync_end_timestamp,
+    };
     let day = sync_window.day.clone();
     let day_start = sync_window.start_timestamp;
     let day_start_text = dashboard_day.day_start_text;
@@ -102,6 +104,7 @@ async fn run_manual_sync_inner(
 
     {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
+        daily_cache::ensure_current_day(&conn, &day).map_err(|err| err.to_string())?;
         let tx = conn
             .unchecked_transaction()
             .map_err(|err| err.to_string())?;
@@ -171,8 +174,25 @@ async fn run_manual_sync_inner(
     })
 }
 
+fn empty_sync_result(profile_id: String, ai_status: &str) -> SyncResult {
+    let now = chrono::Local::now().to_rfc3339();
+    SyncResult {
+        profile_id,
+        sync_status: "idle".to_owned(),
+        ai_status: ai_status.to_owned(),
+        inserted_messages: 0,
+        analyzed_messages: 0,
+        warnings: Vec::new(),
+        started_at: now.clone(),
+        finished_at: now,
+    }
+}
+
 fn aggregate_sync_status(results: impl IntoIterator<Item = bool>) -> &'static str {
     let results = results.into_iter().collect::<Vec<_>>();
+    if results.is_empty() {
+        return "idle";
+    }
     let successful = results.iter().filter(|value| **value).count();
     match successful {
         0 => "failed",
@@ -186,15 +206,14 @@ async fn retry_ai_analysis(
     state: State<'_, AppState>,
     profile_id: String,
 ) -> Result<SyncResult, String> {
-    state.sync_cancel_requested.store(false, Ordering::SeqCst);
     let started_at = chrono::Local::now().to_rfc3339();
     let resource_dir = app.path().resource_dir().map_err(|err| err.to_string())?;
     let cache_dir = state.cache_dir.clone();
     prepare_sync_storage_access(&state);
     let (target_profiles, day, rollover) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
-        let rollover = daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
-        let day = daily_cache::current_dashboard_day_info(&conn).map_err(|err| err.to_string())?;
+        let (rollover, day) =
+            daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
         let target_profiles =
             resolve_target_profiles(&conn, &profile_id).map_err(|err| err.to_string())?;
         (target_profiles, day, rollover)
@@ -213,7 +232,7 @@ async fn retry_ai_analysis(
                 0,
             );
         }
-        return run_manual_sync_inner(app, state, profile_id, false).await;
+        return run_manual_sync_inner(app, state, profile_id).await;
     }
     reset_ai_generated_cache(&state, &day, &target_profiles).map_err(|err| err.to_string())?;
     if let Some(profile) = target_profiles.first() {
@@ -256,16 +275,15 @@ async fn run_full_resync(
     state: State<'_, AppState>,
     profile_id: String,
 ) -> Result<SyncResult, String> {
-    state.sync_cancel_requested.store(false, Ordering::SeqCst);
     let cache_dir = state.cache_dir.clone();
     prepare_sync_storage_access(&state);
     let (target_profiles, all_profiles, day) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
-        daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
+        let (_, day) = daily_cache::detect_day_rollover(&conn).map_err(|err| err.to_string())?;
         (
             resolve_target_profiles(&conn, &profile_id).map_err(|err| err.to_string())?,
             resolve_all_profiles(&conn).map_err(|err| err.to_string())?,
-            daily_cache::current_dashboard_day_info(&conn).map_err(|err| err.to_string())?,
+            day,
         )
     };
 
@@ -299,7 +317,7 @@ async fn run_full_resync(
             0,
         );
     }
-    run_manual_sync_inner(app, state, profile_id, false).await
+    run_manual_sync_inner(app, state, profile_id).await
 }
 
 fn prepare_sync_storage_access(_state: &State<'_, AppState>) {}
@@ -312,13 +330,17 @@ pub(crate) async fn run_sync_bridge(
 ) -> anyhow::Result<bridge_runner::BridgeEnvelope> {
     ensure_sync_not_cancelled(state).map_err(anyhow::Error::msg)?;
     let diagnostic_request = request.clone();
-    let result = bridge_runner::run_bridge_tracked(
-        request,
-        resource_dir.clone(),
-        cache_dir.clone(),
-        Some(&state.sync_bridge_pids),
-    )
-    .await;
+    let result = state
+        .profile_activity
+        .bridge_scope()
+        .map_err(anyhow::Error::msg)?
+        .run(bridge_runner::run_bridge_tracked(
+            request,
+            resource_dir.clone(),
+            cache_dir.clone(),
+            Some(&state.sync_bridges),
+        ))
+        .await;
     ensure_sync_not_cancelled(state).map_err(anyhow::Error::msg)?;
     match &result {
         Ok(envelope) => {
@@ -336,13 +358,5 @@ pub(crate) async fn run_sync_bridge(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn aggregate_status_reports_partial_and_failed_truthfully() {
-        assert_eq!(aggregate_sync_status([true, true]), "synced");
-        assert_eq!(aggregate_sync_status([true, false]), "partial");
-        assert_eq!(aggregate_sync_status([false, false]), "failed");
-    }
-}
+#[path = "orchestrator_tests.rs"]
+mod tests;

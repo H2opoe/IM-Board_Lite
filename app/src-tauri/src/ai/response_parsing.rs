@@ -1,3 +1,5 @@
+// Carries diagnostic metadata so callers can decide whether a retry is safe.
+#[allow(clippy::result_large_err)]
 fn parse_analysis_output(output: &AiRequestOutput) -> Result<AiAnalysis, AiCallError> {
     let json = extract_json_object(&output.content)
         .map_err(|err| AiCallError::new(err.to_string(), Some(output.diagnostics.clone())))?;
@@ -17,6 +19,8 @@ fn should_retry_analysis_parse(err: &AiCallError, diagnostics: &AiCallDiagnostic
 }
 
 
+// Carries diagnostic metadata so callers can decide whether a retry is safe.
+#[allow(clippy::result_large_err)]
 fn parse_summary_output(output: &AiRequestOutput) -> Result<AiSummary, AiCallError> {
     let json = extract_json_object(&output.content)
         .map_err(|err| AiCallError::new(err.to_string(), Some(output.diagnostics.clone())))?;

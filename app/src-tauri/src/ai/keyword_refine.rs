@@ -27,6 +27,7 @@ pub(crate) struct KeywordRefinePlan {
 struct KeywordRefineMessageForAi {
     id: String,
     profile_id: String,
+    platform: String,
     chat_id: String,
     chat_name: String,
     is_group: bool,
@@ -95,7 +96,7 @@ pub(crate) fn build_keyword_refine_plan(
             "scene": "IM聚合AI看板关键词词云",
             "date": day,
             "goal": "直接从当天原始聊天消息中识别适合展示在今日热词词云里的关键词",
-            "rulesVersion": "keyword_ai_direct_from_messages_v1",
+            "rulesVersion": "keyword_ai_direct_from_messages_v2",
             "maxValidKeywords": MAX_REFINED_KEYWORDS,
             "messages": payload_messages,
         }),
@@ -174,15 +175,25 @@ fn load_keyword_refine_messages(
     profile_id: &str,
 ) -> anyhow::Result<Vec<KeywordRefineMessageForAi>> {
     let mut stmt = conn.prepare(
-        "select id, profile_id, chat_id, chat_name, is_group, sender_name, time_text, msg_type, content
+        "select id, profile_id, chat_id, chat_name, is_group, sender_name, time_text, msg_type, content, platform, sender_id, raw_type, raw_json
          from daily_messages
          where day = ?1 and profile_id = ?2 and trim(content) <> ''
          order by timestamp asc
          limit 1200",
     )?;
     let rows = stmt.query_map(params![day, profile_id], |row| {
+        let platform: String = row.get(9)?;
         let msg_type: String = row.get(7)?;
+        let raw_type: Option<String> = row.get(11)?;
+        let raw_json: Option<String> = row.get(12)?;
         let raw_content: String = row.get(8)?;
+        let msg_type = crate::messages::message_type::resolve_stored_message_type(
+            &platform,
+            &msg_type,
+            raw_type.as_deref(),
+            raw_json.as_deref(),
+            &raw_content,
+        );
         let is_group = row.get::<_, i64>(4)? == 1;
         if message_noise::is_message_noise(Some(&msg_type), &raw_content, is_group) {
             return Ok(None);
@@ -202,6 +213,7 @@ fn load_keyword_refine_messages(
         Ok(Some(KeywordRefineMessageForAi {
             id: row.get(0)?,
             profile_id: row.get(1)?,
+            platform,
             chat_id: row.get(2)?,
             chat_name: row.get(3)?,
             is_group,
@@ -424,3 +436,7 @@ fn mark_keywords_status(
     }
     upsert_stat(conn, day, profile_id, "keywords", &keywords)
 }
+
+#[cfg(test)]
+#[path = "tests/keyword_refine_scope.rs"]
+mod scope_tests;

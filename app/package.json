@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "npm run verify:lite-boundary && npm run verify:release-config && npm run verify:runtime-manifest && npm run verify:deprecations && tsc && vite build",
-    "test": "vitest run",
+    "build": "npm run verify:lite-boundary && npm run verify:release-config && npm run verify:runtime-manifest && npm run verify:deprecations && npm run build:ui",
+    "test": "vitest run src",
     "verify:lite-boundary": "node scripts/verify-lite-boundary.mjs",
     "verify:lite-history": "node scripts/verify-lite-boundary.mjs --history",
     "verify:release-config": "node scripts/verify-release-config.mjs",
@@ -17,8 +17,12 @@
     "preview": "vite preview --host 127.0.0.1",
     "tauri": "tauri",
     "tauri:build:windows:xwin": "npm run prepare:windows-deps && npm run build && node scripts/build-windows-xwin.mjs",
-    "tauri:dev:windows": "npm run prepare:windows-deps && node scripts/run-windows-dev-env.mjs node_modules/.bin/tauri.cmd dev",
-    "tauri:build:windows": "npm run prepare:windows-deps && npm run build && node scripts/run-windows-dev-env.mjs node_modules/.bin/tauri.cmd build --target x86_64-pc-windows-msvc --no-bundle"
+    "tauri:dev:windows": "npm run prepare:windows-deps && node scripts/run-windows-dev-env.mjs node node_modules/@tauri-apps/cli/tauri.js dev",
+    "tauri:build:windows": "npm run prepare:windows-deps && node scripts/run-windows-dev-env.mjs node node_modules/@tauri-apps/cli/tauri.js build --target x86_64-pc-windows-msvc --no-bundle",
+    "build:ui": "npm run verify:frontend-notices && tsc && vite build && node scripts/verify-frontend-notices.mjs --artifact-dir dist/third-party/application/frontend",
+    "test:scripts": "node --test scripts/*.test.mjs",
+    "collect:frontend-notices": "node scripts/collect-frontend-notices.mjs",
+    "verify:frontend-notices": "node scripts/verify-frontend-notices.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.10.1",
@@ -32,9 +36,11 @@
     "@tauri-apps/cli": "^2.8.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/react-test-renderer": "18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "react-test-renderer": "18.3.1",
     "typescript": "^5.7.2",
-    "vite": "^6.4.3",
-    "vitest": "4.1.11"
+    "vite": "^6.4.5",
+    "vitest": "4.1.12"
   }
 }

@@ -92,9 +92,7 @@
 .danger-button,
 .icon-button,
 .floating-notice-close,
-.bind-card,
-.profile-candidate,
-.profile-db-candidate {
+.bind-card {
   transition:
     transform 150ms ease,
     background 150ms ease,
@@ -177,11 +175,6 @@
 .profile-platform span,
 .modal-header span,
 .profile-step-title span,
-.profile-candidate span,
-.profile-candidate small,
-.profile-db-candidate span,
-.profile-db-candidate small,
-.wecom-deploy-status span,
 .license-note,
 .profile-delete-confirm,
 .drawer-body,
@@ -286,11 +279,7 @@
 .profile-row,
 .action-item,
 .drawer-source-meta span,
-.profile-candidate,
-.profile-db-candidate,
-.wecom-deploy-status,
 .command-box,
-.setup-checklist,
 .cli-version-box,
 .drawer-meta,
 .empty-state,
@@ -420,7 +409,6 @@
 .drawer-block strong,
 .cli-version-box strong,
 .command-box code,
-.wecom-deploy-status code,
 .about-section h2 {
   color: var(--im-text-primary);
 }
@@ -683,52 +671,10 @@
   background: rgba(12, 19, 21, 0.96);
 }
 
-.profile-candidate,
-.profile-db-candidate,
-.wecom-deploy-status,
 .command-box,
-.setup-checklist,
 .cli-version-box {
   background: rgba(8, 13, 15, 0.34);
   box-shadow: none;
-}
-
-.theme-dark .profile-signing-guide.attention {
-  border-color: rgba(215, 166, 66, 0.3);
-  background: rgba(215, 166, 66, 0.1);
-}
-
-.theme-dark .profile-signing-guide.ready {
-  border-color: rgba(74, 185, 159, 0.24);
-  background: rgba(44, 143, 120, 0.1);
-}
-
-.theme-dark .profile-signing-guide .setup-checkline {
-  color: var(--im-text-secondary);
-}
-
-.theme-dark .profile-signing-guide.attention .setup-checkline svg {
-  color: #ffc071;
-}
-
-.theme-dark .profile-signing-guide .profile-restart-warning {
-  border-color: rgba(255, 192, 113, 0.24);
-  background: rgba(215, 166, 66, 0.13);
-  color: #f1d9ad;
-}
-
-.theme-dark .profile-signing-guide .profile-restart-warning svg {
-  color: #ffc071;
-}
-
-.theme-dark .profile-signing-guide.ready .setup-checkline svg {
-  color: var(--im-primary-hover);
-}
-
-.profile-candidate.selected,
-.profile-db-candidate.selected {
-  border-color: var(--im-border-accent);
-  box-shadow: 0 0 0 2px rgba(44, 143, 120, 0.14);
 }
 
 .profile-step-title svg {

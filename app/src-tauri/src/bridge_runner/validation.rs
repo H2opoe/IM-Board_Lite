@@ -19,9 +19,7 @@ pub(super) fn validate_bridge_request(request: &BridgeRequest) -> Result<(), Str
     if profile.platform != request.platform {
         return Err("账号平台与执行平台不一致。".to_owned());
     }
-    if profile.id.trim().is_empty() || profile.id.len() > 160 {
-        return Err("账号标识无效。".to_owned());
-    }
+    crate::profile_manager::runtime_paths::validate_profile_id(&profile.id)?;
 
     let allowed_args = allowed_args(&request.command);
     for (key, value) in &request.args {
@@ -134,3 +132,7 @@ mod contract_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "profile_id_validation_tests.rs"]
+mod profile_id_validation_tests;

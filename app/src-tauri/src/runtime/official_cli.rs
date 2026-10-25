@@ -6,11 +6,11 @@ use tauri::Emitter;
 
 mod archives;
 mod bind_commands;
-mod npm_registry;
+mod extraction;
+mod native_artifacts;
 mod resolver;
-mod versioning;
 
-use archives::{download_first_available, extract_zip_bytes, find_file_named, make_executable};
+use archives::{download_first_verified, extract_zip_bytes, find_file_named, make_executable};
 pub use bind_commands::{
     command_shell_name, default_bind_command, platform_cli_label, platform_label,
 };
@@ -33,28 +33,25 @@ pub const OFFICIAL_CLIS: &[PlatformCliSpec] = &[
         package: "@wecom/cli",
         bin: "wecom-cli",
         source: "https://github.com/WecomTeam/wecom-cli",
-        compatible_version: "0.1.9",
+        compatible_version: "1.3.4",
     },
     PlatformCliSpec {
         platform: "feishu",
         package: "@larksuite/cli",
         bin: "lark-cli",
         source: "https://github.com/larksuite/cli",
-        compatible_version: "1.0.65",
+        compatible_version: "1.0.98",
     },
     PlatformCliSpec {
         platform: "dingtalk",
         package: "dingtalk-workspace-cli",
         bin: "dws",
         source: "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
-        compatible_version: "1.0.47",
+        compatible_version: crate::runtime::isolated_dws::VERSION,
     },
 ];
 
 const PLATFORM_CLI_PROGRESS_EVENT: &str = "platform-cli-deployment-progress";
-const WINDOWS_DINGTALK_REGISTRY_KEY: &str = r"HKCU:\Software\DwsCli\keychain\dws-cli";
-const WINDOWS_DINGTALK_AUTH_TOKEN_VALUE: &str = "YXV0aC10b2tlbg";
-const WINDOWS_DINGTALK_PROFILE_TOKEN_FILE: &str = "windows-auth-token.regvalue";
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -107,7 +104,17 @@ pub async fn install_package(
     resource_dir: &Path,
     progress: Option<&PlatformCliProgressContext<'_>>,
 ) -> Result<(), String> {
-    let _ = resource_dir;
+    let _install_lock = installer::INSTALL_LOCK.lock().await;
+    installer::recover_interrupted_install(install_root)?;
+    let target = native_target();
+    let isolated_dws = package == "dingtalk-workspace-cli";
+    if isolated_dws {
+        if version != crate::runtime::isolated_dws::VERSION {
+            return Err("不支持的钉钉隔离运行时版本。".into());
+        }
+    } else {
+        native_artifacts::packages(package, version, &target)?;
+    }
     if let Some(progress) = progress {
         emit_platform_cli_progress(
             progress,
@@ -146,15 +153,15 @@ pub async fn install_package(
             staging_root.display()
         )
     })?;
-    let install_result = async {
-        install_npm_package_tree(&staging_root, package, version).await?;
-        ensure_platform_binary(&staging_root, package, version).await
+    let _staging_guard = installer::StagingGuard(staging_root.clone());
+    if isolated_dws {
+        crate::runtime::isolated_dws::stage(resource_dir, &staging_root)?;
+    } else {
+        install_native_packages(&staging_root, package, version, &target).await?;
+        ensure_platform_binary(&staging_root, package, version).await?;
     }
-    .await;
-    if let Err(err) = install_result {
-        fs::remove_dir_all(&staging_root).ok();
-        return Err(err);
-    }
+    let binary = native_binary_path(&staging_root, package)?;
+    installer::check_binary(&binary, &staging_root).await?;
     replace_install_root_atomically(install_root, &staging_root)?;
     if let Some(progress) = progress {
         emit_platform_cli_progress(
@@ -247,8 +254,7 @@ pub async fn ensure_platform_cli_ready(
 }
 
 mod installer;
-pub use installer::remove_platform_cli_staging_dirs;
-use installer::{install_npm_package_tree, replace_install_root_atomically};
+use installer::{install_native_packages, replace_install_root_atomically};
 
 async fn ensure_platform_binary(
     install_root: &Path,
@@ -258,12 +264,34 @@ async fn ensure_platform_binary(
     match package {
         "@wecom/cli" => ensure_wecom_binary(install_root),
         "@larksuite/cli" => ensure_feishu_binary(install_root, version).await,
-        "dingtalk-workspace-cli" => ensure_dingtalk_binary(install_root),
-        _ => Ok(()),
+        _ => Err(format!("不支持的官方CLI包：{package}")),
     }
 }
 
+fn native_target() -> String {
+    "win32-x64".to_owned()
+}
+
+fn native_binary_path(root: &Path, package: &str) -> Result<PathBuf, String> {
+    let target = native_target();
+    let relative = match package {
+        "@wecom/cli" => format!("@wecom/cli-{target}/bin/wecom-cli.exe"),
+        "@larksuite/cli" => format!(
+            "@larksuite/cli/bin/lark-cli-{}.exe",
+            target.replace("win32", "windows")
+        ),
+        "dingtalk-workspace-cli" => format!(
+            "dingtalk-workspace-cli/vendor/dws-{}.exe",
+            target.replace("win32", "windows")
+        ),
+        _ => return Err(format!("不支持的官方CLI包：{package}")),
+    };
+    Ok(root.join("node_modules").join(relative))
+}
+
 include!("official_cli/platform_binaries.rs");
+// Progress payload fields map one-to-one to the frontend event contract.
+#[allow(clippy::too_many_arguments)]
 pub fn emit_platform_cli_progress(
     context: &PlatformCliProgressContext<'_>,
     phase: &str,

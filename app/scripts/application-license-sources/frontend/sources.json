@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "description": "Pinned upstream license texts supplementing incomplete published npm package notices. These files are normal repository inputs; collection performs no network access. Update package/version/integrity and source evidence together when dependencies change.",
+  "packages": [
+    {
+      "name": "victory-vendor",
+      "version": "36.9.2",
+      "integrity": "sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==",
+      "licenseDeclaration": "MIT AND ISC",
+      "texts": [
+        {
+          "path": "victory-vendor-36.9.2/LICENSE_MIT.txt",
+          "sourceUrl": "https://raw.githubusercontent.com/FormidableLabs/victory/v36.9.2/LICENSE.txt",
+          "sha256": "34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4",
+          "scope": "Victory project root MIT license; retain all packaged lib-vendor licenses separately"
+        }
+      ],
+      "requiredPackagedTexts": [
+        {
+          "path": "lib-vendor/d3-array/LICENSE",
+          "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+        },
+        {
+          "path": "lib-vendor/d3-color/LICENSE",
+          "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+        },
+        {
+          "path": "lib-vendor/d3-ease/LICENSE",
+          "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08"
+        },
+        {
+          "path": "lib-vendor/d3-format/LICENSE",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        },
+        {
+          "path": "lib-vendor/d3-interpolate/LICENSE",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        },
+        {
+          "path": "lib-vendor/d3-path/LICENSE",
+          "sha256": "0ab21426fad1e8b819ea8ab4c7faf5a24d4fca9c01572fe722490d600bba0d22"
+        },
+        {
+          "path": "lib-vendor/d3-scale/LICENSE",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        },
+        {
+          "path": "lib-vendor/d3-shape/LICENSE",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        },
+        {
+          "path": "lib-vendor/d3-time/LICENSE",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        },
+        {
+          "path": "lib-vendor/d3-time-format/LICENSE",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        },
+        {
+          "path": "lib-vendor/d3-timer/LICENSE",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        },
+        {
+          "path": "lib-vendor/d3-voronoi/LICENSE",
+          "sha256": "ad6cf57648385d6c40a29f73c55e42922dd793823df5ea265ccd834873bf09b9"
+        },
+        {
+          "path": "lib-vendor/internmap/LICENSE",
+          "sha256": "9ea8903938dab5f12c4572d60725069bec2d1b0dc3bcc210b09bae946a5ebb1f"
+        }
+      ]
+    },
+    {
+      "name": "@tauri-apps/plugin-dialog",
+      "version": "2.7.0",
+      "integrity": "sha512-4nS/hfGMGCXiAS3LtVjH9AgsSAPJeG/7R+q8agTFqytjnMa4Zq95Bq8WzVDkckpanX+yyRHXnRtrKXkANKDHvw==",
+      "licenseDeclaration": "MIT OR Apache-2.0",
+      "texts": [
+        {
+          "path": "tauri-apps-plugin-dialog-2.7.0/LICENSE_MIT.txt",
+          "sourceUrl": "https://raw.githubusercontent.com/tauri-apps/plugins-workspace/d6a3898001a4bcc659e045f9501498751b77dbe6/plugins/dialog/LICENSE_MIT",
+          "sha256": "89ff9689dcf9dd53968785d05a26f7898bb169dbfcada8d032b3e68cf0d55607",
+          "scope": "Plugin release dialog-v2.7.0, commit d6a3898001a4bcc659e045f9501498751b77dbe6; published SPDX file contains declarations only"
+        },
+        {
+          "path": "tauri-apps-plugin-dialog-2.7.0/LICENSE_APACHE-2.0.txt",
+          "sourceUrl": "https://raw.githubusercontent.com/tauri-apps/plugins-workspace/d6a3898001a4bcc659e045f9501498751b77dbe6/plugins/dialog/LICENSE_APACHE-2.0",
+          "sha256": "0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9",
+          "scope": "Plugin release dialog-v2.7.0, commit d6a3898001a4bcc659e045f9501498751b77dbe6; published SPDX file contains declarations only"
+        }
+      ],
+      "upstreamPackageMetadata": {
+        "sourceUrl": "https://raw.githubusercontent.com/tauri-apps/plugins-workspace/d6a3898001a4bcc659e045f9501498751b77dbe6/plugins/dialog/package.json",
+        "sha256": "3759a4259a4885fc2ae69588d0efb25071e56b5f78540462501b64584cdb053e",
+        "name": "@tauri-apps/plugin-dialog",
+        "version": "2.7.0"
+      },
+      "requiredPackagedTexts": [
+        {
+          "path": "LICENSE.spdx",
+          "sha256": "eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef"
+        }
+      ]
+    },
+    {
+      "name": "lucide-react",
+      "version": "0.468.0",
+      "integrity": "sha512-6koYRhnM2N0GGZIdXzSeiNwguv1gt/FAjZOiPl76roBi3xKEXa4WmfpxgQwTTL4KipXjefrnf3oV4IsYhi4JFA==",
+      "licenseDeclaration": "ISC",
+      "texts": [
+        {
+          "path": "lucide-react-0.468.0/Feather-LICENSE_MIT.txt",
+          "sourceUrl": "https://raw.githubusercontent.com/feathericons/feather/f81cd40fdcdd5e94f3f97eb670a5058e3aac528d/LICENSE",
+          "sha256": "afcab584f9ecaf796069d8b3cd2a02e3135d89743a2cf17def2e7935dad91e5d",
+          "scope": "MIT terms for the Feather portions explicitly named in lucide-react LICENSE. Source is Feather v4.29.0; this does not identify the embedded Feather version."
+        }
+      ],
+      "requiredAdditionalTerms": [
+        "MIT"
+      ],
+      "requiredPackagedTexts": [
+        {
+          "path": "LICENSE",
+          "sha256": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc"
+        }
+      ]
+    }
+  ]
+}

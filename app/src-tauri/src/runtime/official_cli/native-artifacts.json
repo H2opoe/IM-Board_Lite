@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "name": "@wecom/cli",
+      "version": "1.3.4",
+      "url": "https://registry.npmjs.org/@wecom/cli/-/cli-1.3.4.tgz",
+      "integrity": "sha512-vz47EsT/BKkHBONVt94xhZtUWhvMR4uF9Y4TTNUwF7PnLETqyFyrNNHwG3aTLmhMNC/ecqRWUUqvNgP90nreaQ=="
+    },
+    {
+      "name": "@larksuite/cli",
+      "version": "1.0.98",
+      "url": "https://registry.npmjs.org/@larksuite/cli/-/cli-1.0.98.tgz",
+      "integrity": "sha512-1AzjdhZ3VXRWnaftb7Mx/SWA3zvs7Mk5W5R1OfThKruQa1ABO8dFZB3V20ZngJigDYiqoUvL/bNqlKZOYLaZbg=="
+    },
+    {
+      "name": "@wecom/cli-darwin-arm64",
+      "version": "1.3.4",
+      "url": "https://registry.npmjs.org/@wecom/cli-darwin-arm64/-/cli-darwin-arm64-1.3.4.tgz",
+      "integrity": "sha512-mktTGWYWqwE5exPs/vdiYcwas77G7DPEhAmj1Hl0LqQHUp6tfwplSfJQ/TaESZvmKtoqDglrywtIQeJ0ksFsWA=="
+    },
+    {
+      "name": "@wecom/cli-darwin-x64",
+      "version": "1.3.4",
+      "url": "https://registry.npmjs.org/@wecom/cli-darwin-x64/-/cli-darwin-x64-1.3.4.tgz",
+      "integrity": "sha512-w9TuS95c06uyqbylxNjBCtC3GvR/6Vf6WK1zvsIcif7ivUq6Gu5scssagbD6rBWwhQUJ6o2MQKufpa439mL8bg=="
+    },
+    {
+      "name": "@wecom/cli-win32-x64",
+      "version": "1.3.4",
+      "url": "https://registry.npmjs.org/@wecom/cli-win32-x64/-/cli-win32-x64-1.3.4.tgz",
+      "integrity": "sha512-FomGDkkDVZpKB9GZjAdMvR7491z9DMiaEzYQyDkA+3Yx6I100gJFnIJ31VZr6oMIRrZCT19GzNP+7c4DzuoPbg=="
+    }
+  ],
+  "feishuAssets": [
+    {
+      "name": "lark-cli-1.0.98-darwin-amd64.tar.gz",
+      "url": "https://github.com/larksuite/cli/releases/download/v1.0.98/lark-cli-1.0.98-darwin-amd64.tar.gz",
+      "sha256": "44a4ff98e969385fc4bb4d701735ba319307e50560fa6c4c956178d70ccc3525"
+    },
+    {
+      "name": "lark-cli-1.0.98-darwin-arm64.tar.gz",
+      "url": "https://github.com/larksuite/cli/releases/download/v1.0.98/lark-cli-1.0.98-darwin-arm64.tar.gz",
+      "sha256": "ee4a3209bbf8b74ea5c00a07d0da89b79f5e7f6abfd518a8b2d78a7a4f7e3f40"
+    },
+    {
+      "name": "lark-cli-1.0.98-windows-amd64.zip",
+      "url": "https://github.com/larksuite/cli/releases/download/v1.0.98/lark-cli-1.0.98-windows-amd64.zip",
+      "sha256": "b13a5d710f9afe327b34bfe68c4a736a574d4d97274f6da862e912dfada1ccdc"
+    }
+  ]
+}

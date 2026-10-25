@@ -1,3 +1,4 @@
+import { shouldHandleOutsideMouseDetection } from "../../../utils/windowActivity";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { CheckCircle2, Clipboard, Info, RefreshCw, Save, Settings2, Terminal, X } from "lucide-react";
 import type { PlatformCliDeploymentProgress, PlatformCliVersionStatus, PlatformDeployment } from "../../../api/bridgeApi";
@@ -69,7 +70,7 @@ export function OfficialCliBindModal({
   ...sharedProps
 }: OfficialCliBindModalProps) {
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
+    <div className="modal-backdrop" onMouseDown={() => { if (shouldHandleOutsideMouseDetection()) onClose(); }}>
       <article
         className="profile-modal profile-setup-modal official-cli-modal"
         onKeyDown={onKeyDown}

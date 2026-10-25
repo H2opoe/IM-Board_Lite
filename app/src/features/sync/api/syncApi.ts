@@ -2,7 +2,7 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { isDemoMode } from "../../../api/demoMode";
 import { isTauri, requireTauri } from "../../../api/tauri";
-import type { SyncJobMode, SyncProgress, SyncResult } from "../model/types";
+import type { SyncJobMode, SyncProgress, SyncResult, SyncJobSnapshot } from "../model/types";
 
 const SYNC_PROGRESS_EVENT = "sync-progress";
 
@@ -46,4 +46,20 @@ export async function watchSyncProgress(handler: (progress: SyncProgress) => voi
   if (isTauri) return listen<SyncProgress>(SYNC_PROGRESS_EVENT, (event) => handler(event.payload));
   void handler;
   return requireTauri("监听同步进度");
+}
+
+export async function getSyncJobState(): Promise<SyncJobSnapshot> {
+  if (isTauri) return invoke("get_sync_job_state");
+  return requireTauri("读取后台同步状态");
+}
+export async function watchSyncJobState(handler: (snapshot: SyncJobSnapshot) => void): Promise<() => void> {
+  if (isTauri) return listen<SyncJobSnapshot>("sync-job-state", event => handler(event.payload));
+  return requireTauri("监听后台同步状态");
+}
+export async function waitForSyncIdle(timeoutMs = 60_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while ((await getSyncJobState()).busy) {
+    if (Date.now() >= deadline) throw new Error("后台任务仍在停止，请稍后重试。未启动新的维护任务。");
+    await new Promise(resolve => window.setTimeout(resolve, 100));
+  }
 }

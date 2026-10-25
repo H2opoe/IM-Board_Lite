@@ -16,10 +16,11 @@ pub(crate) use crate::analysis::progress::{
 };
 use crate::bridge_runner::BridgeRequest;
 use crate::commands::ai as ai_commands;
+use crate::messages::import_window::MessageImportWindow;
 use crate::messages::normalizer::{normalize_message, platform_label, profile_remark, value_array};
 use crate::storage::models::ImProfile;
 use crate::storage::AppState;
-use crate::sync::fetch::{refresh_local_keyword_stats, MessageImportWindow};
+use crate::sync::fetch::refresh_local_keyword_stats;
 use crate::sync::orchestrator::run_sync_bridge;
 
 struct AiCallFailure {
@@ -50,6 +51,7 @@ pub(crate) async fn analyze_pending_messages(
 ) -> Result<(String, i64), String> {
     let (ai_config, analysis_messages) = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
+        crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
         let mut config = ai::get_config(&conn).map_err(|err| err.to_string())?;
         ai::apply_hardware_batch_limit(
             &mut config,
@@ -93,6 +95,7 @@ pub(crate) async fn analyze_pending_messages(
     );
     let analysis_batches = {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
+        crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
         rebalance_analysis_batches_for_context(
             &conn,
             initial_analysis_batches,
@@ -119,6 +122,7 @@ pub(crate) async fn analyze_pending_messages(
         emit_analysis_progress_for_scope(app, target_profiles, batch_index + 1, total_batches);
         let mut context = {
             let conn = state.db.lock().map_err(|err| err.to_string())?;
+            crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
             ai::load_analysis_context_for_messages(&conn, &messages)
                 .map_err(|err| err.to_string())?
         };
@@ -171,6 +175,8 @@ pub(crate) async fn analyze_pending_messages(
                 let mut analysis = analysis_result.analysis;
                 let context_targets = {
                     let conn = state.db.lock().map_err(|err| err.to_string())?;
+                    crate::daily_cache::ensure_current_day(&conn, day)
+                        .map_err(|err| err.to_string())?;
                     ai::context_backfill_targets_for_messages(&conn, day, &messages, &analysis)
                         .map_err(|err| err.to_string())?
                 };
@@ -282,6 +288,8 @@ pub(crate) async fn analyze_pending_messages(
                 }
                 let persist_result = {
                     let conn = state.db.lock().map_err(|err| err.to_string())?;
+                    crate::daily_cache::ensure_current_day(&conn, day)
+                        .map_err(|err| err.to_string())?;
                     ai::persist_analysis_for_messages(&conn, day, &primary_messages, analysis)
                 };
                 match persist_result {
@@ -319,6 +327,8 @@ pub(crate) async fn analyze_pending_messages(
                     }
                     Err(err) => {
                         if let Ok(conn) = state.db.lock() {
+                            crate::daily_cache::ensure_current_day(&conn, day)
+                                .map_err(|err| err.to_string())?;
                             let _ = ai::keep_analysis_pending_for_messages(
                                 &conn,
                                 day,
@@ -343,6 +353,8 @@ pub(crate) async fn analyze_pending_messages(
                 );
                 finish_ai_analysis_run(state, run_id, "failed", Some(&err.message), err.diagnostic);
                 if let Ok(conn) = state.db.lock() {
+                    crate::daily_cache::ensure_current_day(&conn, day)
+                        .map_err(|err| err.to_string())?;
                     let _ = ai::keep_analysis_pending_for_messages(&conn, day, &primary_messages);
                 }
                 ai_status = "failed".to_owned();

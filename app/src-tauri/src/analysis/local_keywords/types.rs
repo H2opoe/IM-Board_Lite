@@ -23,19 +23,14 @@ pub(crate) struct LocalKeywordCandidate {
     pub(crate) source: LocalKeywordSource,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) enum LocalKeywordSource {
     Context,
     Segment,
     Search,
     Phrase,
+    #[default]
     Fallback,
-}
-
-impl Default for LocalKeywordSource {
-    fn default() -> Self {
-        Self::Fallback
-    }
 }
 
 impl LocalKeywordSource {

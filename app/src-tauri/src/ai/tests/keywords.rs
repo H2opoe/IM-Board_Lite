@@ -220,12 +220,12 @@ fn keyword_texts_from_message_content_filters_xml_urls_and_bot_templates() {
 #[test]
 fn keyword_texts_from_message_content_filters_dingtalk_custom_scheme_urls() {
     assert!(keyword_texts_from_message_content(
-            "佛山市戴胜文化传媒有限公司\n让我们一起欢迎新人~\n群小钉\n[dingtalk://dingtalkclient/action/openapp?slide_panel_option=%7B%22width%22%3A480%2C%22hidesTitle%22%3Atrue%7D&containerType=board&dd_darkmode=false&selfIntroduceText=&openedByMiniApp=true&needRedirect=true&corpId=ding298a3a7e22a45692f2c783f7214b6d69]",
+            "示例科技有限公司\n让我们一起欢迎新人~\n群小钉\n[dingtalk://dingtalkclient/action/openapp?slide_panel_option=%7B%22width%22%3A480%2C%22hidesTitle%22%3Atrue%7D&containerType=board&dd_darkmode=false&selfIntroduceText=&openedByMiniApp=true&needRedirect=true&corpId=ding00000000000000000000000000000000]",
         )
         .is_empty());
 
     let texts = keyword_texts_from_message_content(
-        "客户新人培训资料已发出\n[dingtalk://dingtalkclient/action/openapp?slide_panel_option=%7B%22width%22%3A480%2C%22hidesTitle%22%3Atrue%7D&containerType=board&dd_darkmode=false&selfIntroduceText=&openedByMiniApp=true&needRedirect=true&corpId=ding298a3a7e22a45692f2c783f7214b6d69]",
+        "客户新人培训资料已发出\n[dingtalk://dingtalkclient/action/openapp?slide_panel_option=%7B%22width%22%3A480%2C%22hidesTitle%22%3Atrue%7D&containerType=board&dd_darkmode=false&selfIntroduceText=&openedByMiniApp=true&needRedirect=true&corpId=ding00000000000000000000000000000000]",
     );
     let joined = texts.join(" ");
 
@@ -261,7 +261,7 @@ fn dashboard_keyword_filter_rejects_dingtalk_payload_fragments() {
         "dfalse26cid3",
         "7b22width22",
         "3a4802c22",
-        "dding298a3a7e22a45692f2c783f7214b6d6926",
+        "dding0000000000000000000000000000000026",
         "d0129131342192618510926",
         "d500000000485825726",
         "dgroupwelcome26",
@@ -335,6 +335,9 @@ fn clean_message_content_for_ai_keeps_only_allowed_message_types() {
 
 #[test]
 fn clean_message_content_for_ai_filters_group_noise_templates() {
+    let content = "[系统] 群公告 已更新";
+    assert_eq!(clean_message_content_for_ai("system", content), None);
+    assert!(clean_message_content_for_ai("text", content).is_some());
     for content in [
         r#"[系统] "Mr.成"通过扫描"管家芽芽"分享的二维码加入群聊"#,
         "🖥 欢迎 孙文康、皮蛋瘦肉周 加入应用宝Mac公测体验群！\n🔹 如何参与公测？",
@@ -342,7 +345,6 @@ fn clean_message_content_for_ai_filters_group_noise_templates() {
         "当前版本不支持显示内容",
         "请升级飞书查看",
         "@荣少\n今日第 58 个签到，加 5.0 积分 当前会员总积分：470.0 已连续签到5天",
-        "[系统] 群公告 已更新",
         "[链接/文件] #接龙 🔥老温开团【周日5.24早上送货】",
         "#接龙\n百香果团购\n1. 王霞 1箱\n2. 钟予馨2箱\n3. 昕彤1箱",
     ] {
@@ -498,7 +500,7 @@ fn persist_local_keyword_stats_filters_structural_noise_terms() {
             ),
             (
                 "msg-6",
-                "佛山市戴胜文化传媒有限公司\n让我们一起欢迎新人~\n群小钉\n[dingtalk://dingtalkclient/action/openapp?slide_panel_option=%7B%22width%22%3A480%2C%22hidesTitle%22%3Atrue%7D&containerType=board&dd_darkmode=false&selfIntroduceText=&openedByMiniApp=true&needRedirect=true&corpId=ding298a3a7e22a45692f2c783f7214b6d69]",
+                "示例科技有限公司\n让我们一起欢迎新人~\n群小钉\n[dingtalk://dingtalkclient/action/openapp?slide_panel_option=%7B%22width%22%3A480%2C%22hidesTitle%22%3Atrue%7D&containerType=board&dd_darkmode=false&selfIntroduceText=&openedByMiniApp=true&needRedirect=true&corpId=ding00000000000000000000000000000000]",
                 6_i64,
             ),
         ] {

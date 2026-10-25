@@ -7,7 +7,7 @@ use tauri::{Manager, State};
 use zip::write::SimpleFileOptions;
 
 use crate::daily_cache;
-use crate::security::sanitize_log;
+use crate::security::diagnostic_metadata;
 use crate::storage::AppState;
 use crate::version::app_version;
 
@@ -81,20 +81,33 @@ fn export_diagnostic_package_impl(
     let diagnostic = build_diagnostic_json(&conn, state, exported_at.to_rfc3339())?;
 
     let file = fs::File::create(&file_path)?;
-    let mut zip = zip::ZipWriter::new(file);
-    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-    add_zip_text(&mut zip, options, "README.txt", "IM-Board 诊断包\n\n此诊断包用于定位同步、AI 分析、账号绑定和运行时问题。\n包内默认不包含聊天内容、API Key 等敏感信息。\n如果问题涉及特定聊天，请另行提供对应截图或手动脱敏后的上下文。\n")?;
-    add_zip_text(
-        &mut zip,
-        options,
-        "diagnostic.json",
-        &serde_json::to_string_pretty(&diagnostic)?,
-    )?;
-    zip.finish()?;
+    write_diagnostic_archive(file, &diagnostic)?;
 
     Ok(DiagnosticExport {
         file_path: file_path.display().to_string(),
     })
+}
+
+fn write_diagnostic_archive<W: Write + std::io::Seek>(
+    writer: W,
+    diagnostic: &serde_json::Value,
+) -> anyhow::Result<()> {
+    let mut zip = zip::ZipWriter::new(writer);
+    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+    add_zip_text(
+        &mut zip,
+        options,
+        "README.txt",
+        "IM-Board 诊断包\n仅包含结构化诊断元数据；不包含响应正文、原始日志或系统崩溃报告。\n",
+    )?;
+    add_zip_text(
+        &mut zip,
+        options,
+        "diagnostic.json",
+        &serde_json::to_string_pretty(diagnostic)?,
+    )?;
+    zip.finish()?;
+    Ok(())
 }
 
 fn normalize_diagnostic_export_path(file_path: String) -> anyhow::Result<PathBuf> {
@@ -125,6 +138,7 @@ fn build_diagnostic_json(
     state: &AppState,
     exported_at: String,
 ) -> anyhow::Result<serde_json::Value> {
+    let action_days = crate::daily_cache::action_day::resolve_action_days(conn)?;
     Ok(serde_json::json!({
         "exportedAt": exported_at,
         "app": collect_app_info(state),
@@ -132,7 +146,8 @@ fn build_diagnostic_json(
         "profiles": collect_profiles(conn)?,
         "aiConfig": collect_ai_config(conn)?,
         "syncState": collect_sync_state(conn)?,
-        "dailySummary": collect_daily_summary(conn)?,
+        "dailySummary": collect_daily_summary(conn, &action_days)?,
+        "actionDaySummary": crate::daily_cache::action_day::diagnostic_day_summary(&action_days),
         "recentAiRuns": collect_recent_ai_runs(conn)?,
         "recentErrorEvents": collect_recent_error_events(conn)?,
     }))
@@ -173,7 +188,7 @@ fn collect_profiles(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>>
             "enabled": row.get::<_, i64>(3)? == 1,
             "status": row.get::<_, String>(4)?,
             "sortOrder": row.get::<_, i64>(5)?,
-            "config": redact_json_value(config),
+            "config": diagnostic_metadata(config),
             "createdAt": row.get::<_, String>(7)?,
             "updatedAt": row.get::<_, String>(8)?,
         }))
@@ -189,7 +204,7 @@ fn collect_ai_config(conn: &Connection) -> anyhow::Result<Option<serde_json::Val
     };
     Ok(Some(serde_json::json!({
         "provider": row.get::<_, String>(0)?,
-        "baseUrl": row.get::<_, String>(1)?,
+        "baseUrlConfigured": !row.get::<_, String>(1)?.is_empty(),
         "model": row.get::<_, String>(2)?,
         "userPromptLength": row.get::<_, String>(3)?.chars().count(),
         "analysisPromptLength": row.get::<_, String>(4)?.chars().count(),
@@ -214,11 +229,11 @@ fn collect_sync_state(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value
             "day": row.get::<_, String>(1)?,
             "lastSyncAt": row.get::<_, Option<String>>(2)?,
             "lastAnalysisAt": row.get::<_, Option<String>>(3)?,
-            "cursor": redact_json_value(cursor),
+            "cursor": diagnostic_metadata(cursor),
             "updatedAt": row.get::<_, String>(5)?,
             "lastAttemptAt": row.get::<_, Option<String>>(6)?,
             "lastSuccessAt": row.get::<_, Option<String>>(7)?,
-            "lastError": row.get::<_, Option<String>>(8)?.map(|value| sanitize_log(&value)),
+            "lastError": row.get::<_, Option<String>>(8)?.map(|_| "错误正文已省略。".to_owned()),
         }))
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -233,8 +248,7 @@ fn collect_recent_ai_runs(conn: &Connection) -> anyhow::Result<Vec<serde_json::V
             .and_then(|value| serde_json::from_str::<serde_json::Value>(value).ok());
         let error = row
             .get::<_, Option<String>>(6)?
-            .map(|value| sanitize_log(&value))
-            .map(|value| truncate_for_diagnostic(&value, 1200));
+            .map(|_| "错误正文已省略；请参考结构化诊断。".to_owned());
         let input_message_ids = row
             .get::<_, String>(9)
             .ok()
@@ -244,14 +258,14 @@ fn collect_recent_ai_runs(conn: &Connection) -> anyhow::Result<Vec<serde_json::V
             .get::<_, Option<String>>(10)?
             .as_deref()
             .and_then(|value| serde_json::from_str::<serde_json::Value>(value).ok())
-            .map(redact_json_value);
+            .map(diagnostic_metadata);
         Ok(serde_json::json!({
             "id": row.get::<_, String>(0)?,
             "day": row.get::<_, String>(1)?,
             "profileId": row.get::<_, String>(2)?,
             "status": row.get::<_, String>(3)?,
             "model": row.get::<_, Option<String>>(4)?,
-            "tokenUsage": token_usage,
+            "tokenUsage": token_usage.map(diagnostic_metadata),
             "error": error,
             "inputMessageCount": input_message_ids.len(),
             "diagnostic": diagnostic,
@@ -269,13 +283,13 @@ fn collect_recent_error_events(conn: &Connection) -> anyhow::Result<Vec<serde_js
             .get::<_, String>(8)
             .ok()
             .and_then(|value| serde_json::from_str::<serde_json::Value>(&value).ok())
-            .map(redact_json_value)
+            .map(diagnostic_metadata)
             .unwrap_or_else(|| serde_json::json!({}));
         let context = row
             .get::<_, String>(9)
             .ok()
             .and_then(|value| serde_json::from_str::<serde_json::Value>(&value).ok())
-            .map(redact_json_value)
+            .map(diagnostic_metadata)
             .unwrap_or_else(|| serde_json::json!({}));
         Ok(serde_json::json!({
             "id": row.get::<_, String>(0)?,
@@ -285,7 +299,7 @@ fn collect_recent_error_events(conn: &Connection) -> anyhow::Result<Vec<serde_js
             "profileId": row.get::<_, Option<String>>(4)?,
             "platform": row.get::<_, Option<String>>(5)?,
             "operation": row.get::<_, String>(6)?,
-            "userMessage": row.get::<_, String>(7)?,
+            "userMessage": "请参考错误分类；不导出自由文本详情。",
             "rawDetail": raw_detail,
             "context": context,
             "createdAt": row.get::<_, String>(10)?,
@@ -294,69 +308,54 @@ fn collect_recent_error_events(conn: &Connection) -> anyhow::Result<Vec<serde_js
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
-fn collect_daily_summary(conn: &Connection) -> anyhow::Result<Vec<serde_json::Value>> {
-    let mut stmt = conn.prepare("select messages.day, messages.profile_id, messages.platform, count(*) as message_count, sum(case when messages.analyzed_at is null then 1 else 0 end) as pending_analysis_count, count(distinct messages.chat_id) as chat_count, coalesce(topics.topic_count, 0) as topic_count, coalesce(actions.action_count, 0) as action_count from daily_messages messages left join (select day, profile_id, count(*) as topic_count from daily_topics group by day, profile_id) topics on topics.day = messages.day and topics.profile_id = messages.profile_id left join (select date(first_detected_at) as day, profile_id, count(*) as action_count from action_items group by date(first_detected_at), profile_id) actions on actions.day = messages.day and actions.profile_id = messages.profile_id group by messages.day, messages.profile_id, messages.platform order by messages.day desc, messages.profile_id limit 80")?;
+fn collect_daily_summary(
+    conn: &Connection,
+    action_days: &[crate::daily_cache::action_day::ResolvedActionDay],
+) -> anyhow::Result<Vec<serde_json::Value>> {
+    let mut known_counts = std::collections::BTreeMap::<(&str, &str), i64>::new();
+    for action in action_days {
+        if let crate::daily_cache::action_day::ActionDay::Known(day) = &action.day {
+            *known_counts.entry((&action.profile_id, day)).or_default() += 1;
+        }
+    }
+    let mut stmt = conn.prepare(
+        "select
+           messages.day,
+           messages.profile_id,
+           messages.platform,
+           count(*) as message_count,
+           sum(case when messages.analyzed_at is null then 1 else 0 end) as pending_analysis_count,
+           count(distinct messages.chat_id) as chat_count,
+           coalesce(topics.topic_count, 0) as topic_count
+         from daily_messages messages
+         left join (
+           select day, profile_id, count(*) as topic_count
+           from daily_topics
+           group by day, profile_id
+         ) topics on topics.day = messages.day and topics.profile_id = messages.profile_id
+         group by messages.day, messages.profile_id, messages.platform
+         order by messages.day desc, messages.profile_id
+         limit 80",
+    )?;
     let rows = stmt.query_map([], |row| {
+        let day = row.get::<_, String>(0)?;
+        let profile_id = row.get::<_, String>(1)?;
+        let action_count = known_counts
+            .get(&(profile_id.as_str(), day.as_str()))
+            .copied()
+            .unwrap_or(0);
         Ok(serde_json::json!({
-            "day": row.get::<_, String>(0)?,
-            "profileId": row.get::<_, String>(1)?,
+            "day": day,
+            "profileId": profile_id,
             "platform": row.get::<_, String>(2)?,
             "messageCount": row.get::<_, i64>(3)?,
             "pendingAnalysisCount": row.get::<_, i64>(4)?,
             "chatCount": row.get::<_, i64>(5)?,
             "topicCount": row.get::<_, i64>(6)?,
-            "actionCount": row.get::<_, i64>(7)?,
+            "actionCount": action_count,
         }))
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
-}
-
-fn redact_json_value(value: serde_json::Value) -> serde_json::Value {
-    match value {
-        serde_json::Value::Array(items) => {
-            serde_json::Value::Array(items.into_iter().map(redact_json_value).collect())
-        }
-        serde_json::Value::Object(object) => serde_json::Value::Object(
-            object
-                .into_iter()
-                .map(|(key, value)| {
-                    if is_sensitive_key(&key) {
-                        (key, serde_json::json!("***"))
-                    } else {
-                        (key, redact_json_value(value))
-                    }
-                })
-                .collect(),
-        ),
-        serde_json::Value::String(text) => {
-            serde_json::Value::String(truncate_for_diagnostic(&sanitize_log(&text), 1200))
-        }
-        other => other,
-    }
-}
-
-fn is_sensitive_key(key: &str) -> bool {
-    let normalized = key.to_ascii_lowercase();
-    // 诊断包可以包含路径、平台和状态，但不能外带授权令牌或密钥。
-    [
-        "key",
-        "token",
-        "secret",
-        "authorization",
-        "password",
-        "cookie",
-    ]
-    .iter()
-    .any(|marker| normalized.contains(marker))
-}
-
-fn truncate_for_diagnostic(value: &str, limit: usize) -> String {
-    if value.chars().count() <= limit {
-        return value.to_owned();
-    }
-    let mut output = value.chars().take(limit).collect::<String>();
-    output.push_str("...");
-    output
 }
 
 fn set_theme_dock_icon_impl(app: tauri::AppHandle, theme: &str) -> Result<(), String> {
@@ -390,9 +389,19 @@ fn desktop_icon_path(app: &tauri::AppHandle, file_name: &str) -> std::path::Path
             return bundled_icon;
         }
     }
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("icons")
-        .join(file_name)
+    #[cfg(debug_assertions)]
+    {
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("icons")
+            .join(file_name)
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        app.path()
+            .resource_dir()
+            .map(|root| root.join("icons").join(file_name))
+            .unwrap_or_default()
+    }
 }
 
 fn parse_time_to_minutes(value: &str) -> Result<i64, String> {
@@ -415,3 +424,73 @@ fn minutes_to_time(minutes: i64) -> String {
     let minutes = minutes.clamp(0, 1439);
     format!("{:02}:{:02}", minutes / 60, minutes % 60)
 }
+
+#[cfg(test)]
+mod diagnostic_export_tests {
+    use super::*;
+    use std::io::{Cursor, Read};
+
+    #[test]
+    fn failed_legacy_ai_and_error_events_cannot_leak_into_final_zip() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+            .unwrap();
+        conn.execute("insert into ai_analysis_runs(id,day,profile_id,status,error,diagnostic_json,token_usage_json,created_at) values('r','2026-09-29','p','failed','PRIVATE_CHAT',?1,?2,datetime('now'))", rusqlite::params![r#"{"call":{"contentSnippet":"PRIVATE_CHAT","responseBodySnippet":"SECRET_KEY","httpStatus":500},"unknown":"PRIVATE_CHAT"}"#,r#"{"total_tokens":12,"extra":"PRIVATE_CHAT"}"#]).unwrap();
+        conn.execute("insert into diagnostic_error_events(id,source,category,severity,operation,user_message,raw_detail_json,context_json,created_at) values('e','ai','response_parse','error','analysis','PRIVATE_CHAT',?1,?2,datetime('now'))", rusqlite::params![r#"{"error":"PRIVATE_CHAT","diagnostic":{"contentSnippet":"SECRET_KEY","httpStatus":500}}"#,r#"{"anything":"PRIVATE_CHAT"}"#]).unwrap();
+        let diagnostic = serde_json::json!({"recentAiRuns": collect_recent_ai_runs(&conn).unwrap(), "recentErrorEvents":collect_recent_error_events(&conn).unwrap()});
+        let mut bytes = Vec::new();
+        write_diagnostic_archive(Cursor::new(&mut bytes), &diagnostic).unwrap();
+        let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+        assert_eq!(zip.len(), 2);
+        for index in 0..zip.len() {
+            let mut entry = zip.by_index(index).unwrap();
+            let mut content = String::new();
+            entry.read_to_string(&mut content).unwrap();
+            assert!(!content.contains("PRIVATE_CHAT"));
+            assert!(!content.contains("SECRET_KEY"));
+            if entry.name().expect("valid ZIP entry name") == "diagnostic.json" {
+                assert!(content.contains("500"));
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn import_legacy_data(
+    app: tauri::AppHandle,
+) -> Result<crate::storage::legacy_import::ImportSummary, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        import_legacy_data_impl(state)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+fn import_legacy_data_impl(
+    state: State<'_, AppState>,
+) -> Result<crate::storage::legacy_import::ImportSummary, String> {
+    use std::sync::atomic::Ordering;
+    state
+        .sync_job_running
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .map_err(|_| "请等待同步结束后再导入旧数据。".to_owned())?;
+    struct Reset<'a>(&'a std::sync::atomic::AtomicBool);
+    impl Drop for Reset<'_> {
+        fn drop(&mut self) {
+            self.0.store(false, Ordering::SeqCst);
+        }
+    }
+    let _guard = Reset(&state.sync_job_running);
+    let source = dirs::data_dir()
+        .ok_or_else(|| "无法确定旧数据目录。".to_owned())?
+        .join("IMBoard")
+        .join("app.sqlite");
+    let mut destination = state.db.lock().map_err(|e| e.to_string())?;
+    crate::storage::legacy_import::import_from_path(&mut destination, &source)
+        .map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+#[path = "app_action_day_tests.rs"]
+mod action_day_tests;

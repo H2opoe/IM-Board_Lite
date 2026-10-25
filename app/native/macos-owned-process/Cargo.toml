@@ -1,0 +1,23 @@
+[package]
+name = "macos-owned-process"
+version = "0.1.0"
+edition = "2021"
+description = "IM-Board held Child process-group ownership"
+publish = false
+
+[lib]
+name = "macos_owned_process"
+
+[features]
+default = []
+test-support = []
+
+[target.'cfg(unix)'.dependencies]
+libc = "=0.2.186"
+tokio = { version = "=1.53.3", features = ["process", "time"] }
+
+[build-dependencies]
+cc = "=1.2.61"
+
+[dev-dependencies]
+tokio = { version = "=1.53.3", features = ["rt", "macros"] }

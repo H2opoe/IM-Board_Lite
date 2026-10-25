@@ -3,27 +3,10 @@ use std::collections::{HashMap, HashSet};
 use chrono::{Local, NaiveDateTime, TimeZone};
 use sha2::{Digest, Sha256};
 
+pub(crate) use crate::connectors::{platform_label, profile_remark};
+use crate::messages::import_window::MessageImportWindow;
+use crate::messages::message_type::canonical_system_type;
 use crate::storage::models::ImProfile;
-use crate::sync::fetch::MessageImportWindow;
-
-pub(crate) fn profile_remark(profile: &ImProfile) -> String {
-    profile
-        .config_json
-        .get("remark")
-        .and_then(|value| value.as_str())
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or(&profile.label)
-        .to_owned()
-}
-
-pub(crate) fn platform_label(platform: &str) -> &str {
-    match platform {
-        "wecom" => "企业微信",
-        "feishu" => "飞书",
-        "dingtalk" => "钉钉",
-        _ => platform,
-    }
-}
 
 #[derive(Debug)]
 pub(crate) struct DailyMessage {
@@ -127,7 +110,7 @@ pub(crate) fn normalize_message(
         value,
         &["rawType", "raw_type", "type", "Type", "msgType", "MsgType"],
     );
-    let msg_type = normalize_msg_type(raw_type.as_deref(), &content);
+    let msg_type = normalize_msg_type(&profile.platform, raw_type.as_deref(), &content);
     let local_id = first_string(
         value,
         &["localId", "local_id", "msgId", "msg_id", "serverId", "id"],
@@ -227,7 +210,7 @@ fn normalize_text_message(
         },
         timestamp,
         time_text: naive.format("%H:%M").to_string(),
-        msg_type: normalize_msg_type(None, content),
+        msg_type: normalize_msg_type(&profile.platform, None, content),
         content: content.to_owned(),
         raw_type: None,
         local_id: None,
@@ -345,7 +328,10 @@ fn number_value(value: &serde_json::Value, keys: &[&str]) -> Option<i64> {
     None
 }
 
-fn normalize_msg_type(raw_type: Option<&str>, content: &str) -> String {
+fn normalize_msg_type(platform: &str, raw_type: Option<&str>, content: &str) -> String {
+    if let Some(kind) = raw_type.and_then(|raw| canonical_system_type(platform, raw)) {
+        return kind.to_owned();
+    }
     let raw = raw_type.unwrap_or("").to_ascii_lowercase();
     let content_lower = content.to_ascii_lowercase();
     if raw.contains("image") || raw.contains("图片") || raw == "3" || content.contains("[图片]")

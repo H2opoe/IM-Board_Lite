@@ -11,7 +11,7 @@ export function joinNativePath(baseDir: string, leaf: string): string {
 export function commandLineToolName(deployment?: PlatformDeployment | null): string {
   const commandShell = deployment?.commandShell?.trim();
   if (commandShell) return commandShell;
-  return "macOS终端";
+  return "Windows PowerShell";
 }
 
 export function formatCliVersion(version: string): string {

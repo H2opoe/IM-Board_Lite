@@ -6,6 +6,16 @@ use crate::analysis::message_noise;
 
 use super::sources::{is_aggregate, source_label};
 
+// Both rankings must use the same account-scoped definition of "self".
+const SELF_SENDER_SQL: &str = "(lower(trim(sender_id)) in ('me', 'self')
+    or trim(sender_name) = '我' or lower(trim(sender_name)) in ('me', 'self')
+    or (daily_messages.platform = 'feishu' and sender_id <> '' and sender_id =
+        coalesce(nullif(json_extract(profiles.config_json, '$.feishuSelfOpenId'), ''),
+                 json_extract(profiles.config_json, '$.accountIdentity.userId')))
+    or (daily_messages.platform = 'dingtalk' and sender_id <> '' and
+        (sender_id = json_extract(profiles.config_json, '$.accountIdentity.userId')
+         or sender_id in (select value from json_each(coalesce(json_extract(profiles.config_json, '$.dingtalkSelfIds'), '[]'))))))";
+
 pub fn chat_rank(
     conn: &rusqlite::Connection,
     day: &str,
@@ -20,12 +30,12 @@ pub fn chat_rank(
     if !is_aggregate(profile_id) {
         sql.push_str(" and daily_messages.profile_id = ?2");
     }
-    sql.push_str(
+    sql.push_str(&format!(
         " group by daily_messages.profile_id, chat_id, chat_name, daily_messages.platform
-          having sum(case when lower(trim(sender_id)) in ('me', 'self') or trim(sender_name) = '我' or lower(trim(sender_name)) in ('me', 'self') then 1 else 0 end) > 0
-             and sum(case when lower(trim(sender_id)) not in ('me', 'self') and trim(sender_name) <> '我' and lower(trim(sender_name)) not in ('me', 'self') then 1 else 0 end) > 0
-          order by count(*) desc limit 10",
-    );
+          having sum(case when {SELF_SENDER_SQL} then 1 else 0 end) > 0
+             and sum(case when not coalesce({SELF_SENDER_SQL}, 0) then 1 else 0 end) > 0
+          order by count(*) desc limit 10"
+    ));
     let mut stmt = conn.prepare(&sql)?;
     if is_aggregate(profile_id) {
         let rows = stmt.query_map(params![day], map_chat_rank_row)?;
@@ -61,13 +71,13 @@ struct SenderRankRow {
     platform: String,
     remark: String,
     profile_id: String,
-    sender_id: String,
     sender_name: String,
     chat_id: String,
     chat_name: String,
     is_group: bool,
     msg_type: String,
     content: String,
+    is_self: bool,
 }
 
 fn sender_rank(
@@ -77,13 +87,12 @@ fn sender_rank(
     label_key: &str,
 ) -> anyhow::Result<Vec<serde_json::Value>> {
     let reciprocal_direct_chats = reciprocal_direct_chats(conn, day, profile_id)?;
-    let mut sql = "select daily_messages.platform,
+    let mut sql = format!("select daily_messages.platform,
                           coalesce(json_extract(profiles.config_json, '$.remark'), ''),
-                          daily_messages.profile_id, sender_id, sender_name, chat_id, chat_name, is_group, msg_type, content
+                          daily_messages.profile_id, coalesce({SELF_SENDER_SQL}, 0), sender_name, chat_id, chat_name, is_group, msg_type, content
                    from daily_messages
                    left join profiles on profiles.id = daily_messages.profile_id
-                   where day = ?1"
-        .to_owned();
+                   where day = ?1");
     if !is_aggregate(profile_id) {
         sql.push_str(" and daily_messages.profile_id = ?2");
     }
@@ -105,7 +114,7 @@ fn sender_rank(
         {
             continue;
         }
-        if is_self_sender(&row.sender_id) || is_self_sender(&row.sender_name) {
+        if row.is_self {
             continue;
         }
         if let Some(sender) = display_sender(&row) {
@@ -137,13 +146,13 @@ fn map_sender_rank_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<SenderRankRo
         platform: row.get(0)?,
         remark: row.get(1)?,
         profile_id: row.get(2)?,
-        sender_id: row.get(3)?,
         sender_name: row.get(4)?,
         chat_id: row.get(5)?,
         chat_name: row.get(6)?,
         is_group: row.get::<_, i64>(7)? == 1,
         msg_type: row.get(8)?,
         content: row.get(9)?,
+        is_self: row.get::<_, i64>(3)? != 0,
     })
 }
 
@@ -154,16 +163,17 @@ fn reciprocal_direct_chats(
 ) -> anyhow::Result<HashSet<(String, String)>> {
     let mut sql = "select profile_id, chat_id
                    from daily_messages
+                   left join profiles on profiles.id = daily_messages.profile_id
                    where day = ?1 and is_group = 0"
         .to_owned();
     if !is_aggregate(profile_id) {
         sql.push_str(" and profile_id = ?2");
     }
-    sql.push_str(
+    sql.push_str(&format!(
         " group by profile_id, chat_id
-          having sum(case when lower(trim(sender_id)) in ('me', 'self') or trim(sender_name) = '我' or lower(trim(sender_name)) in ('me', 'self') then 1 else 0 end) > 0
-             and sum(case when lower(trim(sender_id)) not in ('me', 'self') and trim(sender_name) <> '我' and lower(trim(sender_name)) not in ('me', 'self') then 1 else 0 end) > 0",
-    );
+          having sum(case when {SELF_SENDER_SQL} then 1 else 0 end) > 0
+             and sum(case when not coalesce({SELF_SENDER_SQL}, 0) then 1 else 0 end) > 0"
+    ));
     let mut stmt = conn.prepare(&sql)?;
     let rows = if is_aggregate(profile_id) {
         stmt.query_map(params![day], map_profile_chat_row)?
@@ -215,3 +225,7 @@ fn is_self_sender(value: &str) -> bool {
         "me" | "self" | "我"
     )
 }
+
+#[cfg(test)]
+#[path = "ranking_identity_tests.rs"]
+mod identity_tests;

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "assets": {
+    "llama-b8987-bin-win-cpu-x64.zip": {
+      "sha256": "37ed3db3c24ac91b23dc375ea7d9458a8813f93f0cc05ca2bf533f99b38f4f05",
+      "sizeBytes": 15918346,
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b8987/llama-b8987-bin-win-cpu-x64.zip"
+    }
+  }
+}

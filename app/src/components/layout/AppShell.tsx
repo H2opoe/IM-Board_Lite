@@ -1,3 +1,4 @@
+import { shouldHandleOutsideMouseDetection } from "../../utils/windowActivity";
 import { ChevronRight, KeyRound, LayoutDashboard, Link2, Monitor, Moon, Settings, SunMedium, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useRef, useState } from "react";
@@ -16,6 +17,9 @@ export type AppView = "dashboard" | "profiles" | "settings" | "appSettings";
 
 interface Props {
   profiles: ImProfile[];
+  profilesError: string;
+  isRefreshingProfiles: boolean;
+  onReloadProfiles: () => void;
   activeProfileId: string;
   activeView: AppView;
   drawerItem: ActionItem | null;
@@ -42,6 +46,9 @@ function startWindowDrag(event: React.MouseEvent<HTMLElement>) {
 
 export function AppShell({
   profiles,
+  profilesError,
+  isRefreshingProfiles,
+  onReloadProfiles,
   activeProfileId,
   activeView,
   drawerItem,
@@ -128,6 +135,14 @@ export function AppShell({
         </nav>
 
         <div className="section-title">已绑定平台</div>
+        {profilesError && (
+          <div role="alert" className="empty-state">
+            <p>{profilesError}</p>
+            <button className="secondary-button" disabled={isRefreshingProfiles} onClick={onReloadProfiles}>
+              {isRefreshingProfiles ? "正在加载账号…" : "重新加载账号"}
+            </button>
+          </div>
+        )}
         <nav className="profile-list">
           {profiles.map((profile) => {
             const subtitle = profileSubtitle(profile);
@@ -202,7 +217,7 @@ export function AppShell({
 
       {renderedDrawerItem && (
         <>
-          <div className={`drawer-dismiss-layer ${drawerStateClass}`} onMouseDown={onCloseDrawer} aria-hidden="true" />
+          <div className={`drawer-dismiss-layer ${drawerStateClass}`} onMouseDown={() => { if (shouldHandleOutsideMouseDetection()) onCloseDrawer(); }} aria-hidden="true" />
           <aside
             className={`detail-drawer ${drawerStateClass}`}
             role="dialog"

@@ -3,9 +3,8 @@ import { Check, ChevronDown, Copy, Download, KeyRound, Loader2, RotateCcw, Save,
 import { FloatingNotice, FloatingNoticeStack } from "../../components/shared/FloatingNotice";
 import { APP_MESSAGES } from "../../constants/messages";
 import {
-  defaultAnalysisBatchSize,
+  configForProvider,
   localDeepseekDisplayName,
-  providerDefaults,
   providerOptions
 } from "./aiConfigDefaults";
 import { formatBytes, useAiSettingsController } from "./useAiSettingsController";
@@ -50,17 +49,7 @@ export function SettingsPage() {
   const isLocalProvider = config.provider.includes("本地");
 
   function changeProvider(provider: string) {
-    const defaults = providerDefaults[provider];
-    const knownBaseUrls = Object.values(providerDefaults).map((item) => item.baseUrl);
-    updateConfigDraft({
-      ...config,
-      provider,
-      apiKey: provider.includes("本地") ? "" : config.apiKey,
-      clearApiKey: false,
-      baseUrl: defaults && knownBaseUrls.includes(config.baseUrl) ? defaults.baseUrl : config.baseUrl,
-      model: defaults && (!config.model || Object.values(providerDefaults).some((item) => item.model === config.model)) ? defaults.model : config.model,
-      analysisBatchSize: defaultAnalysisBatchSize(provider)
-    });
+    updateConfigDraft(configForProvider(config, provider));
   }
 
   function renderSettingsMessage() {

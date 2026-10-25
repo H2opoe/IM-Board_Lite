@@ -17,7 +17,9 @@ IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整�
 ### @DingTalk-Real-AI/dingtalk-workspace-cli
 - License: Apache-2.0
 - Source: https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli
-- Distribution: hot-updated into the application support directory when needed; not bundled in the base installer.
+- Included version: 1.0.65-imboard.1, the IM-Board adaptation of upstream dingtalk-workspace-cli 1.0.65 for account isolation and dependency updates.
+- Distribution: bundled in the base installer and deployed into the application support directory when needed.
+- License and inventory files: runtime/dws/1.0.65-imboard.1/win-x64/LICENSE, THIRD-PARTY-NOTICES.txt, and dependencies.json within the bundled resource directory.
 
 ## Optional Hot-Updated AI Models
 
@@ -36,4 +38,6 @@ IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整�
 
 ## Application Dependencies
 
-The application also uses frontend and Tauri/Rust ecosystem dependencies such as React, Tauri, Vite, Recharts, lucide-react, rusqlite, tokio, reqwest, and related transitive packages. Current dependency metadata is primarily MIT, Apache-2.0, ISC, BSD-3-Clause, and compatible permissive licenses. Before a public release, regenerate this notice from package-lock.json and Cargo.lock to match the exact release artifact.`;
+Frontend dependency notices and original license texts: /third-party/application/frontend/THIRD-PARTY-NOTICES.txt. The corresponding package inventory, versions, source integrity records, and text hashes are in /third-party/application/frontend/inventory.json. This inventory covers the non-dev package-lock candidates and includes internal vendored notices; it does not assert which packages Vite links into the application.
+
+Tauri/Rust dependencies require their own target-specific inventory and original license texts. The frontend files do not cover Rust, external CLI tools, Python, or AI models, and do not establish license compatibility for the complete application.`;

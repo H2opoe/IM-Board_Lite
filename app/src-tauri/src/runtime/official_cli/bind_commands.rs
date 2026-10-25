@@ -1,10 +1,5 @@
 use std::path::Path;
 
-use super::{
-    WINDOWS_DINGTALK_AUTH_TOKEN_VALUE, WINDOWS_DINGTALK_PROFILE_TOKEN_FILE,
-    WINDOWS_DINGTALK_REGISTRY_KEY,
-};
-
 pub fn default_bind_command(platform: &str, cli_path: &Path, config_dir: &Path) -> String {
     default_bind_command_windows(platform, cli_path, config_dir)
 }
@@ -44,7 +39,7 @@ fn default_bind_command_windows(platform: &str, cli_path: &Path, config_dir: &Pa
     let env = OfficialCliProfileEnv::new(config_dir);
     match platform {
         "wecom" => format!(
-            "$env:WECOM_CLI_CONFIG_DIR = {}; {} init",
+            "$env:WECOM_CLI_CONFIG_DIR = {}; {} auth init",
             powershell_single_quote(config_dir),
             powershell_cli_invocation(cli_path)
         ),
@@ -81,36 +76,21 @@ fn default_bind_command_windows(platform: &str, cli_path: &Path, config_dir: &Pa
             )
         }
         "dingtalk" => {
-            // DWS 的 Windows token 仍在 HKCU 注册表中，文件侧只保存当前 profile 的 token 副本，
-            // 运行前临时导入、结束后恢复，避免多个账号互相串授权。
-            let token_path = env
-                .dws_keychain_dir()
-                .join(WINDOWS_DINGTALK_PROFILE_TOKEN_FILE);
-            let auth_identity = config_dir
+            let identity = config_dir
                 .parent()
-                .and_then(|path| path.file_name())
-                .and_then(|value| value.to_str())
+                .and_then(|p| p.file_name())
+                .and_then(|p| p.to_str())
                 .unwrap_or("im-board-dingtalk");
-            let cli = powershell_cli_invocation(cli_path);
+            let cli = "Invoke-IMBoardDws";
+            let setup = format!("$env:DWS_CONFIG_DIR = {}; $env:DWS_CACHE_DIR = {}; $env:DWS_KEYCHAIN_DIR = {}; $env:TMP = {}; $env:TEMP = $env:TMP; $env:TMPDIR = $env:TMP; $env:DWS_AUTH_IDENTITY = {}; $env:DWS_TENANT = $env:DWS_AUTH_IDENTITY; $env:DINGTALK_DWS_AGENTCODE = $env:DWS_AUTH_IDENTITY;",powershell_single_quote(&env.config_dir),powershell_single_quote(&env.cache_dir),powershell_single_quote(&env.dws_keychain_dir()),powershell_single_quote(&env.tmp_dir),powershell_single_quote_text(identity));
+            let body = format!(
+                "Write-Host '[1/3] 正在登录钉钉，请完成浏览器扫码。'; {cli} auth login --force; if ($LASTEXITCODE -eq 0) {{ {cli} auth status --format json }}; if ($LASTEXITCODE -eq 0) {{ Write-Host '[2/3] 登录已成功，正在授权消息读取权限（最长180秒）；请留意浏览器授权页。'; Invoke-IMBoardDwsBounded -TimeoutSeconds 180 -NativeArguments @('pat', 'chmod', 'chat.message:list', '--agentCode', {}, '--grant-type', 'permanent', '--format', 'json') }}; if ($LASTEXITCODE -eq 0) {{ Write-Host '[3/3] 正在核验账号身份。'; {cli} contact user get-self --format json }}; if ($LASTEXITCODE -eq 0) {{ Write-Host '钉钉授权检查已完成。请返回 IM-Board 保存配置。' }}",
+                powershell_single_quote_text(identity)
+            );
             format!(
-                "$env:DWS_CONFIG_DIR = {}; $env:DWS_CACHE_DIR = {}; $env:DWS_KEYCHAIN_DIR = {}; $env:TMP = {}; $env:TEMP = {}; $env:TMPDIR = {}; $env:DWS_AUTH_IDENTITY = {}; $env:DWS_TENANT = {}; $env:DINGTALK_DWS_AGENTCODE = {}; $dwsRegistryKey = {}; $dwsTokenValue = {}; $dwsProfileTokenPath = {}; $dwsPreviousToken = $null; if (Test-Path $dwsRegistryKey) {{ $dwsPrevious = Get-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -ErrorAction SilentlyContinue; if ($null -ne $dwsPrevious) {{ $dwsPreviousToken = $dwsPrevious.$dwsTokenValue }} }}; function Set-DwsProfileToken {{ New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dwsProfileTokenPath) | Out-Null; if (Test-Path $dwsProfileTokenPath) {{ New-Item -Force -Path $dwsRegistryKey | Out-Null; Set-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -Value ([System.IO.File]::ReadAllText($dwsProfileTokenPath).Trim()) }} elseif (Test-Path $dwsRegistryKey) {{ Remove-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -ErrorAction SilentlyContinue }} }}; function Save-DwsProfileToken {{ $dwsCurrent = Get-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -ErrorAction SilentlyContinue; if ($null -eq $dwsCurrent) {{ throw '钉钉授权未写入当前账号 token。' }}; [System.IO.File]::WriteAllText($dwsProfileTokenPath, [string]$dwsCurrent.$dwsTokenValue, [System.Text.Encoding]::ASCII) }}; function Restore-DwsPreviousToken {{ if ($null -eq $dwsPreviousToken) {{ if (Test-Path $dwsRegistryKey) {{ Remove-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -ErrorAction SilentlyContinue }} }} else {{ New-Item -Force -Path $dwsRegistryKey | Out-Null; Set-ItemProperty -Path $dwsRegistryKey -Name $dwsTokenValue -Value $dwsPreviousToken }} }}; try {{ Set-DwsProfileToken; {} auth login --force; if ($LASTEXITCODE -eq 0) {{ {} auth status --format json }}; if ($LASTEXITCODE -eq 0) {{ {} pat chmod chat.message:list --agentCode {} --grant-type permanent }}; if ($LASTEXITCODE -eq 0) {{ {} contact user get-self --format json }}; if ($LASTEXITCODE -eq 0) {{ Save-DwsProfileToken }} }} finally {{ Restore-DwsPreviousToken }}",
-                powershell_single_quote(&env.config_dir),
-                powershell_single_quote(&env.cache_dir),
-                powershell_single_quote(&env.dws_keychain_dir()),
-                powershell_single_quote(&env.tmp_dir),
-                powershell_single_quote(&env.tmp_dir),
-                powershell_single_quote(&env.tmp_dir),
-                powershell_single_quote_text(auth_identity),
-                powershell_single_quote_text(auth_identity),
-                powershell_single_quote_text(auth_identity),
-                powershell_single_quote_text(WINDOWS_DINGTALK_REGISTRY_KEY),
-                powershell_single_quote_text(WINDOWS_DINGTALK_AUTH_TOKEN_VALUE),
-                powershell_single_quote(&token_path),
-                cli,
-                cli,
-                cli,
-                powershell_single_quote_text(auth_identity),
-                cli
+                "{} {}",
+                setup,
+                crate::runtime::dws_auth::session(config_dir, cli_path, &body, false)
             )
         }
         _ => powershell_single_quote(cli_path),
@@ -185,17 +165,24 @@ mod tests {
     }
 
     #[test]
-    fn dingtalk_bind_uses_dws_dirs_and_preserves_registry_token() {
+    fn dingtalk_bind_uses_account_namespace_without_global_token_swap() {
         let command = command("dingtalk");
         assert!(command.contains("DWS_CONFIG_DIR"));
         assert!(command.contains("DWS_CACHE_DIR"));
         assert!(command.contains("DWS_KEYCHAIN_DIR"));
         assert!(command.contains("$env:TMP = "));
         assert!(command.contains("$env:TEMP = "));
-        assert!(command.contains(WINDOWS_DINGTALK_PROFILE_TOKEN_FILE));
-        assert!(command.contains("Set-DwsProfileToken"));
-        assert!(command.contains("Save-DwsProfileToken"));
-        assert!(command.contains("Restore-DwsPreviousToken"));
+        assert!(command.contains("IM_BOARD_DWS_NAMESPACE"));
+        assert!(command.contains("Invoke-IMBoardDws auth login --force"));
+        assert!(command.contains("[1/3]"));
+        assert!(command.contains("[2/3]"));
+        assert!(command.contains("[3/3]"));
+        assert!(command.contains("Invoke-IMBoardDwsBounded -TimeoutSeconds 180"));
+        assert!(command.contains("'chat.message:list'"));
+        assert!(command.contains("'--grant-type', 'permanent'"));
+        assert!(!command.contains("Write-DwsSessionToken"));
+        assert!(command.contains("Get-FileHash"));
+        assert!(!command.contains("dwsPreviousToken"));
         assert!(!command.contains("USERPROFILE"));
         assert!(!command.contains("APPDATA"));
         assert!(!command.contains("LOCALAPPDATA"));

@@ -97,17 +97,13 @@ export async function updatePlatformCli(platform: Platform): Promise<PlatformCli
   return requireTauri("更新平台CLI");
 }
 
-export async function cleanupUnusedPlatformCli(platform: Platform): Promise<boolean> {
-  if (isTauri) return invoke("cleanup_unused_platform_cli", { platform });
-  return requireTauri("清理未使用的平台CLI");
-}
-
 function formatBridgeError(envelope: { warnings?: string[]; error?: { code?: string; message: string } }) {
   if (
     envelope.error?.code === "WECOM_MESSAGE_PERMISSION_UNSUPPORTED" ||
     envelope.error?.code === "WECOM_NOT_AUTHENTICATED" ||
     envelope.error?.code === "FEISHU_NOT_AUTHENTICATED" ||
     envelope.error?.code === "DINGTALK_NOT_AUTHENTICATED" ||
+    envelope.error?.code === "DINGTALK_AUTHORIZATION_BUSY" ||
     envelope.error?.code === "DINGTALK_MESSAGE_PERMISSION_MISSING"
   ) {
     return envelope.error.message;
@@ -134,6 +130,7 @@ function bridgeErrorCodeLabel(code?: string) {
   const labels: Record<string, string> = {
     BRIDGE_CRASHED: "桥接进程执行失败",
     BRIDGE_SPAWN_FAILED: "桥接进程启动失败",
+    BRIDGE_TIMEOUT: "桥接进程执行超时",
     MISSING_CHAT: "缺少会话参数",
     WECOM_PROFILE_NOT_FOUND: "缺少企业微信账号配置",
     WECOM_UNSUPPORTED_COMMAND: "企业微信命令不支持",

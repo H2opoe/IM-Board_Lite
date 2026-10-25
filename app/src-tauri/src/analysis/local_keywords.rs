@@ -18,7 +18,6 @@ pub(crate) use policy::{is_generic_single_term, is_local_stopword, is_low_semant
 pub(crate) use scoring::local_keywords;
 pub(crate) use text_cleaning::{
     clean_link_or_app_message_text, clean_plain_message_text, contains_disallowed_media_content,
-    contains_group_membership_notice, contains_unsupported_client_notice,
     keyword_texts_from_message_content, should_skip_keyword_message,
 };
 

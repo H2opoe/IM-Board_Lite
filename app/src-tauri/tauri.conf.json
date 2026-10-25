@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "IM-Board",
-  "mainBinaryName": "IM-Board",
+  "productName": "IM-Board Lite",
+  "mainBinaryName": "IM-Board-Lite",
   "version": "3.0.0",
-  "identifier": "com.local.im-board",
+  "identifier": "com.local.im-board-lite",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
@@ -19,7 +19,10 @@
         "minWidth": 760,
         "minHeight": 600,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "label": "main",
+        "visible": true,
+        "center": true
       }
     ],
     "security": {
@@ -38,7 +41,9 @@
     "resources": [
       "../runtime/llama.cpp/*/win-cpu-x64/**/*",
       "icons/icon-light.png",
-      "icons/icon-dark.png"
+      "icons/icon-dark.png",
+      "../runtime/dws/*/win-x64/**/*",
+      "../shared/third-party/process-wrap/*"
     ]
   }
 }

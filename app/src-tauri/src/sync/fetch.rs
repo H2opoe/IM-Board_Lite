@@ -1,6 +1,7 @@
+use super::outcome::ProfileSyncOutcome;
+use crate::messages::import_window::MessageImportWindow;
 use std::collections::{HashMap, HashSet};
 
-use chrono::{Datelike, Duration, Local, NaiveDate, TimeZone};
 use futures::future::join_all;
 use tauri::State;
 
@@ -30,78 +31,8 @@ struct FetchJob {
     args: HashMap<String, String>,
 }
 
-#[derive(Debug, Clone)]
-pub(crate) struct MessageImportWindow {
-    pub(crate) day: String,
-    pub(crate) start_timestamp: i64,
-    pub(crate) end_timestamp: i64,
-}
-
-impl MessageImportWindow {
-    pub(crate) fn from_dashboard_day(day: &crate::daily_cache::DashboardDay) -> Self {
-        Self {
-            day: day.day.clone(),
-            start_timestamp: day.day_start_timestamp,
-            end_timestamp: day.sync_end_timestamp,
-        }
-    }
-
-    pub(crate) fn natural_day(day: &str) -> Option<Self> {
-        let date = NaiveDate::parse_from_str(day, "%Y-%m-%d").ok()?;
-        let start = Local
-            .with_ymd_and_hms(date.year(), date.month(), date.day(), 0, 0, 0)
-            .single()?;
-        let end = start + Duration::days(1) - Duration::seconds(1);
-        Some(Self {
-            day: day.to_owned(),
-            start_timestamp: start.timestamp(),
-            end_timestamp: end.timestamp(),
-        })
-    }
-
-    pub(crate) fn contains(&self, timestamp: i64) -> bool {
-        timestamp >= self.start_timestamp && timestamp <= self.end_timestamp
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct ProfileSyncOutcome {
-    pub(crate) profile_id: String,
-    pub(crate) succeeded: bool,
-    pub(crate) inserted_messages: i64,
-    pub(crate) warnings: Vec<String>,
-    pub(crate) error: Option<String>,
-}
-
-impl ProfileSyncOutcome {
-    fn from_reads(
-        profile: &ImProfile,
-        inserted_messages: i64,
-        mut warnings: Vec<String>,
-        errors: Vec<String>,
-    ) -> Self {
-        let error = (!errors.is_empty()).then(|| errors.join("；"));
-        warnings.extend(errors);
-        Self {
-            profile_id: profile.id.clone(),
-            succeeded: error.is_none(),
-            inserted_messages,
-            warnings,
-            error,
-        }
-    }
-
-    fn failed(profile: &ImProfile, message: String) -> Self {
-        Self {
-            profile_id: profile.id.clone(),
-            succeeded: false,
-            inserted_messages: 0,
-            warnings: vec![message.clone()],
-            error: Some(message),
-        }
-    }
-}
-
+// Lite fetch retains its edition-specific connector paths while context extraction is scheduled.
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn sync_target_profiles_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -132,6 +63,8 @@ fn connector_for_profile(profile: &ImProfile) -> Result<ConnectorAdapter, String
         .ok_or_else(|| format!("Lite版暂不支持{}账号同步。", profile.label))
 }
 
+// See sync_target_profiles_messages.
+#[allow(clippy::too_many_arguments)]
 async fn sync_concurrent_profiles_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -167,6 +100,8 @@ async fn sync_concurrent_profiles_messages(
     Ok(outcomes)
 }
 
+// See sync_target_profiles_messages.
+#[allow(clippy::too_many_arguments)]
 async fn sync_profile_messages_with_notice(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -210,6 +145,8 @@ fn profile_sync_failure_message(profile: &ImProfile, error: &str) -> String {
     )
 }
 
+// See sync_target_profiles_messages.
+#[allow(clippy::too_many_arguments)]
 async fn sync_profile_messages(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -240,7 +177,7 @@ async fn sync_profile_messages(
         0,
     );
 
-    if (connector.sync_mode)() == ProfileSyncMode::WindowMessagesWithGroupFallback {
+    if (connector.sync_mode)() == ProfileSyncMode::WindowMessages {
         let (_fetched, inserted, errors) = fetch_dingtalk_window_messages(
             app,
             state,
@@ -265,8 +202,8 @@ async fn sync_profile_messages(
         ));
     }
 
-    let warning_count_before_discovery = warnings.len();
-    let contact_sessions = collect_session_discovery_steps(
+    let mut discovery_errors = Vec::new();
+    let contact_sessions = match collect_session_discovery_steps(
         app,
         state,
         &profile,
@@ -277,8 +214,15 @@ async fn sync_profile_messages(
         cache_dir.clone(),
         &mut warnings,
     )
-    .await?;
-    let discovery_reported_warning = warnings.len() > warning_count_before_discovery;
+    .await
+    {
+        Ok(sessions) => sessions,
+        Err(error) if is_sync_cancelled_message(&error) => return Err(error),
+        Err(error) => {
+            discovery_errors.push(error);
+            Vec::new()
+        }
+    };
 
     let mut all_sessions = contact_sessions;
     if (connector.should_run_session_list)() {
@@ -313,9 +257,11 @@ async fn sync_profile_messages(
         all_sessions.extend(value_array(&sessions.data).into_iter().cloned());
     }
     let all_sessions = dedupe_sessions(all_sessions);
-    if all_sessions.is_empty() && !discovery_reported_warning {
+    if all_sessions.is_empty() {
         if let Some(warning) = (connector.empty_session_warning)(&profile) {
-            warnings.push(warning);
+            if !warnings.contains(&warning) {
+                warnings.push(warning);
+            }
         }
     }
 
@@ -339,7 +285,7 @@ async fn sync_profile_messages(
         total,
     );
 
-    let (_, profile_inserted_messages, errors) = fetch_recent_session_messages(
+    let (_, profile_inserted_messages, mut errors) = fetch_recent_session_messages(
         app,
         state,
         &profile,
@@ -353,6 +299,7 @@ async fn sync_profile_messages(
         &mut warnings,
     )
     .await?;
+    errors.extend(discovery_errors);
     inserted_messages += profile_inserted_messages;
     if errors.is_empty() {
         emit_profile_sync_done(app, &profile, inserted_messages);
@@ -366,6 +313,8 @@ async fn sync_profile_messages(
     ))
 }
 
+// The discovery adapter contract stays explicit for platform adapters.
+#[allow(clippy::too_many_arguments)]
 async fn collect_session_discovery_steps(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -409,6 +358,15 @@ async fn collect_session_discovery_steps(
                 .map_err(|err| err.to_string())?;
                 warnings.extend(contacts.warnings);
                 if contacts.ok {
+                    if profile.platform == "wecom" {
+                        let conn = state.db.lock().map_err(|err| err.to_string())?;
+                        crate::messages::contact_names::repair_wecom_sender_names(
+                            &conn,
+                            &profile.id,
+                            &contacts.data,
+                        )
+                        .map_err(|err| err.to_string())?;
+                    }
                     sessions.extend(value_array(&contacts.data).into_iter().cloned());
                 } else {
                     return Err(contacts
@@ -449,6 +407,21 @@ async fn collect_session_discovery_steps(
                 .map_err(|err| err.to_string())?;
                 warnings.extend(searched_sessions.warnings);
                 if searched_sessions.ok {
+                    if profile.platform == "feishu" {
+                        if let Some(open_id) = searched_sessions
+                            .meta
+                            .get("selfOpenId")
+                            .and_then(serde_json::Value::as_str)
+                        {
+                            let conn = state.db.lock().map_err(|err| err.to_string())?;
+                            crate::messages::account_identity::record_feishu_self_identity(
+                                &conn,
+                                &profile.id,
+                                open_id,
+                            )
+                            .map_err(|err| err.to_string())?;
+                        }
+                    }
                     sessions.extend(value_array(&searched_sessions.data).into_iter().cloned());
                 } else {
                     return Err(searched_sessions
@@ -497,6 +470,7 @@ pub(crate) fn refresh_local_keyword_stats(
         .lock()
         .map_err(|err| err.to_string())
         .and_then(|conn| {
+            crate::daily_cache::ensure_current_day(&conn, day).map_err(|err| err.to_string())?;
             ai::persist_local_keyword_stats_with_status(&conn, day, &profile.id, "local_final")
                 .map_err(|err| err.to_string())
         });
@@ -533,33 +507,5 @@ mod tests {
             profile_sync_failure_message(&profile, "Bridge进程执行失败"),
             "【飞书 · 工作号】同步失败：Bridge进程执行失败"
         );
-    }
-}
-
-#[cfg(test)]
-mod outcome_tests {
-    use super::*;
-    #[test]
-    fn read_failures_preserve_import_count_without_advancing_success() {
-        let profile = ImProfile {
-            id: "test".into(),
-            platform: "feishu".into(),
-            label: "test".into(),
-            enabled: true,
-            config_json: serde_json::json!({}),
-            status: "normal".into(),
-            sort_order: 0,
-            created_at: String::new(),
-            updated_at: String::new(),
-        };
-        let failed =
-            ProfileSyncOutcome::from_reads(&profile, 7, vec![], vec!["read failed".into()]);
-        assert!(!failed.succeeded);
-        assert_eq!(failed.inserted_messages, 7);
-        assert_eq!(failed.error.as_deref(), Some("read failed"));
-        assert_eq!(failed.warnings, vec!["read failed"]);
-        let empty = ProfileSyncOutcome::from_reads(&profile, 0, vec![], vec![]);
-        assert!(empty.succeeded);
-        assert!(empty.error.is_none());
     }
 }

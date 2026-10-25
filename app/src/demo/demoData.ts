@@ -1,5 +1,6 @@
 import type { ActionItem, DashboardData, SourceStat } from "../features/dashboard/model/types";
 import type { ImProfile, Platform } from "../features/profiles/model/types";
+import { formatLocalDate } from "../utils/dates";
 
 const now = new Date();
 const iso = (hour: number, minute = 0) => {
@@ -41,7 +42,7 @@ export function demoDashboard(profileId = "aggregate"): DashboardData {
   const openTasks = actions.filter((item) => item.itemType === "task" && item.status === "open").length;
 
   return {
-    day: new Date().toISOString().slice(0, 10),
+    day: formatLocalDate(new Date()),
     metrics: [
       { key: "messages", label: "今天消息数", value: messageTotal, sources: sourceList },
       { key: "replies", label: "待我回复", value: openReplies, sources: sourceList },

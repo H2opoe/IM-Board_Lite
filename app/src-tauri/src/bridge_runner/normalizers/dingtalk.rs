@@ -33,9 +33,9 @@ pub(in crate::bridge_runner) fn normalize_dingtalk_chats(
                 Some(serde_json::json!({
                     "chatId": chat_id,
                     "chatName": chat_name,
-                    "isGroup": true,
+                    "isGroup": dingtalk_is_group_message(chat),
                     "chatType": json_string(chat, &["type", "conversationType", "conversation_type"]).unwrap_or_else(|| "group".to_owned()),
-                    "lastMessageTimestamp": dingtalk_json_timestamp(chat, &["lastMessageTime", "last_message_time", "time", "updatedAt"]),
+                    "lastMessageTimestamp": dingtalk_json_timestamp(chat, &["latestMessageTime", "lastMessageTime", "last_message_time", "time", "updatedAt"]),
                     "raw": chat
                 }))
             })
@@ -80,9 +80,10 @@ pub(in crate::bridge_runner) fn normalize_dingtalk_messages(
                     &["senderId", "sender_id", "senderStaffId", "sender", "fromUserId", "from"],
                 )
                 .unwrap_or_default();
-                let sender_name = json_string(message, &["senderName", "sender_name", "fromName", "displayName"])
+                let sender_name = json_string(message, &["senderName", "sender_name", "fromName", "displayName", "sender"])
                     .unwrap_or_else(|| sender_id.clone());
-                let content = dingtalk_message_content(message, &msg_type)?;
+                let content = dingtalk_message_content(message, &msg_type)
+                    .or_else(|| (msg_type != "text").then(|| format!("[{msg_type}]")))?;
                 let normalized_chat_id = json_string(message, &["openConversationId", "conversationId", "chatId", "chat_id"])
                     .unwrap_or_else(|| chat_id.clone());
                 let normalized_chat_name = json_string(message, &["conversationTitle", "chatName", "chat_name"])
@@ -106,6 +107,9 @@ pub(in crate::bridge_runner) fn normalize_dingtalk_messages(
 }
 
 pub(in crate::bridge_runner) fn dingtalk_is_group_message(message: &serde_json::Value) -> bool {
+    if let Some(single) = message.get("singleChat").and_then(|v| v.as_bool()) {
+        return !single;
+    }
     if let Some(value) = message
         .get("isGroup")
         .or_else(|| message.get("is_group"))
@@ -125,7 +129,11 @@ pub(in crate::bridge_runner) fn dingtalk_is_group_message(message: &serde_json::
     )
     .unwrap_or_default()
     .to_ascii_lowercase();
-    !(kind.contains("single") || kind.contains("private") || kind.contains("p2p") || kind == "1")
+    !(kind.contains("direct")
+        || kind.contains("single")
+        || kind.contains("private")
+        || kind.contains("p2p")
+        || kind == "1")
 }
 
 pub(in crate::bridge_runner) fn dingtalk_message_content(
@@ -162,7 +170,25 @@ pub(in crate::bridge_runner) fn dingtalk_time_arg(value: &str) -> Option<String>
             .timestamp_opt(timestamp, 0)
             .single()
             .unwrap_or_else(Local::now)
-            .format("%Y-%m-%d %H:%M:%S")
-            .to_string()
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, false)
     })
+}
+
+#[cfg(test)]
+mod read_projection_tests {
+    use super::*;
+    #[test]
+    fn current_cli_projection_keeps_direct_and_group_identity_and_media() {
+        let raw = serde_json::json!({"data":{"messages":[
+            {"messageId":"m1","conversationId":"direct","conversationTitle":"Alice","senderId":"u1","sender":"Alice","singleChat":true,"createTime":1792800000000i64,"text":"fixture text","messageType":"text"},
+            {"messageId":"m2","conversationId":"group","conversationTitle":"Project","senderId":"u2","sender":"Bob","singleChat":false,"createTime":1792800001000i64,"text":null,"messageType":"image"}
+        ]}});
+        let messages = normalize_dingtalk_messages(&raw, &HashMap::new());
+        assert_eq!(messages.as_array().unwrap().len(), 2);
+        assert_eq!(messages[0]["chatId"], "direct");
+        assert_eq!(messages[0]["senderName"], "Alice");
+        assert_eq!(messages[0]["isGroup"], false);
+        assert_eq!(messages[1]["isGroup"], true);
+        assert_eq!(messages[1]["content"], "[image]");
+    }
 }

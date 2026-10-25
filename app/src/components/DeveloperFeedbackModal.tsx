@@ -1,3 +1,5 @@
+import { shouldHandleOutsideMouseDetection } from "../utils/windowActivity";
+import { useEffect } from "react";
 import { ExternalLink, X } from "lucide-react";
 
 interface Props {
@@ -7,8 +9,16 @@ interface Props {
 const feedbackUrl = "https://github.com/H2opoe/IM-Board_Lite/issues";
 
 export function DeveloperFeedbackModal({ onClose }: Props) {
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
+    <div className="modal-backdrop" onMouseDown={() => { if (shouldHandleOutsideMouseDetection()) onClose(); }}>
       <article className="profile-modal developer-feedback-modal" onMouseDown={(event) => event.stopPropagation()}>
         <header className="modal-header">
           <div>

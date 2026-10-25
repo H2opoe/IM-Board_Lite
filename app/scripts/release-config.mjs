@@ -45,9 +45,9 @@ export function releaseConfig() {
     macosBundleVersion,
     edition: releaseManifest.edition,
     target: releaseManifest.target,
-    bundleId: "com.local.im-board",
-    productName: "IM-Board",
-    macosAppPath: join(appRoot, "src-tauri", "target", "universal-apple-darwin", "release", "bundle", "macos", "IM-Board.app"),
+    bundleId: "com.local.im-board-lite",
+    productName: "IM-Board Lite",
+    macosAppPath: join(appRoot, "src-tauri", "target", "universal-apple-darwin", "release", "bundle", "macos", "IM-Board Lite.app"),
     macosDmgPath: join(appRoot, "..", "artifacts", "macos", `IM-Board_${releaseLabel}_mac_universal.dmg`),
   };
 }

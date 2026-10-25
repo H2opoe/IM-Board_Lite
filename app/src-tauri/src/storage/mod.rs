@@ -1,24 +1,29 @@
+pub(crate) mod legacy_import;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicBool, AtomicU64},
-    Mutex,
+    Arc, Mutex,
 };
 
 use rusqlite::{params, Connection, OptionalExtension};
 use tokio::sync::Notify;
 
+mod backup;
+use backup::backup_database_before_upgrade;
 pub mod models;
 use models::LocalModelDownloadProgress;
 
 pub struct AppState {
     pub db: Mutex<Connection>,
+    pub profile_activity: crate::profile_manager::activity::ProfileActivity,
     pub binding_drafts: Mutex<std::collections::HashMap<String, models::ImProfile>>,
     pub app_dir: PathBuf,
     pub cache_dir: PathBuf,
-    pub sync_cancel_requested: AtomicBool,
+    pub sync_cancel_requested: Arc<AtomicBool>,
     pub sync_job_running: AtomicBool,
-    pub sync_bridge_pids: Mutex<Vec<u32>>,
+    pub sync_job_snapshot: Mutex<crate::sync::status::SyncJobSnapshot>,
+    pub sync_bridges: crate::bridge_registry::BridgeRegistry,
     pub auto_sync_frequency_minutes: AtomicU64,
     pub auto_sync_schedule_changed: Notify,
     pub local_model_runtime: crate::local_runtime_supervisor::LocalRuntimeSupervisor,
@@ -27,7 +32,7 @@ pub struct AppState {
     pub system_capabilities: crate::system_capabilities::SystemCapabilities,
 }
 
-const APP_DATA_DIR_NAME: &str = "IMBoard";
+const APP_DATA_DIR_NAME: &str = crate::edition::DATA_DIR_NAME;
 
 impl AppState {
     pub fn new() -> anyhow::Result<Self> {
@@ -47,6 +52,16 @@ impl AppState {
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         backup_database_before_upgrade(&conn, &app_dir)?;
         run_migrations(&mut conn)?;
+        if let Err(error) = crate::profile_manager::cleanup_queue::retry_pending(
+            &mut conn,
+            &[],
+            &app_dir,
+            &cache_dir,
+            None,
+        ) {
+            eprintln!("{error}");
+        }
+        crate::security::diagnostic_privacy::scrub_legacy_diagnostics(&mut conn)?;
         if let Err(error) = crate::security::credentials::migrate_legacy_ai_api_key(&conn) {
             eprintln!(
                 "{}",
@@ -57,14 +72,19 @@ impl AppState {
             .unwrap_or(DEFAULT_AUTO_SYNC_FREQUENCY_MINUTES);
         let system_capabilities = crate::system_capabilities::SystemCapabilities::detect(&app_dir);
 
+        let sync_cancel_requested = Arc::new(AtomicBool::new(false));
+        let sync_bridges =
+            crate::bridge_registry::BridgeRegistry::with_cancel_flag(sync_cancel_requested.clone());
         Ok(Self {
             db: Mutex::new(conn),
+            profile_activity: crate::profile_manager::activity::ProfileActivity::default(),
             binding_drafts: Mutex::new(std::collections::HashMap::new()),
             app_dir,
             cache_dir,
-            sync_cancel_requested: AtomicBool::new(false),
+            sync_cancel_requested,
             sync_job_running: AtomicBool::new(false),
-            sync_bridge_pids: Mutex::new(Vec::new()),
+            sync_job_snapshot: Mutex::new(crate::sync::status::SyncJobSnapshot::default()),
+            sync_bridges,
             auto_sync_frequency_minutes: AtomicU64::new(auto_sync_frequency_minutes),
             auto_sync_schedule_changed: Notify::new(),
             local_model_runtime: crate::local_runtime_supervisor::LocalRuntimeSupervisor::new()?,
@@ -114,59 +134,7 @@ fn stored_auto_sync_frequency_minutes(conn: &Connection) -> anyhow::Result<Optio
         .filter(|value| *value > 0))
 }
 
-const LATEST_SCHEMA_VERSION: i64 = 3;
-
-fn backup_database_before_upgrade(
-    conn: &Connection,
-    app_dir: &std::path::Path,
-) -> anyhow::Result<Option<PathBuf>> {
-    let current_version =
-        conn.pragma_query_value(None, "user_version", |row| row.get::<_, i64>(0))?;
-    let user_table_count: i64 = conn.query_row(
-        "select count(*) from sqlite_master where type = 'table' and name not like 'sqlite_%'",
-        [],
-        |row| row.get(0),
-    )?;
-    if current_version >= LATEST_SCHEMA_VERSION || user_table_count == 0 {
-        return Ok(None);
-    }
-
-    let backup_dir = app_dir.join("Backups");
-    fs::create_dir_all(&backup_dir)?;
-    let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S-%3f");
-    let backup_path = backup_dir.join(format!(
-        "app-v{current_version}-before-v{LATEST_SCHEMA_VERSION}-{timestamp}.sqlite"
-    ));
-    let mut destination = Connection::open(&backup_path)?;
-    let backup = rusqlite::backup::Backup::new(conn, &mut destination)?;
-    backup.run_to_completion(128, std::time::Duration::from_millis(25), None)?;
-    drop(backup);
-    let integrity: String =
-        destination.pragma_query_value(None, "integrity_check", |row| row.get(0))?;
-    if integrity != "ok" {
-        anyhow::bail!("升级前数据库备份完整性检查失败：{integrity}");
-    }
-    prune_database_backups(&backup_dir, 5)?;
-    Ok(Some(backup_path))
-}
-
-fn prune_database_backups(backup_dir: &std::path::Path, keep: usize) -> anyhow::Result<()> {
-    let mut backups = fs::read_dir(backup_dir)?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| {
-            path.file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| name.starts_with("app-v") && name.ends_with(".sqlite"))
-        })
-        .collect::<Vec<_>>();
-    backups.sort();
-    let remove_count = backups.len().saturating_sub(keep);
-    for path in backups.into_iter().take(remove_count) {
-        fs::remove_file(path)?;
-    }
-    Ok(())
-}
+const LATEST_SCHEMA_VERSION: i64 = 5;
 
 fn run_migrations(conn: &mut Connection) -> anyhow::Result<()> {
     conn.execute_batch("pragma journal_mode = WAL; pragma foreign_keys = ON;")?;
@@ -175,6 +143,11 @@ fn run_migrations(conn: &mut Connection) -> anyhow::Result<()> {
     if current_version > LATEST_SCHEMA_VERSION {
         anyhow::bail!(
             "数据库版本 {current_version} 高于当前应用支持的版本 {LATEST_SCHEMA_VERSION}，请升级应用后重试。"
+        );
+    }
+    if current_version == 4 {
+        anyhow::bail!(
+            "数据库版本 4 不属于当前 Lite 已支持的升级链，请保留原库并使用显式导入入口。"
         );
     }
     if current_version == LATEST_SCHEMA_VERSION {
@@ -193,6 +166,10 @@ fn run_migrations(conn: &mut Connection) -> anyhow::Result<()> {
     if current_version < 3 {
         migrate_schema_v3(&tx)?;
         tx.pragma_update(None, "user_version", 3)?;
+    }
+    if current_version < 5 {
+        tx.execute_batch(include_str!("../../migrations/005_action_detected_day.sql"))?;
+        tx.pragma_update(None, "user_version", 5)?;
     }
     tx.commit()?;
     Ok(())
@@ -317,6 +294,7 @@ mod tests {
         conn.execute_batch(
             "create table profiles(id text primary key);
              create table daily_messages(id text primary key);
+             create table action_items(id text primary key);
              create table ai_config(id integer primary key);
              create table ai_analysis_runs(id text primary key, created_at text not null);
              create table sync_state(
@@ -424,3 +402,6 @@ mod tests {
         assert_eq!(stored_auto_sync_frequency_minutes(&conn).unwrap(), Some(1));
     }
 }
+
+#[cfg(test)]
+mod action_day_migration_tests;

@@ -1,0 +1,2032 @@
+{
+  "schemaVersion": 1,
+  "application": {
+    "name": "im-board",
+    "version": "3.0.0"
+  },
+  "scope": "All package-lock v3 non-dev nodes are conservative frontend dependency candidates, including types and peer dependencies. This is not the Vite linked module graph or a license compatibility determination. Build-only dev nodes, Rust, CLI, models and Python are outside this inventory.",
+  "inputs": {
+    "packageLockSha256": "558f90d4ae47546ffd4c13b943bc917f27659cf10398bc62bbf6dcf8c371a1ac",
+    "packageJsonSha256": "89d515e327d9a409a5f0a0eba30bc5930b9cf551a6bb85e8c13e673250143bc3",
+    "supplementalSources": [
+      {
+        "path": "scripts/application-license-sources/frontend/lucide-react-0.468.0/Feather-LICENSE_MIT.txt",
+        "sha256": "afcab584f9ecaf796069d8b3cd2a02e3135d89743a2cf17def2e7935dad91e5d"
+      },
+      {
+        "path": "scripts/application-license-sources/frontend/sources.json",
+        "sha256": "4d9ad6f6e4c6be9bc1461c83d7a233f58fdabdcd7a1543d191f7c1597110531f"
+      },
+      {
+        "path": "scripts/application-license-sources/frontend/tauri-apps-plugin-dialog-2.7.0/LICENSE_APACHE-2.0.txt",
+        "sha256": "0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9"
+      },
+      {
+        "path": "scripts/application-license-sources/frontend/tauri-apps-plugin-dialog-2.7.0/LICENSE_MIT.txt",
+        "sha256": "89ff9689dcf9dd53968785d05a26f7898bb169dbfcada8d032b3e68cf0d55607"
+      },
+      {
+        "path": "scripts/application-license-sources/frontend/victory-vendor-36.9.2/LICENSE_MIT.txt",
+        "sha256": "34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4"
+      }
+    ]
+  },
+  "packages": [
+    {
+      "lockPath": "node_modules/@babel/runtime",
+      "name": "@babel/runtime",
+      "version": "7.29.2",
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.29.2.tgz",
+      "registryIntegrity": "sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "a34bfb8ab99545a10b211e8918e4a58cc66740366644298cb8efa3b766537ee0",
+        "fileCount": 249,
+        "sizeBytes": 247667,
+        "treeSha256": "5552b4ddb37808414558878e93d4cc49a51d1548dd8bff701d59c2da73b3f516",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/b0d8c4c357ed648d/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+          "bytes": 1106,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@tauri-apps/api",
+      "name": "@tauri-apps/api",
+      "version": "2.10.1",
+      "resolved": "https://registry.npmjs.org/@tauri-apps/api/-/api-2.10.1.tgz",
+      "registryIntegrity": "sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw==",
+      "licenseDeclaration": "Apache-2.0 OR MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": true,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "250c125edd082b3dc4e90cda5c1d28472ae103f368092b73988a4aa0022945ed",
+        "fileCount": 67,
+        "sizeBytes": 691501,
+        "treeSha256": "e4aa1a313b37aac5e1e88e141dc3afc3cf05e5633d402013b8dcb6686d5b148e",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/55f3f9b4d4e239f6/package/LICENSE_APACHE-2.0",
+          "sourcePath": "LICENSE_APACHE-2.0",
+          "origin": "package",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+          "bytes": 10174,
+          "detectedLicenseTerms": [
+            "Apache-2.0"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/55f3f9b4d4e239f6/package/LICENSE_MIT",
+          "sourcePath": "LICENSE_MIT",
+          "origin": "package",
+          "sha256": "9dd42ea92cff2ede5cd477cbfcce051b2d0115c0ac7f368ee88cb545055dff1d",
+          "bytes": 1090,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@tauri-apps/plugin-dialog",
+      "name": "@tauri-apps/plugin-dialog",
+      "version": "2.7.0",
+      "resolved": "https://registry.npmjs.org/@tauri-apps/plugin-dialog/-/plugin-dialog-2.7.0.tgz",
+      "registryIntegrity": "sha512-4nS/hfGMGCXiAS3LtVjH9AgsSAPJeG/7R+q8agTFqytjnMa4Zq95Bq8WzVDkckpanX+yyRHXnRtrKXkANKDHvw==",
+      "licenseDeclaration": "MIT OR Apache-2.0",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": true,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "3759a4259a4885fc2ae69588d0efb25071e56b5f78540462501b64584cdb053e",
+        "fileCount": 7,
+        "sizeBytes": 33316,
+        "treeSha256": "49699dd74ad0f6960fa5dbd254aff55ebb1e99b80d3b22e453fed03f4f2609cc",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/17de8324bee0d03c/package/LICENSE.spdx",
+          "sourcePath": "LICENSE.spdx",
+          "origin": "package",
+          "sha256": "eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef",
+          "bytes": 888,
+          "detectedLicenseTerms": [],
+          "evidence": "declaration-only"
+        },
+        {
+          "path": "licenses/17de8324bee0d03c/upstream/tauri-apps-plugin-dialog-2.7.0/LICENSE_MIT.txt",
+          "sourcePath": "tauri-apps-plugin-dialog-2.7.0/LICENSE_MIT.txt",
+          "origin": "upstream",
+          "sourceUrl": "https://raw.githubusercontent.com/tauri-apps/plugins-workspace/d6a3898001a4bcc659e045f9501498751b77dbe6/plugins/dialog/LICENSE_MIT",
+          "scope": "Plugin release dialog-v2.7.0, commit d6a3898001a4bcc659e045f9501498751b77dbe6; published SPDX file contains declarations only",
+          "sha256": "89ff9689dcf9dd53968785d05a26f7898bb169dbfcada8d032b3e68cf0d55607",
+          "bytes": 1089,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/17de8324bee0d03c/upstream/tauri-apps-plugin-dialog-2.7.0/LICENSE_APACHE-2.0.txt",
+          "sourcePath": "tauri-apps-plugin-dialog-2.7.0/LICENSE_APACHE-2.0.txt",
+          "origin": "upstream",
+          "sourceUrl": "https://raw.githubusercontent.com/tauri-apps/plugins-workspace/d6a3898001a4bcc659e045f9501498751b77dbe6/plugins/dialog/LICENSE_APACHE-2.0",
+          "scope": "Plugin release dialog-v2.7.0, commit d6a3898001a4bcc659e045f9501498751b77dbe6; published SPDX file contains declarations only",
+          "sha256": "0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9",
+          "bytes": 10173,
+          "detectedLicenseTerms": [
+            "Apache-2.0"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-array",
+      "name": "@types/d3-array",
+      "version": "3.2.2",
+      "resolved": "https://registry.npmjs.org/@types/d3-array/-/d3-array-3.2.2.tgz",
+      "registryIntegrity": "sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "5ca42ef98f3a66be59b30c9e414338e8d36d96a2690e716a02b4c02366aa1dfb",
+        "fileCount": 4,
+        "sizeBytes": 52479,
+        "treeSha256": "62e3506bfd5924e281830801d2b2aa7d915277e803baa5ee23d2168261993929",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/ad4d248aa61f5fc0/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-color",
+      "name": "@types/d3-color",
+      "version": "3.1.3",
+      "resolved": "https://registry.npmjs.org/@types/d3-color/-/d3-color-3.1.3.tgz",
+      "registryIntegrity": "sha512-iO90scth9WAbmgv7ogoq57O9YpKmFBbmoEoCHDB2xMBY0+/KVrqAaCDyCE16dUspeOvIxFFRI+0sEtqDqy2b4A==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "409ac013405caa33f42ed394d92b357fde96b950ee4d5bbfb7de8d6dbebe6f37",
+        "fileCount": 4,
+        "sizeBytes": 27916,
+        "treeSha256": "9b392de4a36569992402c773d45f118138a28fec410661b26f9062d2d0069261",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/602110a404283adf/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-ease",
+      "name": "@types/d3-ease",
+      "version": "3.0.2",
+      "resolved": "https://registry.npmjs.org/@types/d3-ease/-/d3-ease-3.0.2.tgz",
+      "registryIntegrity": "sha512-NcV1JjO5oDzoK26oMzbILE6HW7uVXOHLQvHshBUW4UMdZGfiY6v5BeQwh9a9tCzv+CeefZQHJt5SRgK154RtiA==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "7ba99c6eb0a18cfb6dd35693feed30f23cf992d73e60c346840a5acb35ce1e50",
+        "fileCount": 4,
+        "sizeBytes": 13405,
+        "treeSha256": "a22a334d41f726a8a198e2dc84f8431901efece9859d07203ade70850618d3af",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/fbafe6d995b1c4ea/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-interpolate",
+      "name": "@types/d3-interpolate",
+      "version": "3.0.4",
+      "resolved": "https://registry.npmjs.org/@types/d3-interpolate/-/d3-interpolate-3.0.4.tgz",
+      "registryIntegrity": "sha512-mgLPETlrpVV1YRJIglr4Ez47g7Yxjl1lj7YKsiMCb27VJH9W8NVM6Bb9d8kkpG/uAQS5AmbA48q2IAolKKo1MA==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "751bcbf0a81dc0b5e507e535e29d9c27b7132b74b3b950594391f9eea0b46a76",
+        "fileCount": 4,
+        "sizeBytes": 24501,
+        "treeSha256": "eb99e6ed66120108862a04d8875557b81c647e59f4383c9d35c60b2f815af976",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/09828c552395bede/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-path",
+      "name": "@types/d3-path",
+      "version": "3.1.1",
+      "resolved": "https://registry.npmjs.org/@types/d3-path/-/d3-path-3.1.1.tgz",
+      "registryIntegrity": "sha512-VMZBYyQvbGmWyWVea0EHs/BwLgxc+MKi1zLDCONksozI4YJMcTt8ZEuIR4Sb1MMTE8MMW49v0IwI5+b7RmfWlg==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "c59e734c59ae49aba1a5ec160abd11d7f7b6af728751aede04a2e1bce9b9627c",
+        "fileCount": 4,
+        "sizeBytes": 8384,
+        "treeSha256": "aaa60690ff77aa2ce79291623cb2f9deb74ac9affe9f89e8529dd24a1d21820e",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/857caeaf419938f0/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-scale",
+      "name": "@types/d3-scale",
+      "version": "4.0.9",
+      "resolved": "https://registry.npmjs.org/@types/d3-scale/-/d3-scale-4.0.9.tgz",
+      "registryIntegrity": "sha512-dLmtwB8zkAeO/juAMfnV+sItKjlsw2lKdZVVy6LRr0cBmegxSABiLEpGVmSJJ8O08i4+sGR6qQtb6WtuwJdvVw==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "190c9e78aa278d267bed85d1a67e3d88d9bc98e27002dc2fa7d7b8d5254f6261",
+        "fileCount": 4,
+        "sizeBytes": 134973,
+        "treeSha256": "42f3cba04f5f5ee8478099f2f58466f7a0a9eed78120647e76186f4e75a7850b",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/e14f8790fd80ce34/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-shape",
+      "name": "@types/d3-shape",
+      "version": "3.1.8",
+      "resolved": "https://registry.npmjs.org/@types/d3-shape/-/d3-shape-3.1.8.tgz",
+      "registryIntegrity": "sha512-lae0iWfcDeR7qt7rA88BNiqdvPS5pFVPpo5OfjElwNaT2yyekbM0C9vK+yqBqEmHr6lDkRnYNoTBYlAgJa7a4w==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "71b56a4fd6a49860b5556b718df5b745d07cd439079e96907e654c8e834c5802",
+        "fileCount": 4,
+        "sizeBytes": 136674,
+        "treeSha256": "92be85d5e74bda6d3f81a6b3f58a38796b649bbbb22d5759a90b854919eac04c",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/8da0dd223052beb3/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-time",
+      "name": "@types/d3-time",
+      "version": "3.0.4",
+      "resolved": "https://registry.npmjs.org/@types/d3-time/-/d3-time-3.0.4.tgz",
+      "registryIntegrity": "sha512-yuzZug1nkAAaBlBBikKZTgzCeA+k1uy4ZFwWANOfKw5z5LRhV0gNA7gNkKm7HoK+HRN0wX3EkxGk0fpbWhmB7g==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "11b8e23aeea3f0024c293deb135e8d84c4b6013874b11eb8f2659d2db1d53432",
+        "fileCount": 4,
+        "sizeBytes": 31274,
+        "treeSha256": "dbb133cb798e728efe17c2ba895b7fe07b9e437d2089e22f59f1ea2167250d1a",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/1552732410888579/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/@types/d3-timer",
+      "name": "@types/d3-timer",
+      "version": "3.0.2",
+      "resolved": "https://registry.npmjs.org/@types/d3-timer/-/d3-timer-3.0.2.tgz",
+      "registryIntegrity": "sha512-Ps3T8E8dZDam6fUyNiMkekK3XUsaUEik+idO9/YjPtfj2qruF8tFBXS7XhtE4iIXBLxhmLjP3SXpLhVf21I9Lw==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "3be7bbce108834ebe5b901437fd40e87fa57a7c1d52c4aaa33152b71f87f3314",
+        "fileCount": 4,
+        "sizeBytes": 6755,
+        "treeSha256": "11bd06a526f7851b510daa86ed765b57f5f63b6334665d658ee966c58b9f0986",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/2d61d765d9dc7835/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/clsx",
+      "name": "clsx",
+      "version": "2.1.1",
+      "resolved": "https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz",
+      "registryIntegrity": "sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "a5e616b9883177fb47c1fca22b6a4ab42be1c3ed6ffae8595a5c7d88630eeec2",
+        "fileCount": 10,
+        "sizeBytes": 8555,
+        "treeSha256": "46cf2634da1a2f2f31fa11996250059c0ce1b0b858b0863b0352ef90c8068c97",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/d66d255412e9b90e/package/license",
+          "sourcePath": "license",
+          "origin": "package",
+          "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97",
+          "bytes": 1104,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/csstype",
+      "name": "csstype",
+      "version": "3.2.3",
+      "resolved": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
+      "registryIntegrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev candidate: type metadata",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "c818b74a9bc1556488b7ec2a65399224738f6619228f9a6491c5c02ca91f849e",
+        "fileCount": 5,
+        "sizeBytes": 1253449,
+        "treeSha256": "83042d8a8e7ca010a766c818dcc32ff410ba3d118200ce67c77e136a85792391",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/8c4a8a76655f293f/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e",
+          "bytes": 1062,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-array",
+      "name": "d3-array",
+      "version": "3.2.4",
+      "resolved": "https://registry.npmjs.org/d3-array/-/d3-array-3.2.4.tgz",
+      "registryIntegrity": "sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "f9e9dc28e2a9bfe32a0a80dda5c9f8bb49758ee112f4418e2b5662787f1bf500",
+        "fileCount": 66,
+        "sizeBytes": 163730,
+        "treeSha256": "fc4034b6faf85055356fd2202e2312ed32a0f7b2f16a190a55b867e06afe2666",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/f1e9a8fff8c5b7fa/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "3e6849627f74ff73c257a3ae1efb574015d94fc1035c05ec3c15805165efcbc4",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-color",
+      "name": "d3-color",
+      "version": "3.1.0",
+      "resolved": "https://registry.npmjs.org/d3-color/-/d3-color-3.1.0.tgz",
+      "registryIntegrity": "sha512-zg/chbXyeBtMQ1LbD/WSoW2DpC3I0mpmPdW+ynRTj/x2DAWYrIY7qeZIHidozwV24m4iavr15lNwIwLxRmOxhA==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "3de1c3c467f09ffc0372c8b765f8981535c22e1d9f944d17a35ee37df1033516",
+        "fileCount": 11,
+        "sizeBytes": 61152,
+        "treeSha256": "fa56bc482634d7bb3ab67a863842f8c3ba751ef672cbc340f71326b11cfa214a",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/e73223f67a90c813/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-ease",
+      "name": "d3-ease",
+      "version": "3.0.1",
+      "resolved": "https://registry.npmjs.org/d3-ease/-/d3-ease-3.0.1.tgz",
+      "registryIntegrity": "sha512-wR/XK3D3XcLIZwpbvQwQ5fK+8Ykds1ip7A2Txe0yxncXSdq1L9skcG7blcedkOX+ZcgxGAmLX1FrRGbADwzi0w==",
+      "licenseDeclaration": "BSD-3-Clause",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "393518c7886852c8cdeae42a54065c3ba54eddb701dd2da98c6d048f92cbc91c",
+        "fileCount": 17,
+        "sizeBytes": 34629,
+        "treeSha256": "7ca281acad93eb130bf8f8ae494ba1ad1262a3ad3eeafff00823539180741543",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "BSD-3-Clause"
+      ],
+      "texts": [
+        {
+          "path": "licenses/779dc8df6e5f2f4c/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08",
+          "bytes": 1504,
+          "detectedLicenseTerms": [
+            "BSD-3-Clause"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-format",
+      "name": "d3-format",
+      "version": "3.1.2",
+      "resolved": "https://registry.npmjs.org/d3-format/-/d3-format-3.1.2.tgz",
+      "registryIntegrity": "sha512-AJDdYOdnyRDV5b6ArilzCPPwc1ejkHcoyFarqlPqT7zRYjhavcT3uSrqcMvsgh2CgoPbK3RCwyHaVyxYcP2Arg==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "0227cabd3bc479f158f6a7435cafdbdeaed76d35b8917cf3fcfe2c367e46e37e",
+        "fileCount": 80,
+        "sizeBytes": 42342,
+        "treeSha256": "4ade8a906475f856cf7401918db00705a5380590a02feef3f196f1211775e736",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/34de80807df8a5f3/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "2a6d2d5f32ba0b755ddbc1c833f766e30cdbe6ebe9a6d4e3e24427721f0b63d3",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-interpolate",
+      "name": "d3-interpolate",
+      "version": "3.0.1",
+      "resolved": "https://registry.npmjs.org/d3-interpolate/-/d3-interpolate-3.0.1.tgz",
+      "registryIntegrity": "sha512-3bYs1rOD33uo8aqJfKP3JWPAibgw8Zm2+L9vBKEHJ2Rg+viTR7o5Mmv5mZcieN+FRYaAOWX5SJATX6k1PWz72g==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "3e2ce33f9d7072b6bfedbae949c1df546e187994e44b6f4b3795abeb63914613",
+        "fileCount": 31,
+        "sizeBytes": 69687,
+        "treeSha256": "b9e479cc437d3a56c4f934ab809f4c786cc3b05f7049277b4c678db8f06578d1",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/ede6e5e3706bedd5/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-path",
+      "name": "d3-path",
+      "version": "3.1.0",
+      "resolved": "https://registry.npmjs.org/d3-path/-/d3-path-3.1.0.tgz",
+      "registryIntegrity": "sha512-p3KP5HCf/bvjBSSKuXid6Zqijx7wIfNW+J/maPs+iwR35at5JCbLUT0LzF1cnjbCHWhqzQTIN2Jpe8pRebIEFQ==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "1aae497436309c84e7db7e5a2a11b1cc78bbba98f26088e4e71079cd725bdc89",
+        "fileCount": 7,
+        "sizeBytes": 20858,
+        "treeSha256": "776c78f2e4d867baaa3c33a98bb9242676f5f9ef016b2b198fa6e0d88e5e5887",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/3d9c861aef325f3f/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "a09b0d6d76e768fca2085fad05743ee81ddd11946bcda160a3cf5e1081a479aa",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-scale",
+      "name": "d3-scale",
+      "version": "4.0.2",
+      "resolved": "https://registry.npmjs.org/d3-scale/-/d3-scale-4.0.2.tgz",
+      "registryIntegrity": "sha512-GZW464g1SH7ag3Y7hXjf8RoUuAFIqklOAq3MRl4OaWabTFJY9PN/E1YklhXLh+OQ3fM9yS2nOkCoS+WLZ6kvxQ==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "75f7dfe869b2e6d1cbecd380f939f218ca046a26313c4e623aa52d6352a9b51b",
+        "fileCount": 29,
+        "sizeBytes": 174363,
+        "treeSha256": "5aeead9598c135e6375d171f1546e611bcf4b52cde4afbf9544fd49a6be8a5bd",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/71961a99941a57c6/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-shape",
+      "name": "d3-shape",
+      "version": "3.2.0",
+      "resolved": "https://registry.npmjs.org/d3-shape/-/d3-shape-3.2.0.tgz",
+      "registryIntegrity": "sha512-SaLBuwGm3MOViRq2ABk3eLoxwZELpH6zhl3FbAoJ7Vm1gofKx6El1Ib5z23NUEhF9AsGl7y+dzLe5Cw2AArGTA==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "c3d084a64bc3c85c407db4282be588a42484c4dc2639bb0a21424fe29ff38335",
+        "fileCount": 65,
+        "sizeBytes": 247267,
+        "treeSha256": "d5619132798307a09cda0863b0e61a751a9668f7e498faf0a9616efcf7385f45",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/5fc5058b9ab25b56/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-time",
+      "name": "d3-time",
+      "version": "3.1.0",
+      "resolved": "https://registry.npmjs.org/d3-time/-/d3-time-3.1.0.tgz",
+      "registryIntegrity": "sha512-VqKjzBLejbSMT4IgbmVgDjpkYrNWUYJnbCGo874u7MMKIWsILRX+OpX/gTk8MqjpT1A/c6HY2dCA77ZN0lkQ2Q==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "f145cd8f545cc98527d75c3717be9159616680fe5ba312c350828b44857e1ee6",
+        "fileCount": 17,
+        "sizeBytes": 64483,
+        "treeSha256": "3fb1e06f35b73640a530811f7d9f6c1733e5f1a75d54e09643a0c09793f7ceaf",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/f4e64306949393a6/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-time-format",
+      "name": "d3-time-format",
+      "version": "4.1.0",
+      "resolved": "https://registry.npmjs.org/d3-time-format/-/d3-time-format-4.1.0.tgz",
+      "registryIntegrity": "sha512-dJxPBlzC7NugB2PDLwo9Q8JiTR3M3e4/XANkreKSUxF8vvXKqm1Yfq4Q5dl8budlunRVlUUaDUgFt7eA8D6NLg==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "98ffed8c2cf40a4d279b4346b73c09e38cbce40a96fa11caa69a174dea7cbf55",
+        "fileCount": 44,
+        "sizeBytes": 85603,
+        "treeSha256": "66aa4d5f101d169e12c92ef677a42a5774ae99e645854099b50c0f6b62353212",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/3ddedcd3de738eff/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/d3-timer",
+      "name": "d3-timer",
+      "version": "3.0.1",
+      "resolved": "https://registry.npmjs.org/d3-timer/-/d3-timer-3.0.1.tgz",
+      "registryIntegrity": "sha512-ndfJ/JxxMd3nw31uyKoY2naivF+r29V+Lc0svZxe1JvvIRmi8hUsrMvdOwgS1o6uBHmiz91geQ0ylPP0aj1VUA==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "d2b6cb2200728b60982aa30c4caf787f0bda2c066ef9176282ab54ba656403cb",
+        "fileCount": 9,
+        "sizeBytes": 18405,
+        "treeSha256": "2a8a162ff991a7ad34b8dc65edc8f6057c4643b436849fc4f70851614ba761dc",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/5d08ea60b06f76a3/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/decimal.js-light",
+      "name": "decimal.js-light",
+      "version": "2.5.1",
+      "resolved": "https://registry.npmjs.org/decimal.js-light/-/decimal.js-light-2.5.1.tgz",
+      "registryIntegrity": "sha512-qIMFpTMZmny+MMIitAB6D7iVPEorVw6YQRWkvarTkT4tBeSLLiHzcwj6q0MmYSFCiVpiqPJTJEYIrpcPzVEIvg==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "d20b9fb64b091a9bb3f06d9aba27a1aa8b2e391aac84082b37875255b1989975",
+        "fileCount": 10,
+        "sizeBytes": 218255,
+        "treeSha256": "dbae2a4144a028697d24499342b24744b87e48b57444dd2578df2216cf5a2448",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/8fc0c987c5e687ab/package/LICENCE.md",
+          "sourcePath": "LICENCE.md",
+          "origin": "package",
+          "sha256": "fc0397fbd5c128bec7edef4e8d3f45e15db5fd043cdd0a2edfc4f14d47fbc3e4",
+          "bytes": 1110,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/dom-helpers",
+      "name": "dom-helpers",
+      "version": "5.2.1",
+      "resolved": "https://registry.npmjs.org/dom-helpers/-/dom-helpers-5.2.1.tgz",
+      "registryIntegrity": "sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "efce7444ae9b3409183abbf4f09fdb5207217a38ad504c87ace88e1975a1d083",
+        "fileCount": 284,
+        "sizeBytes": 126584,
+        "treeSha256": "9e50c8ea0bc8e114d028aa4f082563d00f763abd77d9d37e1aa98d07b1664e8e",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/46976d6e77ee09dc/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "1b0a9ba95a67bc484e028b13c61b83fc5aa1ca7957d1e2d43c2b0f70d9e9dd45",
+          "bytes": 1078,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/eventemitter3",
+      "name": "eventemitter3",
+      "version": "4.0.7",
+      "resolved": "https://registry.npmjs.org/eventemitter3/-/eventemitter3-4.0.7.tgz",
+      "registryIntegrity": "sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "2e9612fd0b3b723d4e27dbd741752f84ad840f3151973250820be782650cb7e1",
+        "fileCount": 8,
+        "sizeBytes": 37967,
+        "treeSha256": "1679941d3d86fd0b247005fd607e92290876ca92cf7a760e7c56bb0d1b53b40a",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/e9eb74a1eed2a44d/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "3aecc12b1cb28832b5f65ab64291de96568c3f236a74d646281b4491f7bcadbf",
+          "bytes": 1082,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/fast-equals",
+      "name": "fast-equals",
+      "version": "5.4.0",
+      "resolved": "https://registry.npmjs.org/fast-equals/-/fast-equals-5.4.0.tgz",
+      "registryIntegrity": "sha512-jt2DW/aNFNwke7AUd+Z+e6pz39KO5rzdbbFCg2sGafS4mk13MI7Z8O5z9cADNn5lhGODIgLwug6TZO2ctf7kcw==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "74dfe5885edc129eac3fdb57ee9362a4ee05a13b94f86c54206fc8dddf72ce40",
+        "fileCount": 25,
+        "sizeBytes": 282291,
+        "treeSha256": "4a4c284a96e81a9ef937dc6963673a042ca64d3d3bbc860d2550e2fa2ec8536d",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/b508e983095ae0a0/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "c0af1c3e74a891b408dc4365897482cc8c284365808e3837c56ea3c337ed7a2c",
+          "bytes": 1069,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/internmap",
+      "name": "internmap",
+      "version": "2.0.3",
+      "resolved": "https://registry.npmjs.org/internmap/-/internmap-2.0.3.tgz",
+      "registryIntegrity": "sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "b94bd846fb96743a86d527a3d0a3ad1bd5b1ffd3cd1109e6b115ebaef59dd195",
+        "fileCount": 6,
+        "sizeBytes": 10470,
+        "treeSha256": "40ec0bb355655d90986cb26da71c30c479cea04d82a15a4d4907f793d2f57a71",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC"
+      ],
+      "texts": [
+        {
+          "path": "licenses/2b3d70aa2574c9da/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "9ea8903938dab5f12c4572d60725069bec2d1b0dc3bcc210b09bae946a5ebb1f",
+          "bytes": 726,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/js-tokens",
+      "name": "js-tokens",
+      "version": "4.0.0",
+      "resolved": "https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz",
+      "registryIntegrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "47345931827b3e26db9fe690abb81f856a0d040cbca8af1e69711a64cd58ce0d",
+        "fileCount": 5,
+        "sizeBytes": 15069,
+        "treeSha256": "514b13c1a2d628475938ee5cd416c721802768cdcc3af07d11747019ce705568",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/0fe195842c66a573/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "2213d91c606205c71eb051a199478cdc2adde945893404d7f1421436dd6d5cc1",
+          "bytes": 1103,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/lodash",
+      "name": "lodash",
+      "version": "4.18.1",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.18.1.tgz",
+      "registryIntegrity": "sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "5ef0a453b679125b155af19e1477f93b577ea826a57e1545f77608d326966e6a",
+        "fileCount": 1051,
+        "sizeBytes": 1413741,
+        "treeSha256": "5fca8c9c5dcda1f99db92650e5b11a4ffd1c3f0219441952c55ff54701077979",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/f3bde40aa2049cb4/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "f71e8ed126b46346494aad5486874cd8f0aafe95092ed67d2e3cb6110f939abc",
+          "bytes": 1952,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/loose-envify",
+      "name": "loose-envify",
+      "version": "1.4.0",
+      "resolved": "https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz",
+      "registryIntegrity": "sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "8c2e27dae366396ced36fe0f7c6d35d71a1440fd8e82df5f2005a5297888a0d4",
+        "fileCount": 8,
+        "sizeBytes": 5814,
+        "treeSha256": "c45a23a202419773f5228f945b2b8c78c36ed2ba36c96c416538d0c7aae91c3d",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/f423fcb10ecb83c1/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "4eb7543b08d955a6d23fcc224601d43ff566e775be918805e26210d7f6eb4893",
+          "bytes": 1100,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/lucide-react",
+      "name": "lucide-react",
+      "version": "0.468.0",
+      "resolved": "https://registry.npmjs.org/lucide-react/-/lucide-react-0.468.0.tgz",
+      "registryIntegrity": "sha512-6koYRhnM2N0GGZIdXzSeiNwguv1gt/FAjZOiPl76roBi3xKEXa4WmfpxgQwTTL4KipXjefrnf3oV4IsYhi4JFA==",
+      "licenseDeclaration": "ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": true,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "609e78dffe97aab720c105246eca516f0aaac1de60725e53c0f5abb908b08320",
+        "fileCount": 3521,
+        "sizeBytes": 28578348,
+        "treeSha256": "2314b16c3f0a7d21746d132d673929aff8df809cef9596370fde44774157e96c",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "ISC",
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/005b3cad111b5900/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc",
+          "bytes": 880,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/005b3cad111b5900/upstream/lucide-react-0.468.0/Feather-LICENSE_MIT.txt",
+          "sourcePath": "lucide-react-0.468.0/Feather-LICENSE_MIT.txt",
+          "origin": "upstream",
+          "sourceUrl": "https://raw.githubusercontent.com/feathericons/feather/f81cd40fdcdd5e94f3f97eb670a5058e3aac528d/LICENSE",
+          "scope": "MIT terms for the Feather portions explicitly named in lucide-react LICENSE. Source is Feather v4.29.0; this does not identify the embedded Feather version.",
+          "sha256": "afcab584f9ecaf796069d8b3cd2a02e3135d89743a2cf17def2e7935dad91e5d",
+          "bytes": 1081,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/object-assign",
+      "name": "object-assign",
+      "version": "4.1.1",
+      "resolved": "https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz",
+      "registryIntegrity": "sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "5990bbffa235fc675debd925d50f6c3f48a2b4526d8c9f7555cadec9029d0d7f",
+        "fileCount": 4,
+        "sizeBytes": 5493,
+        "treeSha256": "2c68e2ca38047d0401b817fcf89d7d8fbbf710c218548a51317d2331f9c6be7b",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/c145d125ace86011/package/license",
+          "sourcePath": "license",
+          "origin": "package",
+          "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c",
+          "bytes": 1119,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/prop-types",
+      "name": "prop-types",
+      "version": "15.8.1",
+      "resolved": "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz",
+      "registryIntegrity": "sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "96aa387585c686397a80616d6a563759576e9b9fac1f80d57874aa4ee4730a2c",
+        "fileCount": 12,
+        "sizeBytes": 94537,
+        "treeSha256": "af2e0c9731a0538ac33d0539e60f0bd2ae0da6d02b4a9b1e04e00f68d97fe690",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/38336846259100d8/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "f657f99d3fb9647db92628e96007aabb46e5f04f33e49999075aab8e250ca7ce",
+          "bytes": 1080,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/prop-types/node_modules/react-is",
+      "name": "react-is",
+      "version": "16.13.1",
+      "resolved": "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz",
+      "registryIntegrity": "sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "06784c4340af9853928c519791684487b83076b3c84e8de6ba5f240e33700b71",
+        "fileCount": 9,
+        "sizeBytes": 23954,
+        "treeSha256": "f8236608c2f25e05cd666a7401f8bebd2adf11932d2219e992dea996ce700cab",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/612867cb1a1dbc60/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+          "bytes": 1086,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/react",
+      "name": "react",
+      "version": "18.3.1",
+      "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+      "registryIntegrity": "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": true,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "d4e68a5c96babb20cad1daafea8b78822eae45b341552cf5418d06a5304fa64c",
+        "fileCount": 20,
+        "sizeBytes": 318101,
+        "treeSha256": "1223edef15c4f5a8150b36b33cb29edb5610720bfc1470a0cad78d45b1b0ece3",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/c32755efedd6ef6b/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+          "bytes": 1086,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/react-dom",
+      "name": "react-dom",
+      "version": "18.3.1",
+      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
+      "registryIntegrity": "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": true,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "d2f29e31bd48b833e48cd7bbf41f192e8ee4ff8da249fdbe10d4ac4114b8b12e",
+        "fileCount": 32,
+        "sizeBytes": 4513549,
+        "treeSha256": "e740037241806555f69643e475fbce798dc8212a7dfcc8f75e5051c6dc7fb3de",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/d5a4b102c0309762/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+          "bytes": 1086,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/react-is",
+      "name": "react-is",
+      "version": "18.3.1",
+      "resolved": "https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz",
+      "registryIntegrity": "sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "8d8b7b3d6df8fa36fcd2fbee3561faea9bfa488c2318dabef4cfeaf275aee7f3",
+        "fileCount": 8,
+        "sizeBytes": 24013,
+        "treeSha256": "ad123adafe6bc84cf96f48e59da1c60a209eddc224e39da8e27a3b98f78ca65e",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/083c4f82ea3dc625/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+          "bytes": 1086,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/react-smooth",
+      "name": "react-smooth",
+      "version": "4.0.4",
+      "resolved": "https://registry.npmjs.org/react-smooth/-/react-smooth-4.0.4.tgz",
+      "registryIntegrity": "sha512-gnGKTpYwqL0Iii09gHobNolvX4Kiq4PKx6eWBCYYix+8cdw+cGo3do906l1NBPKkSWx1DghC1dlWG9L2uGd61Q==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "550a6e4daa68b7809a679285de528c04ae3423e4a26210e5f93c0a9753f13f14",
+        "fileCount": 33,
+        "sizeBytes": 308681,
+        "treeSha256": "8fdad56790fd50a114f7b93653cc7b33bdef4dce8163ede29b5cd633d8663882",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/8cf626b5b91a5366/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "258fe95d585e52a42eb5bec05b103a78400532103c4d01f94bc4cfca59486540",
+          "bytes": 1075,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/react-transition-group",
+      "name": "react-transition-group",
+      "version": "4.4.5",
+      "resolved": "https://registry.npmjs.org/react-transition-group/-/react-transition-group-4.4.5.tgz",
+      "registryIntegrity": "sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==",
+      "licenseDeclaration": "BSD-3-Clause",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "2c6a5bfbbe8f65366df04ef7ea28a32fe6d8a8e582f3d68afb84ff3d3c86436a",
+        "fileCount": 36,
+        "sizeBytes": 244028,
+        "treeSha256": "0b5a3ecc2ffff67d9f1e1269aba7525f949ae860b6efcf073cfc41411991f7bd",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "BSD-3-Clause"
+      ],
+      "texts": [
+        {
+          "path": "licenses/6ad90b7872b7f94a/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "b9adc17ad75a847d8743be2843935f0842a0ea4f45e7b0c7e17ed0be98614b9b",
+          "bytes": 1608,
+          "detectedLicenseTerms": [
+            "BSD-3-Clause"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/recharts",
+      "name": "recharts",
+      "version": "2.15.4",
+      "resolved": "https://registry.npmjs.org/recharts/-/recharts-2.15.4.tgz",
+      "registryIntegrity": "sha512-UT/q6fwS3c1dHbXv2uFgYJ9BMFHu3fwnd7AYZaEQhXuYQ4hgsxLvsUXzGdKeZrW5xopzDCvuA2N41WJ88I7zIw==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": true,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "91ad4851d8a34ed86c60a003e372b9aa2756ad1d300b8b4d8ae21ce40dd2d20c",
+        "fileCount": 291,
+        "sizeBytes": 4650058,
+        "treeSha256": "e51ed0349f1843d89e9869d94f0cc1ad350a29ec6cb1deb28b9c09175ae89bbb",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/7dee6385225507f9/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "2d3aa48a8d1d3b93093680e8e68d3a64cfb590c3ade377ffcaefc69dac7c2ce5",
+          "bytes": 1084,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/recharts-scale",
+      "name": "recharts-scale",
+      "version": "0.4.5",
+      "resolved": "https://registry.npmjs.org/recharts-scale/-/recharts-scale-0.4.5.tgz",
+      "registryIntegrity": "sha512-kivNFO+0OcUNu7jQquLXAxz1FIwZj8nrj+YkOKc5694NbjCvcT6aSZiIzNzd2Kul4o4rTto8QVR9lMNtxD4G1w==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "9e776d8c82fce431cc1f506d0985b67f0c5d9c096dcef13df5598b3eea864d38",
+        "fileCount": 19,
+        "sizeBytes": 162004,
+        "treeSha256": "8fb65aca32ffdc158e48f0af74f99d9529208b95e68f5a881dd577862c8fa29e",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/d2975b2be4339a73/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "9b0d4666d301c53eb4be4e2fec89e5589a7e5da450026153c27e34c2b3115921",
+          "bytes": 1076,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/scheduler",
+      "name": "scheduler",
+      "version": "0.23.2",
+      "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz",
+      "registryIntegrity": "sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "0893643a24576d727174e639586b8833a53f2a7b4a2199a719b9cfcebe9bae88",
+        "fileCount": 17,
+        "sizeBytes": 93383,
+        "treeSha256": "008ed7c14bab44613b4228bb546b8cdd5ccff8c5e34750956d63d990ce35e977",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/7bf6cc1c4f3ff7f1/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+          "bytes": 1086,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/tiny-invariant",
+      "name": "tiny-invariant",
+      "version": "1.3.3",
+      "resolved": "https://registry.npmjs.org/tiny-invariant/-/tiny-invariant-1.3.3.tgz",
+      "registryIntegrity": "sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==",
+      "licenseDeclaration": "MIT",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "27d6815b2577f3e7184f5c69af817377a2e6a0390a68acdfd852402f81d8ba2c",
+        "fileCount": 13,
+        "sizeBytes": 14809,
+        "treeSha256": "06607ab30802c3f51db4077e6ace1bec28439852a7c5b29ebfe05bcacf3b2680",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/6671cdc59845918e/package/LICENSE",
+          "sourcePath": "LICENSE",
+          "origin": "package",
+          "sha256": "b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f",
+          "bytes": 1073,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    },
+    {
+      "lockPath": "node_modules/victory-vendor",
+      "name": "victory-vendor",
+      "version": "36.9.2",
+      "resolved": "https://registry.npmjs.org/victory-vendor/-/victory-vendor-36.9.2.tgz",
+      "registryIntegrity": "sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==",
+      "licenseDeclaration": "MIT AND ISC",
+      "optional": false,
+      "peer": false,
+      "scope": "non-dev frontend dependency candidate",
+      "directDependency": false,
+      "viteBundleInclusion": "not-established",
+      "installedSource": {
+        "packageJsonSha256": "d1b66abeb4072c2c5137b5a82ec7b24b63966c4580cec8592bb504f7fa608a83",
+        "fileCount": 299,
+        "sizeBytes": 406364,
+        "treeSha256": "1153a1fabb52ee5c3e338259f6223bbf751dd0bf7dde4fa615142b7fe2d4b453",
+        "excludes": [
+          "nested node_modules packages are separately inventoried"
+        ]
+      },
+      "detectedLicenseTerms": [
+        "BSD-3-Clause",
+        "ISC",
+        "MIT"
+      ],
+      "texts": [
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-array/LICENSE",
+          "sourcePath": "lib-vendor/d3-array/LICENSE",
+          "origin": "package",
+          "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-color/LICENSE",
+          "sourcePath": "lib-vendor/d3-color/LICENSE",
+          "origin": "package",
+          "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-ease/LICENSE",
+          "sourcePath": "lib-vendor/d3-ease/LICENSE",
+          "origin": "package",
+          "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08",
+          "bytes": 1504,
+          "detectedLicenseTerms": [
+            "BSD-3-Clause"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-format/LICENSE",
+          "sourcePath": "lib-vendor/d3-format/LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-interpolate/LICENSE",
+          "sourcePath": "lib-vendor/d3-interpolate/LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-path/LICENSE",
+          "sourcePath": "lib-vendor/d3-path/LICENSE",
+          "origin": "package",
+          "sha256": "0ab21426fad1e8b819ea8ab4c7faf5a24d4fca9c01572fe722490d600bba0d22",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-scale/LICENSE",
+          "sourcePath": "lib-vendor/d3-scale/LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-shape/LICENSE",
+          "sourcePath": "lib-vendor/d3-shape/LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-time/LICENSE",
+          "sourcePath": "lib-vendor/d3-time/LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-time-format/LICENSE",
+          "sourcePath": "lib-vendor/d3-time-format/LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-timer/LICENSE",
+          "sourcePath": "lib-vendor/d3-timer/LICENSE",
+          "origin": "package",
+          "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+          "bytes": 731,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/d3-voronoi/LICENSE",
+          "sourcePath": "lib-vendor/d3-voronoi/LICENSE",
+          "origin": "package",
+          "sha256": "ad6cf57648385d6c40a29f73c55e42922dd793823df5ea265ccd834873bf09b9",
+          "bytes": 2656,
+          "detectedLicenseTerms": [
+            "MIT",
+            "BSD-3-Clause"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/package/lib-vendor/internmap/LICENSE",
+          "sourcePath": "lib-vendor/internmap/LICENSE",
+          "origin": "package",
+          "sha256": "9ea8903938dab5f12c4572d60725069bec2d1b0dc3bcc210b09bae946a5ebb1f",
+          "bytes": 726,
+          "detectedLicenseTerms": [
+            "ISC"
+          ],
+          "evidence": "license-terms"
+        },
+        {
+          "path": "licenses/4b9e78961407872e/upstream/victory-vendor-36.9.2/LICENSE_MIT.txt",
+          "sourcePath": "victory-vendor-36.9.2/LICENSE_MIT.txt",
+          "origin": "upstream",
+          "sourceUrl": "https://raw.githubusercontent.com/FormidableLabs/victory/v36.9.2/LICENSE.txt",
+          "scope": "Victory project root MIT license; retain all packaged lib-vendor licenses separately",
+          "sha256": "34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4",
+          "bytes": 1626,
+          "detectedLicenseTerms": [
+            "MIT"
+          ],
+          "evidence": "license-terms"
+        }
+      ]
+    }
+  ],
+  "unresolved": [],
+  "summary": {
+    "packageCount": 47,
+    "textCount": 64,
+    "unresolvedCount": 0
+  },
+  "notices": {
+    "path": "THIRD-PARTY-NOTICES.txt",
+    "sha256": "b350b67eb5802979dcb4650aca1c00428d7151daf016be7b5338c0a7922b7390",
+    "bytes": 105742
+  }
+}

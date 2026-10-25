@@ -1,39 +1,27 @@
+#[path = "dingtalk_identity_lookup.rs"]
+mod identity_lookup;
+#[path = "dingtalk_read_contract.rs"]
+mod read_contract;
+use crate::bridge_registry::BridgeRegistry;
 use std::path::PathBuf;
 use std::process::Stdio;
-use std::sync::Mutex;
 use std::time::Instant;
 
-#[cfg(windows)]
-use tokio::process::Command;
-
 use crate::security::sanitize_log;
-#[cfg(windows)]
-use crate::storage::models::ImProfile;
 
 use super::errors::{bridge_error_for, classify_dingtalk_cli_error, not_authenticated_message};
-#[cfg(windows)]
-use super::hide_windows_console;
-use super::normalizers::{
-    dingtalk_time_arg, normalize_dingtalk_chats, normalize_dingtalk_messages,
-};
-use super::paths::{expand_home, resolve_official_cli_for_runtime};
+use super::normalizers::{normalize_dingtalk_chats, normalize_dingtalk_messages};
+use super::paths::{expand_home, prepare_official_cli_for_runtime};
 use super::{
     apply_official_cli_env, official_cli_command, wait_for_official_cli_output, BridgeEnvelope,
     BridgeError, BridgeRequest, OFFICIAL_CLI_COMMAND_TIMEOUT,
 };
 
-#[cfg(windows)]
-const WINDOWS_DINGTALK_REGISTRY_KEY: &str = r"HKCU\Software\DwsCli\keychain\dws-cli";
-#[cfg(windows)]
-const WINDOWS_DINGTALK_AUTH_TOKEN_VALUE: &str = "YXV0aC10b2tlbg";
-#[cfg(windows)]
-const WINDOWS_DINGTALK_PROFILE_TOKEN_FILE: &str = "windows-auth-token.regvalue";
-
 pub(super) async fn run_official_dingtalk_cli(
     request: BridgeRequest,
     resource_dir: PathBuf,
     cache_dir: PathBuf,
-    active_pids: Option<&Mutex<Vec<u32>>>,
+    active_bridges: Option<&BridgeRegistry>,
     started_at: Instant,
 ) -> anyhow::Result<BridgeEnvelope> {
     let Some(profile) = &request.profile else {
@@ -46,23 +34,42 @@ pub(super) async fn run_official_dingtalk_cli(
             started_at,
         ));
     };
-    let Some(cli_path) = resolve_official_cli_for_runtime(
+    let cli_path = match prepare_official_cli_for_runtime(
         &resource_dir,
         Some(profile),
         "dingtalk",
         "dingtalk-workspace-cli",
         "dws",
-    ) else {
-        return Ok(bridge_error_for(
-            "dingtalk",
-            "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
-            "DINGTALK_CLI_MISSING",
-            "官方CLI尚未准备完成，请重新打开绑定窗口等待准备完成，或重新安装IM-Board。",
-            true,
-            started_at,
-        ));
+    )
+    .await
+    {
+        Ok(path) => path,
+        Err(detail) => {
+            return Ok(bridge_error_for(
+                "dingtalk",
+                "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
+                "DINGTALK_CLI_MISSING",
+                &format!("官方CLI准备失败：{detail}"),
+                true,
+                started_at,
+            ));
+        }
     };
 
+    // Windows keeps the independently verified, profile-isolated native runtime.
+    let cli_path = match crate::runtime::isolated_dws::resolve(&resource_dir, &cli_path) {
+        Ok(path) => path,
+        Err(detail) => {
+            return Ok(bridge_error_for(
+                "dingtalk",
+                "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
+                "DINGTALK_CLI_MISSING",
+                &detail,
+                true,
+                started_at,
+            ))
+        }
+    };
     let mut command = official_cli_command(&cli_path);
     apply_official_cli_env(&mut command);
     if let Some(auth_identity) = profile
@@ -98,20 +105,21 @@ pub(super) async fn run_official_dingtalk_cli(
                 .arg("--format")
                 .arg("json");
         }
-        "list-chats" => {
-            command
-                .arg("chat")
-                .arg("list-top-conversations")
-                .arg("--format")
-                .arg("json")
-                .arg("--limit")
-                .arg(
-                    request
-                        .args
-                        .get("limit")
-                        .cloned()
-                        .unwrap_or_else(|| "200".to_owned()),
-                );
+        "list-chats" | "fetch-messages" | "search-messages" => {
+            let args = match read_contract::read_args(&request.command, &request.args) {
+                Ok(args) => args,
+                Err(message) => {
+                    return Ok(bridge_error_for(
+                        "dingtalk",
+                        "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
+                        "DINGTALK_INVALID_READ_RANGE",
+                        &message,
+                        true,
+                        started_at,
+                    ))
+                }
+            };
+            command.args(args);
         }
         "search-groups" => {
             command
@@ -121,82 +129,6 @@ pub(super) async fn run_official_dingtalk_cli(
                 .arg("json")
                 .arg("--query")
                 .arg(request.args.get("query").cloned().unwrap_or_default());
-        }
-        "fetch-messages" => {
-            let chat_id = request.args.get("chat").cloned().unwrap_or_default();
-            if chat_id.trim().is_empty() {
-                return Ok(bridge_error_for(
-                    "dingtalk",
-                    "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
-                    "MISSING_CHAT",
-                    "fetch-messages缺少chat参数。",
-                    true,
-                    started_at,
-                ));
-            }
-            command
-                .arg("chat")
-                .arg("message")
-                .arg("list")
-                .arg("--format")
-                .arg("json")
-                .arg("--group")
-                .arg(chat_id)
-                .arg("--forward")
-                .arg(
-                    request
-                        .args
-                        .get("forward")
-                        .cloned()
-                        .unwrap_or_else(|| "true".to_owned()),
-                )
-                .arg("--limit")
-                .arg(
-                    request
-                        .args
-                        .get("limit")
-                        .cloned()
-                        .unwrap_or_else(|| "100".to_owned()),
-                );
-            if let Some(start) = request
-                .args
-                .get("start_time")
-                .and_then(|value| dingtalk_time_arg(value))
-            {
-                command.arg("--time").arg(start);
-            }
-        }
-        "search-messages" => {
-            command
-                .arg("chat")
-                .arg("message")
-                .arg("list-all")
-                .arg("--format")
-                .arg("json")
-                .arg("--cursor")
-                .arg(request.args.get("cursor").cloned().unwrap_or_default())
-                .arg("--limit")
-                .arg(
-                    request
-                        .args
-                        .get("limit")
-                        .cloned()
-                        .unwrap_or_else(|| "200".to_owned()),
-                );
-            if let Some(start) = request
-                .args
-                .get("start_time")
-                .and_then(|value| dingtalk_time_arg(value))
-            {
-                command.arg("--start").arg(start);
-            }
-            if let Some(end) = request
-                .args
-                .get("end_time")
-                .and_then(|value| dingtalk_time_arg(value))
-            {
-                command.arg("--end").arg(end);
-            }
         }
         other => {
             return Ok(bridge_error_for(
@@ -242,10 +174,38 @@ pub(super) async fn run_official_dingtalk_cli(
     {
         command.env("DWS_CONFIG_DIR", expand_home(config_dir));
     }
+    let identity_command = (request.command == "get-self").then(|| {
+        let mut next = official_cli_command(&cli_path);
+        for (key, value) in command.as_std().get_envs() {
+            if let Some(value) = value {
+                next.env(key, value);
+            } else {
+                next.env_remove(key);
+            }
+        }
+        next.stdout(Stdio::piped()).stderr(Stdio::piped());
+        next
+    });
     #[cfg(windows)]
-    prepare_windows_dingtalk_token(profile).await?;
-
-    let child = match command.spawn() {
+    let command = {
+        let Some(config_dir) = profile
+            .config_json
+            .get("configDir")
+            .and_then(serde_json::Value::as_str)
+            .filter(|path| !path.trim().is_empty())
+        else {
+            return Ok(bridge_error_for(
+                "dingtalk",
+                "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
+                "DINGTALK_CLI_FAILED",
+                "钉钉账号缺少隔离配置目录，请重新打开账号配置后保存。",
+                true,
+                started_at,
+            ));
+        };
+        crate::runtime::dws_auth::wrap_command(command, &expand_home(config_dir))
+    };
+    let child = match super::command::spawn_bridge(command) {
         Ok(child) => child,
         Err(err) => {
             return Ok(bridge_error_for(
@@ -259,12 +219,21 @@ pub(super) async fn run_official_dingtalk_cli(
         }
     };
     let output =
-        wait_for_official_cli_output(child, active_pids, OFFICIAL_CLI_COMMAND_TIMEOUT).await?;
+        wait_for_official_cli_output(child, active_bridges, OFFICIAL_CLI_COMMAND_TIMEOUT).await?;
 
     let stderr = sanitize_log(&String::from_utf8_lossy(&output.stderr));
     let stdout = String::from_utf8_lossy(&output.stdout);
     if !output.status.success() {
-        let sanitized_stdout = sanitize_log(&stdout);
+        // Partial read responses may contain real message bodies. Report only
+        // error fields; never copy the result ledger into a banner or log.
+        let sanitized_stdout = if matches!(
+            request.command.as_str(),
+            "search-messages" | "fetch-messages" | "list-chats"
+        ) {
+            read_contract::failure_summary(&stdout)
+        } else {
+            sanitize_log(&stdout)
+        };
         let detail = [sanitized_stdout.trim(), stderr.trim()]
             .into_iter()
             .filter(|value| !value.is_empty())
@@ -298,9 +267,35 @@ pub(super) async fn run_official_dingtalk_cli(
         ));
     }
 
-    let raw = serde_json::from_str::<serde_json::Value>(&stdout)
-        .unwrap_or_else(|_| serde_json::json!({ "text": sanitize_log(&stdout) }));
-    if raw.get("error").is_some() {
+    let raw = match serde_json::from_str::<serde_json::Value>(&stdout) {
+        Ok(raw) => raw,
+        Err(_) => {
+            return Ok(bridge_error_for(
+                "dingtalk",
+                "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
+                "DINGTALK_INVALID_RESPONSE",
+                "钉钉CLI未返回有效JSON，无法确认读取结果。",
+                true,
+                started_at,
+            ))
+        }
+    };
+    if matches!(
+        request.command.as_str(),
+        "search-messages" | "list-chats" | "fetch-messages"
+    ) {
+        if let Err(message) = read_contract::complete_payload(&raw, &request.command) {
+            return Ok(bridge_error_for(
+                "dingtalk",
+                "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
+                "DINGTALK_READ_INCOMPLETE",
+                &message,
+                true,
+                started_at,
+            ));
+        }
+    }
+    if raw.get("error").is_some_and(|error| !error.is_null()) {
         let sanitized_stdout = sanitize_log(&stdout);
         let error = classify_dingtalk_cli_error(&sanitized_stdout, &stderr).unwrap_or_else(|| {
             let detail = [sanitized_stdout.trim(), stderr.trim()]
@@ -354,17 +349,42 @@ pub(super) async fn run_official_dingtalk_cli(
             }),
         });
     }
+    let (self_ids, identity_warning) = if let Some(command) = identity_command {
+        identity_lookup::resolve(command, &raw, &profile.config_json, active_bridges).await?
+    } else {
+        (Vec::new(), None)
+    };
     let data = match request.command.as_str() {
-        "get-self" => raw,
+        "get-self" => raw.clone(),
         "list-chats" | "search-groups" => normalize_dingtalk_chats(&raw),
         "fetch-messages" => normalize_dingtalk_messages(&raw, &request.args),
         "search-messages" => normalize_dingtalk_messages(&raw, &request.args),
         _ => serde_json::Value::Array(Vec::new()),
     };
+    if matches!(
+        request.command.as_str(),
+        "search-messages" | "fetch-messages"
+    ) {
+        let expected = read_contract::complete_payload(&raw, &request.command)
+            .ok()
+            .and_then(|payload| payload.get("messages"))
+            .and_then(|value| value.as_array())
+            .map_or(0, Vec::len);
+        if data.as_array().map_or(0, Vec::len) != expected {
+            return Ok(bridge_error_for(
+                "dingtalk",
+                "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
+                "DINGTALK_INVALID_RESPONSE",
+                "钉钉部分消息缺少有效时间或正文，未将其误计为零条或完整读取。",
+                true,
+                started_at,
+            ));
+        }
+    }
     Ok(BridgeEnvelope {
         ok: true,
         data,
-        warnings: vec![stderr]
+        warnings: vec![stderr, identity_warning.unwrap_or_default()]
             .into_iter()
             .filter(|value| !value.is_empty())
             .collect(),
@@ -372,82 +392,8 @@ pub(super) async fn run_official_dingtalk_cli(
         meta: serde_json::json!({
             "platform": "dingtalk",
             "source": "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
-            "duration_ms": started_at.elapsed().as_millis()
+            "duration_ms": started_at.elapsed().as_millis(),
+            "selfIds": self_ids
         }),
     })
-}
-
-#[cfg(windows)]
-fn windows_dingtalk_token_path(profile: &ImProfile) -> PathBuf {
-    profile
-        .config_json
-        .get("dwsKeychainDir")
-        .and_then(|value| value.as_str())
-        .filter(|value| !value.trim().is_empty())
-        .map(expand_home)
-        .or_else(|| {
-            profile
-                .config_json
-                .get("configDir")
-                .and_then(|value| value.as_str())
-                .filter(|value| !value.trim().is_empty())
-                .map(|value| expand_home(value).join("keychain"))
-        })
-        .unwrap_or_else(|| PathBuf::from(".").join("dws-keychain"))
-        .join(WINDOWS_DINGTALK_PROFILE_TOKEN_FILE)
-}
-
-#[cfg(windows)]
-async fn prepare_windows_dingtalk_token(profile: &ImProfile) -> anyhow::Result<()> {
-    // Windows 版 DWS 当前把 auth-token 固定写入 HKCU 注册表，无法被 DWS_CONFIG_DIR 隔离。
-    // 每次运行前由 IM-Board 导入当前 profile 保存的 token；未授权的新 profile 则先清空全局 token，
-    // 避免“第二个账号未完成授权”时误读到上一个账号。
-    let token_path = windows_dingtalk_token_path(profile);
-    if token_path.exists() {
-        let token = std::fs::read_to_string(&token_path)?
-            .trim_start_matches('\u{feff}')
-            .trim()
-            .to_owned();
-        if !token.is_empty() {
-            run_windows_registry_command(
-                "add",
-                &[
-                    WINDOWS_DINGTALK_REGISTRY_KEY,
-                    "/v",
-                    WINDOWS_DINGTALK_AUTH_TOKEN_VALUE,
-                    "/t",
-                    "REG_SZ",
-                    "/d",
-                    &token,
-                    "/f",
-                ],
-            )
-            .await?;
-            return Ok(());
-        }
-    }
-    run_windows_registry_command(
-        "delete",
-        &[
-            WINDOWS_DINGTALK_REGISTRY_KEY,
-            "/v",
-            WINDOWS_DINGTALK_AUTH_TOKEN_VALUE,
-            "/f",
-        ],
-    )
-    .await
-    .or_else(|_| Ok(()))
-}
-
-#[cfg(windows)]
-async fn run_windows_registry_command(action: &str, args: &[&str]) -> anyhow::Result<()> {
-    let mut command = Command::new("reg");
-    command.arg(action).args(args);
-    hide_windows_console(&mut command);
-    let output = command.output().await?;
-    if output.status.success() {
-        return Ok(());
-    }
-    let stderr = sanitize_log(&String::from_utf8_lossy(&output.stderr));
-    anyhow::bail!("Windows 注册表钉钉授权隔离失败：{stderr}");
 }

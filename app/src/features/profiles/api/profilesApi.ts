@@ -63,3 +63,9 @@ export async function createProfileDraft(platform: Platform, sortOrder = 0): Pro
     updatedAt: now
   };
 }
+
+export async function releaseProfileDraft(profileId: string): Promise<void> {
+  if (isTauri) return invoke("release_profile_draft", { profileId });
+  if (isDemoMode()) return;
+  return requireTauri("释放绑定草稿");
+}

@@ -71,9 +71,9 @@ fn dashboard_topic_filter_rejects_group_membership_notices() {
         "Github开发者企微交流群成员通过王潇咏分享的二维码加入",
         "多名成员通过扫描王潇咏分享的二维码加入群聊"
     ));
-    assert!(is_disallowed_dashboard_topic(
-        "群成员变动",
-        "[系统] 张三被邀请加入群聊，李四退出群聊"
+    assert!(!is_disallowed_dashboard_topic(
+        "邀请客户参与项目交付",
+        "明天邀请客户加入群聊讨论交付"
     ));
 }
 
@@ -182,4 +182,201 @@ fn summary_prompt_prevents_generic_cross_scene_merges() {
     assert!(DEFAULT_SUMMARY_PROMPT.contains("至少对应 3 条有效消息"));
     assert!(DEFAULT_SUMMARY_PROMPT.contains("scoreMultiplier"));
     assert!(!DEFAULT_SUMMARY_PROMPT.contains("keywordRefine.candidates"));
+}
+
+#[test]
+fn message_type_boundary_keeps_business_discussions_and_excludes_typed_events() {
+    let conn = rusqlite::Connection::open_in_memory().expect("fixture database");
+    conn.execute_batch(include_str!("../../../migrations/001_init.sql"))
+        .expect("schema");
+    for platform in ["feishu", "dingtalk", "wecom"] {
+        for (suffix, msg_type, raw_type, raw_json, content) in [
+            (
+                "announcement",
+                "text",
+                Some("text"),
+                "{}",
+                "请确认群公告的发布时间，今天需要跟进交付排期",
+            ),
+            (
+                "interaction",
+                "text",
+                Some("text"),
+                "{}",
+                "拍一拍提醒功能今天需要完成交付，请确认",
+            ),
+            (
+                "meeting",
+                "text",
+                Some("text"),
+                "{}",
+                "会议安排与项目交付排期今天需要确认",
+            ),
+            (
+                "welcome",
+                "text",
+                Some("text"),
+                "{}",
+                "请设计欢迎新人引导流程",
+            ),
+            (
+                "invite",
+                "text",
+                Some("text"),
+                "{}",
+                "明天邀请客户加入群聊讨论交付",
+            ),
+            (
+                "compatibility",
+                "text",
+                Some("text"),
+                "{}",
+                "当前版本不支持显示内容，我们下周修复",
+            ),
+            (
+                "checkin-rule",
+                "text",
+                Some("text"),
+                "{}",
+                "签到奖励积分规则需要产品确认",
+            ),
+            (
+                "raw-system",
+                "text",
+                Some("system"),
+                "{}",
+                "今天需要完成系统维护任务",
+            ),
+            (
+                "nested-system",
+                "text",
+                None,
+                r#"{"raw":{"msg_type":"system"}}"#,
+                "今天需要完成后台配置任务",
+            ),
+            (
+                "canonical-system",
+                "system",
+                None,
+                "{}",
+                "今天需要完成后台维护任务",
+            ),
+            (
+                "legacy-file",
+                "file",
+                Some("system"),
+                "{}",
+                "今天需要交付系统维护记录invoice.pdf",
+            ),
+        ] {
+            let id = format!("{platform}-{suffix}");
+            conn.execute("insert into daily_messages(id,day,profile_id,platform,chat_id,chat_name,is_group,
+                sender_id,sender_name,timestamp,time_text,msg_type,content,raw_type,raw_json,content_hash)
+                values(?1,'2026-05-01',?2,?2,'business-chat','项目群',1,'customer','客户',1,'09:00',?3,?4,?5,?6,?1)",
+                params![id,platform,msg_type,content,raw_type,raw_json]).expect("fixture row");
+        }
+        upsert_keyword_meta(&conn, "2026-05-01", platform, "fixture-v1", "local_final")
+            .expect("keyword metadata");
+        let ids = [platform.to_owned()];
+        let messages =
+            load_analysis_messages_for_profiles(&conn, "2026-05-01", &ids).expect("analysis");
+        let actual = messages
+            .iter()
+            .map(|message| message.id.clone())
+            .collect::<HashSet<_>>();
+        let expected = [
+            "announcement",
+            "interaction",
+            "meeting",
+            "welcome",
+            "invite",
+            "compatibility",
+            "checkin-rule",
+        ]
+        .map(|suffix| format!("{platform}-{suffix}"))
+        .into_iter()
+        .collect::<HashSet<_>>();
+        assert_eq!(actual, expected, "analysis {platform}");
+        let summary_messages = super::summary_candidates::load_summary_candidate_messages(
+            &conn,
+            "2026-05-01",
+            platform,
+        )
+        .expect("summary SQL reader");
+        assert_eq!(
+            summary_messages
+                .iter()
+                .map(|message| message.id.clone())
+                .collect::<HashSet<_>>(),
+            expected,
+            "summary SQL {platform}"
+        );
+        let summaries = load_summary_candidates(&conn, "2026-05-01", platform).expect("summary");
+        let sources = summaries
+            .iter()
+            .flat_map(|value| value.source_message_ids.iter().cloned())
+            .collect::<HashSet<_>>();
+        assert!(sources.is_subset(&expected), "summary {platform}");
+        for suffix in ["announcement", "interaction", "meeting"] {
+            assert!(
+                sources.contains(&format!("{platform}-{suffix}")),
+                "summary {platform}: {suffix}"
+            );
+        }
+        let plan = super::keyword_refine::build_keyword_refine_plan(&conn, "2026-05-01", &ids, 3)
+            .expect("refine")
+            .expect("business messages");
+        let refined_sources = plan.payload["messages"]
+            .as_array()
+            .expect("messages")
+            .iter()
+            .map(|value| value["id"].as_str().unwrap().to_owned())
+            .collect::<HashSet<_>>();
+        assert_eq!(refined_sources, expected, "refine {platform}");
+        assert_eq!(
+            conn.query_row(
+                "select count(*) from daily_messages where profile_id=?1",
+                [platform],
+                |row| row.get::<_, i64>(0)
+            )
+            .unwrap(),
+            11,
+            "source messages remain stored"
+        );
+    }
+}
+
+#[test]
+fn message_type_boundary_keeps_generated_business_topics_and_keyword_text() {
+    for content in [
+        "群公告发布时间需要确认",
+        "拍一拍提醒功能需要交付",
+        "会议安排与项目交付排期需要确认",
+        "请设计欢迎新人引导流程",
+        "明天邀请客户加入群聊讨论交付",
+        "当前版本不支持显示内容，我们下周修复",
+        "签到奖励积分规则需要产品确认",
+        "请设计修改群名的权限提示",
+        "接龙团购功能需要产品确认",
+    ] {
+        assert!(
+            clean_message_content_for_ai("text", content).is_some(),
+            "{content}"
+        );
+        assert!(
+            !keyword_texts_from_message_content(content).is_empty(),
+            "{content}"
+        );
+        assert!(
+            !is_disallowed_dashboard_topic(content, "今天需要跟进项目交付"),
+            "{content}"
+        );
+        assert!(!is_disallowed_dashboard_keyword(content), "{content}");
+    }
+    for kind in ["system", "sys", "notice", "notification"] {
+        assert!(
+            clean_message_content_for_ai(kind, "今天需要跟进后台维护").is_none(),
+            "{kind}"
+        );
+    }
 }

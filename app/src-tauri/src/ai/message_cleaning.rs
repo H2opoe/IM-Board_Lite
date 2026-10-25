@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use crate::analysis::local_keywords::{
     clean_link_or_app_message_text, clean_plain_message_text, contains_any,
-    contains_disallowed_media_content, contains_group_membership_notice,
-    contains_unsupported_client_notice, is_generic_single_term, is_local_stopword,
+    contains_disallowed_media_content, is_generic_single_term, is_local_stopword,
     looks_like_noise_keyword, ANALYSIS_COMPLETION_TERMS, ANALYSIS_REPLY_TERMS, ANALYSIS_RISK_TERMS,
     ANALYSIS_TASK_TERMS, ANALYSIS_URGENCY_TERMS,
 };
@@ -41,7 +40,7 @@ pub(super) fn group_has_analysis_signal(messages: &[AnalysisMessage]) -> bool {
 
     messages.iter().any(|message| {
         let content = message.content.trim();
-        if should_skip_ai_message(&message) {
+        if should_skip_ai_message(message) {
             return false;
         }
         let lower = content.to_ascii_lowercase();
@@ -85,14 +84,15 @@ pub(crate) fn should_skip_ai_message(message: &AnalysisMessage) -> bool {
         || should_skip_nonsemantic_message(content)
         || !is_allowed_ai_message_type(&message.msg_type, content)
         || contains_disallowed_media_content(content)
-        || contains_unsupported_client_notice(content)
-        || contains_group_membership_notice(content)
         || message_noise::is_message_noise(Some(&message.msg_type), content, message.is_group)
         || is_call_record_message(message)
 }
 
 pub(crate) fn clean_message_content_for_ai(msg_type: &str, content: &str) -> Option<String> {
     let trimmed = content.trim();
+    if crate::messages::message_type::is_system_message_type(msg_type) {
+        return None;
+    }
     if is_file_message_type(msg_type) {
         return clean_file_message_text(trimmed);
     }
@@ -100,8 +100,6 @@ pub(crate) fn clean_message_content_for_ai(msg_type: &str, content: &str) -> Opt
         || should_skip_nonsemantic_message(trimmed)
         || !is_allowed_ai_message_type(msg_type, trimmed)
         || contains_disallowed_media_content(trimmed)
-        || contains_unsupported_client_notice(trimmed)
-        || contains_group_membership_notice(trimmed)
         || message_noise::is_message_noise(Some(msg_type), trimmed, false)
         || is_call_record_text(msg_type, trimmed)
     {
@@ -125,7 +123,6 @@ pub(crate) fn is_disallowed_dashboard_topic(title: &str, summary: &str) -> bool 
     let text = format!("{}\n{}", title.trim(), summary.trim());
     is_call_record_text("text", &text)
         || contains_disallowed_media_content(&text)
-        || contains_group_membership_notice(&text)
         || message_noise::is_message_noise(Some("text"), &text, true)
 }
 
@@ -179,18 +176,13 @@ pub(super) fn is_allowed_ai_message_type(msg_type: &str, content: &str) -> bool 
             | "49"
             | "file"
             | "document"
-            | "system"
-            | "sys"
-            | "notice"
-            | "notification"
-            | "10000"
-            | "10002"
     ) || (kind.is_empty() && !contains_disallowed_media_content(content))
 }
 
 pub(super) fn is_excluded_ai_message_type(msg_type: &str) -> bool {
     let kind = normalized_message_type(msg_type);
-    kind.contains("image")
+    crate::messages::message_type::is_system_message_type(&kind)
+        || kind.contains("image")
         || kind.contains("图片")
         || kind == "3"
         || kind.contains("voice")
@@ -268,14 +260,7 @@ pub(super) fn looks_like_link_or_app_payload(content: &str) -> bool {
 
 pub(super) fn should_skip_nonsemantic_message(content: &str) -> bool {
     let lower = content.to_ascii_lowercase();
-    lower.contains("<sysmsg")
-        || lower.contains("<revokemsg")
-        || lower.contains("今日已签到")
-        || lower.contains("连续签到")
-        || lower.contains("积分商城")
-        || lower.contains("点击领取")
-        || lower.contains("点击进入")
-        || lower.contains("点击查看您的答题记录")
+    lower.contains("<sysmsg") || lower.contains("<revokemsg")
 }
 
 pub(super) fn is_call_record_message(message: &AnalysisMessage) -> bool {

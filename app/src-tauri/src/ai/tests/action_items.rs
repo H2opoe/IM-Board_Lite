@@ -3,6 +3,10 @@ fn persist_analysis_can_write_resolved_reply_as_done() {
     let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
     conn.execute_batch(include_str!("../../../migrations/001_init.sql"))
         .expect("schema");
+    conn.execute_batch(include_str!(
+        "../../../migrations/005_action_detected_day.sql"
+    ))
+    .expect("action detection schema");
     conn.execute(
             "insert into daily_messages(
                id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
@@ -62,6 +66,10 @@ fn persist_analysis_marks_inferred_reply_done_after_user_response() {
     let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
     conn.execute_batch(include_str!("../../../migrations/001_init.sql"))
         .expect("schema");
+    conn.execute_batch(include_str!(
+        "../../../migrations/005_action_detected_day.sql"
+    ))
+    .expect("action detection schema");
     conn.execute_batch(
         "insert into daily_messages(
            id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
@@ -114,6 +122,10 @@ fn persist_analysis_does_not_merge_open_items_without_existing_action_item_id() 
     let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
     conn.execute_batch(include_str!("../../../migrations/001_init.sql"))
         .expect("schema");
+    conn.execute_batch(include_str!(
+        "../../../migrations/005_action_detected_day.sql"
+    ))
+    .expect("action detection schema");
     conn.execute(
         "insert into daily_messages(
                id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
@@ -179,6 +191,10 @@ fn persist_analysis_uses_existing_action_item_without_action_item_group_column()
     let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
     conn.execute_batch(include_str!("../../../migrations/001_init.sql"))
         .expect("schema");
+    conn.execute_batch(include_str!(
+        "../../../migrations/005_action_detected_day.sql"
+    ))
+    .expect("action detection schema");
     conn.execute(
         "insert into daily_messages(
                id, day, profile_id, platform, chat_id, chat_name, is_group, sender_id, sender_name,
