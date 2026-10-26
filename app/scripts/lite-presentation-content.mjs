@@ -10,7 +10,8 @@ const presentationStrings = {
 };
 
 export function maskLitePresentationContent(path, text) {
-  for (const literal of presentationStrings[path.replaceAll("\\", "/")] ?? []) {
+  path = path.replaceAll("\\", "/");
+  for (const literal of presentationStrings[path] ?? []) {
     // Match complete quoted literals or JSX text, never arbitrary code tokens.
     text = text.replaceAll(JSON.stringify(literal), '"public-contact-presentation"');
     text = text.replaceAll(`>${literal}<`, ">public-contact-presentation<");
