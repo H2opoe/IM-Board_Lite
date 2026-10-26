@@ -1,0 +1,181 @@
+[
+  {
+    "name": "empty array",
+    "data": [],
+    "expected": "complete"
+  },
+  {
+    "name": "empty named collection",
+    "data": {
+      "messages": [],
+      "failures": null
+    },
+    "expected": "complete"
+  },
+  {
+    "name": "empty nested collection",
+    "data": {
+      "ok": true,
+      "data": {
+        "items": [],
+        "has_more": false
+      }
+    },
+    "expected": "complete"
+  },
+  {
+    "name": "ordinary messages are not auth signals",
+    "data": [
+      {
+        "text": "permission denied not_authenticated"
+      }
+    ],
+    "expected": "complete"
+  },
+  {
+    "name": "missing payload",
+    "data": null,
+    "expected": "invalid"
+  },
+  {
+    "name": "missing collection",
+    "data": {},
+    "expected": "invalid"
+  },
+  {
+    "name": "null collection",
+    "data": {
+      "messages": null
+    },
+    "expected": "invalid"
+  },
+  {
+    "name": "unrecognized text",
+    "data": {
+      "text": "private body"
+    },
+    "expected": "invalid"
+  },
+  {
+    "name": "permission error",
+    "data": {
+      "items": [],
+      "error": {
+        "code": 403
+      }
+    },
+    "expected": "api"
+  },
+  {
+    "name": "business failure",
+    "data": {
+      "success": false,
+      "items": []
+    },
+    "expected": "api"
+  },
+  {
+    "name": "remaining pages",
+    "data": {
+      "items": [],
+      "has_more": true
+    },
+    "expected": "incomplete"
+  },
+  {
+    "name": "missing completion",
+    "data": {
+      "items": [],
+      "complete": false
+    },
+    "expected": "incomplete"
+  },
+  {
+    "name": "failed decryption",
+    "data": {
+      "messages": [],
+      "decryptFailedCount": 1
+    },
+    "expected": "incomplete"
+  },
+  {
+    "name": "failed shard",
+    "data": {
+      "messages": [
+        "retained row"
+      ],
+      "failures": [
+        "failed shard"
+      ]
+    },
+    "expected": "incomplete"
+  },
+  {
+    "name": "invalid failure list",
+    "data": {
+      "items": [],
+      "failures": "not an array"
+    },
+    "expected": "invalid"
+  },
+  {
+    "name": "invalid pagination type",
+    "data": {
+      "items": [],
+      "hasMore": "false"
+    },
+    "expected": "invalid"
+  },
+  {
+    "name": "invalid failure count",
+    "data": {
+      "items": [],
+      "failedCount": -1
+    },
+    "expected": "invalid"
+  },
+  {
+    "name": "business error code",
+    "data": {
+      "messages": [],
+      "errcode": 40058
+    },
+    "expected": "api"
+  },
+  {
+    "name": "invalid business error code",
+    "data": {
+      "messages": [],
+      "code": {}
+    },
+    "expected": "invalid"
+  },
+  {
+    "name": "pagination limit in metadata",
+    "data": {
+      "items": [],
+      "_meta": {
+        "pagination": {
+          "has_more": true
+        }
+      }
+    },
+    "expected": "incomplete"
+  },
+  {
+    "name": "unknown pagination completeness",
+    "data": {
+      "items": [],
+      "paginationKnown": false
+    },
+    "expected": "incomplete"
+  },
+  {
+    "name": "truncated read",
+    "data": {
+      "items": [],
+      "truncatedByPageLimit": true
+    },
+    "expected": "incomplete"
+  }
+]

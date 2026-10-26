@@ -1,4 +1,3 @@
-pub(crate) mod legacy_import;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{

@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { READ_RESULT_ERROR_CODES } from "./readResult";
 import { listen } from "@tauri-apps/api/event";
 import type { ImProfile, Platform } from "../features/profiles/model/types";
 import { isTauri, requireTauri } from "./tauri";
@@ -99,13 +100,14 @@ export async function updatePlatformCli(platform: Platform): Promise<PlatformCli
 
 function formatBridgeError(envelope: { warnings?: string[]; error?: { code?: string; message: string } }) {
   if (
+    Object.values(READ_RESULT_ERROR_CODES).includes(envelope.error?.code ?? "") ||
     envelope.error?.code === "WECOM_MESSAGE_PERMISSION_UNSUPPORTED" ||
     envelope.error?.code === "WECOM_NOT_AUTHENTICATED" ||
     envelope.error?.code === "FEISHU_NOT_AUTHENTICATED" ||
     envelope.error?.code === "DINGTALK_NOT_AUTHENTICATED" ||
     envelope.error?.code === "DINGTALK_MESSAGE_PERMISSION_MISSING"
   ) {
-    return envelope.error.message;
+    return envelope.error?.message ?? "";
   }
   const label = bridgeErrorCodeLabel(envelope.error?.code);
   const message = envelope.error?.message;

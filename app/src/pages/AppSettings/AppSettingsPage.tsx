@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FileArchive, Info, Loader2, MessageCircle, Save, TimerReset } from "lucide-react";
 import { save as showSaveDialog } from "@tauri-apps/plugin-dialog";
-import { exportDiagnosticPackage, getAppSettings, saveAppSettings, importLegacyData } from "../../api/appSettingsApi";
+import { exportDiagnosticPackage, getAppSettings, saveAppSettings } from "../../api/appSettingsApi";
 import { AboutModal } from "../../components/AboutModal";
 import { DeveloperFeedbackModal } from "../../components/DeveloperFeedbackModal";
 import { FloatingNotice, FloatingNoticeStack } from "../../components/shared/FloatingNotice";
@@ -23,13 +23,12 @@ function diagnosticPackageFileName() {
 
 export function AppSettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const [status, setStatus] = useState<"idle" | "loading" | "saving" | "exportingDiagnostics" | "importing" | "saved" | "error">("loading");
+  const [status, setStatus] = useState<"idle" | "loading" | "saving" | "exportingDiagnostics" | "saved" | "error">("loading");
   const [message, setMessage] = useState("");
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isDeveloperFeedbackOpen, setIsDeveloperFeedbackOpen] = useState(false);
   const isExportingDiagnostics = status === "exportingDiagnostics";
-  const isImporting = status === "importing";
-  const isBusy = status === "saving" || isExportingDiagnostics || isImporting;
+  const isBusy = status === "saving" || isExportingDiagnostics;
   const canSave = status !== "loading" && !isBusy;
 
   const mounted = useRef(false);
@@ -58,7 +57,7 @@ export function AppSettingsPage() {
     };
   }, []);
 
-  function beginOperation(nextStatus: "saving" | "exportingDiagnostics" | "importing") {
+  function beginOperation(nextStatus: "saving" | "exportingDiagnostics") {
     if (!mounted.current || operationInFlight.current || status === "loading") return null;
     operationInFlight.current = true;
     const request = ++operationSequence.current;
@@ -85,24 +84,6 @@ export function AppSettingsPage() {
     }
   }
 
-  async function importPreviousData() {
-    const isCurrent = beginOperation("importing");
-    if (!isCurrent) return;
-    try {
-      const result = await importLegacyData();
-      // A completed database write refreshes the live account list even after navigation.
-      window.dispatchEvent(new Event("im-board-profiles-changed"));
-      if (!isCurrent()) return;
-      setStatus("saved");
-      setMessage(`已导入 ${result.profiles} 个账号、${result.messages} 条消息、${result.actions} 个事项。请在平台管理中重新授权并启用账号；AI 密钥需重新配置。`);
-    } catch (error) {
-      if (!isCurrent()) return;
-      setStatus("error");
-      setMessage(userErrorMessage(error, "旧数据导入失败，原数据未修改。"));
-    } finally {
-      if (isCurrent()) operationInFlight.current = false;
-    }
-  }
 
   async function exportDiagnostics() {
     const isCurrent = beginOperation("exportingDiagnostics");
@@ -150,11 +131,6 @@ export function AppSettingsPage() {
       )}
 
       <section className="settings-layout app-settings-grid">
-        <article className="panel settings-panel app-settings-card">
-          <header className="panel-header"><strong>导入旧版数据</strong></header>
-          <p className="app-settings-copy">Lite 现使用独立数据目录。仅在当前 Lite 尚无账号和业务数据时，可从旧版 IMBoard 目录导入企业微信、飞书和钉钉的账号、消息、事项及话题。原库保持只读；授权信息、AI 密钥、同步游标和运行时不会复制，导入账号默认停用，需要重新绑定。</p>
-          <button className="secondary-button" disabled={!canSave} onClick={() => void importPreviousData()}>{isImporting ? "正在导入…" : "从旧版目录导入"}</button>
-        </article>
         <article className="panel settings-panel app-settings-card">
           <header className="panel-header">
             <div>

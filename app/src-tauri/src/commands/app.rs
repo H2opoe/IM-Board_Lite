@@ -559,42 +559,6 @@ mod diagnostic_export_tests {
     }
 }
 
-#[tauri::command]
-pub async fn import_legacy_data(
-    app: tauri::AppHandle,
-) -> Result<crate::storage::legacy_import::ImportSummary, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        import_legacy_data_impl(state)
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-fn import_legacy_data_impl(
-    state: State<'_, AppState>,
-) -> Result<crate::storage::legacy_import::ImportSummary, String> {
-    use std::sync::atomic::Ordering;
-    state
-        .sync_job_running
-        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-        .map_err(|_| "请等待同步结束后再导入旧数据。".to_owned())?;
-    struct Reset<'a>(&'a std::sync::atomic::AtomicBool);
-    impl Drop for Reset<'_> {
-        fn drop(&mut self) {
-            self.0.store(false, Ordering::SeqCst);
-        }
-    }
-    let _guard = Reset(&state.sync_job_running);
-    let source = dirs::data_dir()
-        .ok_or_else(|| "无法确定旧数据目录。".to_owned())?
-        .join("IMBoard")
-        .join("app.sqlite");
-    let mut destination = state.db.lock().map_err(|e| e.to_string())?;
-    crate::storage::legacy_import::import_from_path(&mut destination, &source)
-        .map_err(|e| e.to_string())
-}
-
 #[cfg(test)]
 #[path = "app_action_day_tests.rs"]
 mod action_day_tests;

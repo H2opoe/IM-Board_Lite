@@ -15,7 +15,6 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
     session_discovery_steps,
     should_run_session_list: default_should_run_session_list,
     prepare_profile_sync_access: no_prepare_profile_sync_access,
-    empty_session_warning,
     sessions_ready_message,
     fetch_concurrency,
     capabilities: ConnectorCapabilities {
@@ -44,13 +43,6 @@ fn is_available() -> bool {
 
 fn session_discovery_steps() -> &'static [SessionDiscoveryStep] {
     DISCOVERY_STEPS
-}
-
-fn empty_session_warning(_profile: &ImProfile) -> Option<String> {
-    Some(
-        "企业微信：授权可见通讯录和会话列表均为空，请确认当前账号可见范围以及最近7天内的可读消息。"
-            .to_owned(),
-    )
 }
 
 fn sessions_ready_message(profile: &ImProfile, total: i64) -> String {

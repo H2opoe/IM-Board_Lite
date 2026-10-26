@@ -7,10 +7,7 @@ use super::errors::{
     bridge_error_for, classify_feishu_cli_error, classify_feishu_cli_structured_error,
     parse_feishu_cli_json, sanitize_feishu_cli_output, validate_feishu_auth_status,
 };
-use super::normalizers::{
-    feishu_time_arg, normalize_feishu_chats, normalize_feishu_message_sessions,
-    normalize_feishu_messages,
-};
+use super::normalizers::{checked_feishu_read, feishu_time_arg};
 use super::paths::{expand_home, prepare_official_cli_for_runtime};
 use super::{
     apply_official_cli_env, official_cli_command, wait_for_official_cli_output, BridgeEnvelope,
@@ -106,6 +103,7 @@ pub(super) async fn run_official_feishu_cli(
             cli_args.extend([
                 "im".to_owned(),
                 "+chat-list".to_owned(),
+                "--page-all".to_owned(),
                 "--as".to_owned(),
                 "user".to_owned(),
                 "--sort-type".to_owned(),
@@ -131,6 +129,7 @@ pub(super) async fn run_official_feishu_cli(
             cli_args.extend([
                 "im".to_owned(),
                 "+chat-messages-list".to_owned(),
+                "--page-all".to_owned(),
                 "--as".to_owned(),
                 "user".to_owned(),
                 "--chat-id".to_owned(),
@@ -195,6 +194,10 @@ pub(super) async fn run_official_feishu_cli(
                 started_at,
             ));
         }
+    }
+
+    if request.command != "auth-status" {
+        cli_args.extend(["--page-limit".to_owned(), "40".to_owned()]);
     }
 
     let profile_cache = cache_dir.join(&profile.id);
@@ -286,9 +289,16 @@ pub(super) async fn run_official_feishu_cli(
         ));
     }
 
-    let sanitized_stdout = sanitize_feishu_cli_output(&stdout);
-    let raw = parse_feishu_cli_json(&stdout)
-        .unwrap_or_else(|| serde_json::json!({ "text": sanitized_stdout.clone() }));
+    let Some(raw) = parse_feishu_cli_json(&stdout) else {
+        return Ok(bridge_error_for(
+            "feishu",
+            "https://github.com/larksuite/cli",
+            super::read_result::ReadProblem::Invalid.code(),
+            super::read_result::ReadProblem::Invalid.message(),
+            true,
+            started_at,
+        ));
+    };
     if request.command == "auth-status" {
         if let Some(error) = validate_feishu_auth_status(&raw) {
             return Ok(BridgeEnvelope {
@@ -317,9 +327,21 @@ pub(super) async fn run_official_feishu_cli(
         });
     }
     let data = match request.command.as_str() {
-        "list-chats" => normalize_feishu_chats(&raw),
-        "fetch-messages" => normalize_feishu_messages(&raw, &request.args),
-        "search-messages" => normalize_feishu_message_sessions(&raw),
+        "list-chats" | "fetch-messages" | "search-messages" => {
+            match checked_feishu_read(&raw, &request.args, &request.command) {
+                Ok(data) => data,
+                Err(problem) => {
+                    return Ok(bridge_error_for(
+                        "feishu",
+                        "https://github.com/larksuite/cli",
+                        problem.code(),
+                        problem.message(),
+                        true,
+                        started_at,
+                    ))
+                }
+            }
+        }
         "auth-status" => serde_json::json!({ "authenticated": true, "raw": raw }),
         _ => serde_json::Value::Array(Vec::new()),
     };

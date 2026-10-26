@@ -38,9 +38,3 @@ export async function openMacosPrivacySettings(
   if (isTauri) return invoke("open_macos_privacy_settings", { pane, appPath, dataDir });
   return requireTauri("打开系统设置");
 }
-
-export interface LegacyImportSummary { profiles: number; messages: number; actions: number; topics: number; }
-export async function importLegacyData(): Promise<LegacyImportSummary> {
-  if (isTauri) return invoke("import_legacy_data");
-  return requireTauri("导入旧数据");
-}

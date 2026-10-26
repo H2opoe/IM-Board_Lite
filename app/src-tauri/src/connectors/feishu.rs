@@ -3,7 +3,6 @@ use super::{
     session_history_mode, ConnectorAdapter, ConnectorCapabilities, ConnectorKind,
     SessionDiscoveryStep,
 };
-use crate::storage::models::ImProfile;
 
 const DISCOVERY_STEPS: &[SessionDiscoveryStep] = &[SessionDiscoveryStep::WindowSearch];
 
@@ -15,7 +14,6 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
     session_discovery_steps,
     should_run_session_list,
     prepare_profile_sync_access: no_prepare_profile_sync_access,
-    empty_session_warning,
     sessions_ready_message: default_sessions_ready_message,
     fetch_concurrency,
     capabilities: ConnectorCapabilities {
@@ -49,13 +47,6 @@ fn should_run_session_list() -> bool {
     // 飞书同步仍优先通过消息检索发现当天活跃会话，避免群列表缺少活跃时间时扩大读取范围。
     // 手动读测需要列群时由 bridge_runner 调用官方新版 `im +chat-list`。
     false
-}
-
-fn empty_session_warning(_profile: &ImProfile) -> Option<String> {
-    Some(
-        "飞书：当前授权未返回今天可见会话。请确认已授权 search:message，且今天有可检索消息。"
-            .to_owned(),
-    )
 }
 
 fn fetch_concurrency() -> usize {

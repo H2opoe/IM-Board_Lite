@@ -35,7 +35,6 @@ pub struct ConnectorAdapter {
     pub session_discovery_steps: fn() -> &'static [SessionDiscoveryStep],
     pub should_run_session_list: fn() -> bool,
     pub prepare_profile_sync_access: fn(&ImProfile),
-    pub empty_session_warning: fn(&ImProfile) -> Option<String>,
     pub sessions_ready_message: fn(&ImProfile, i64) -> String,
     pub fetch_concurrency: fn() -> usize,
     pub capabilities: ConnectorCapabilities,

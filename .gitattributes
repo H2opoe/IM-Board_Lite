@@ -3,3 +3,6 @@ app/scripts/application-license-sources/** -text
 app/public/third-party/application/** -text
 
 app/cli-adapters/** -text
+
+# Unified patch context uses a space before source indentation.
+app/cli-adapters/dws-isolation/isolation.patch whitespace=-space-before-tab

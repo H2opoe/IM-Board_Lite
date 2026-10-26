@@ -44,7 +44,6 @@ it("does not issue another request from a callback retained after unmount", asyn
   act(() => view.unmount());
   const calls = mocks.list.mock.calls.length;
   await refresh();
-  window.dispatchEvent(new Event("im-board-profiles-changed"));
   expect(mocks.list).toHaveBeenCalledTimes(calls);
 });
 

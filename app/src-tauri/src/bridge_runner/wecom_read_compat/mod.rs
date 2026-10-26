@@ -37,8 +37,8 @@ impl Failure {
     }
     fn invalid() -> Self {
         Self::new(
-            "WECOM_COMPAT_INVALID_RESPONSE",
-            "企业微信自动读取返回格式不完整，未将其当作空结果或完整同步。",
+            super::super::read_result::ReadProblem::Invalid.code(),
+            super::super::read_result::ReadProblem::Invalid.message(),
         )
     }
     fn service(stage: &str, code: i64) -> Self {
@@ -167,7 +167,8 @@ async fn all_pages(
     for _ in 0..100 {
         let response=transport.post(url,json!({"jsonrpc":"2.0","id":request_id("mcp_rpc"),"method":"tools/call","params":{"name":method,"arguments":arguments}})).await?;
         let payload = rpc_payload(response)?;
-        let page = payload[field].as_array().ok_or_else(Failure::invalid)?;
+        let page = super::super::read_result::named_collection(&payload, field)
+            .map_err(|_| Failure::invalid())?;
         bytes += serde_json::to_vec(page)
             .map_err(|_| Failure::invalid())?
             .len();

@@ -15,12 +15,12 @@ fn target() -> &'static str {
 fn digests() -> (&'static str, &'static str) {
     match target() {
         "darwin-arm64" => (
-            "d8088a9bc36ee16c2d42a06fff92bd104e0255229e77d3aa62ce24443a063860",
-            "69216ea7180fb24f2897b535a4425ad67274718dfc7d8c33773a55275b53cf8f",
+            "b1548d349c2bae67e0f250de9d8ce540327a41a52bb2eee77b8390edd526a069",
+            "b5f380564ca7090cea9518ffa0a985ed43bc21e1842053d9cabe15afef5b054c",
         ),
         _ => (
-            "b7e52b95b6726fb55abb57a68ac35c63a74b52e82e8d0c4a44d0234c7f303883",
-            "94edd21605e08dee38097f076c1a8a5a3c4170053e85ccaee6d7c9aa21ad700d",
+            "8fcb49324dce16ba3c4c4eb56086a9f8fa2cc1275955064c32ad1788da78a39c",
+            "21b9ff57a750865cda94e6677bd83ab4e17e80378ee803a91f3142952ae91e7f",
         ),
     }
 }
