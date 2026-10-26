@@ -105,7 +105,6 @@ pub fn run() {
             commands::bridge::run_bridge_command,
             commands::bridge::update_platform_cli,
             commands::app::get_app_settings,
-            commands::app::import_legacy_data,
             commands::app::export_diagnostic_package,
             commands::app::save_app_settings,
             commands::app::set_theme_dock_icon,

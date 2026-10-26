@@ -29,9 +29,3 @@ export async function exportDiagnosticPackage(filePath: string): Promise<Diagnos
   void filePath;
   return requireTauri("导出诊断包");
 }
-
-export interface LegacyImportSummary { profiles: number; messages: number; actions: number; topics: number; }
-export async function importLegacyData(): Promise<LegacyImportSummary> {
-  if (isTauri) return invoke("import_legacy_data");
-  return requireTauri("导入旧数据");
-}

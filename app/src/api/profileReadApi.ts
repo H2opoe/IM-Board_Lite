@@ -1,36 +1,30 @@
 import type { AccountIdentity, DingtalkIdentity, ImProfile } from "../features/profiles/model/types";
-import { runBridgeCommand } from "./bridgeApi";
+import { runBridgeCommand, type BridgeCommand } from "./bridgeApi";
+import { formatReadSuccess, requireCompleteRead } from "./readResult";
 import { isTauri, requireTauri } from "./tauri";
 
 export async function testProfileRead(profile: ImProfile): Promise<string> {
   if (isTauri) {
     if (profile.platform === "wecom") {
-      const contacts = await runBridgeCommand(profile, "list-contacts", {});
-      const todayChats = await runBridgeCommand(profile, "list-chats", todaySearchArgs("200"));
-      const warnings = [...(contacts.warnings ?? []), ...(todayChats.warnings ?? [])];
-      if (warnings.length) throw new Error(warnings.join("；"));
-      return formatReadSuccess(`通讯录${countArray(contacts.data)}人；今天会话${countArray(todayChats.data)}个；群聊${countGroups(todayChats.data)}个`);
+      const contacts = await probeRead(profile, "list-contacts", {});
+      const todayChats = await probeRead(profile, "list-chats", todaySearchArgs("200"));
+      return formatReadSuccess(`通讯录${contacts.length}人；今天会话${todayChats.length}个；群聊${countGroups(todayChats)}个`, contacts.length + todayChats.length);
     }
     if (profile.platform === "feishu") {
-      const todaySessions = await runBridgeCommand(profile, "search-messages", todaySearchArgs("20"));
-      return formatReadSuccess(`今天会话${countArray(todaySessions.data)}个；群聊${countGroups(todaySessions.data)}个`);
+      const todaySessions = await probeRead(profile, "search-messages", todaySearchArgs("20"));
+      return formatReadSuccess(`今天会话${todaySessions.length}个；群聊${countGroups(todaySessions)}个`, todaySessions.length);
     }
     if (profile.platform === "dingtalk") {
-      const result = await runBridgeCommand(profile, "search-messages", todaySearchArgs("100"));
-      if (result.warnings?.length) throw new Error(result.warnings.join("；"));
-      const messages = arrayData(result.data);
-      if (messages.length === 0) {
-        return "钉钉CLI已响应，但当前授权范围内未检索到今天的消息；这不代表钉钉今天没有会话，请核对授权账号和消息读取权限。";
-      }
+      const messages = await probeRead(profile, "search-messages", todaySearchArgs("100"));
       const chats = new Map<string, unknown>();
       for (const message of messages) {
         const chatId = recordString(message, ["chatId"]);
         if (chatId) chats.set(chatId, message);
       }
-      return formatReadSuccess(`今天消息${messages.length}条；会话${chats.size}个；群聊${countGroups([...chats.values()])}个`);
+      return formatReadSuccess(`今天消息${messages.length}条；会话${chats.size}个；群聊${countGroups([...chats.values()])}个`, messages.length);
     }
-    const sessions = await runBridgeCommand(profile, "list-chats", { limit: "20" });
-    return formatReadSuccess(`最近会话${countArray(sessions.data)}个`);
+    const sessions = await probeRead(profile, "list-chats", { limit: "20" });
+    return formatReadSuccess(`最近会话${sessions.length}个`, sessions.length);
   }
   return requireTauri("测试账号读取");
 }
@@ -66,8 +60,8 @@ export async function getOfficialCliAccountIdentity(profile: ImProfile): Promise
   return parseFeishuIdentity(envelope.data);
 }
 
-function formatReadSuccess(summary: string) {
-  return `测试读取成功：${summary}。`;
+async function probeRead(profile: ImProfile, command: BridgeCommand, args: Record<string, string>) {
+  return requireCompleteRead(await runBridgeCommand(profile, command, args));
 }
 
 function todaySearchArgs(limit: string) {
@@ -81,10 +75,6 @@ function todaySearchArgs(limit: string) {
     end_time: formatLocalDateTime(end),
     limit
   };
-}
-
-function countArray(data: unknown) {
-  return Array.isArray(data) ? data.length : 0;
 }
 
 function arrayData(data: unknown) {

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "appVersion": "3.0.0",
-  "releaseLabel": "3.0.0-lite",
-  "macosBundleVersion": "30000",
+  "appVersion": "3.0.1",
+  "releaseLabel": "3.0.1-lite",
+  "macosBundleVersion": "30001",
   "edition": "lite",
   "target": "windows"
 }

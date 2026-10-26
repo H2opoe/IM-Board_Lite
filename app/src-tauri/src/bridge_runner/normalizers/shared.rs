@@ -4,29 +4,9 @@ pub(in crate::bridge_runner) fn first_json_array<'a>(
     value: &'a serde_json::Value,
     keys: &[&str],
 ) -> Vec<&'a serde_json::Value> {
-    if let Some(array) = value.as_array() {
-        return array.iter().collect();
-    }
-    for key in keys {
-        if let Some(array) = value.get(*key).and_then(|inner| inner.as_array()) {
-            return array.iter().collect();
-        }
-        if let Some(array) = value
-            .get("data")
-            .and_then(|data| data.get(*key))
-            .and_then(|inner| inner.as_array())
-        {
-            return array.iter().collect();
-        }
-        if let Some(array) = value
-            .get("result")
-            .and_then(|result| result.get(*key))
-            .and_then(|inner| inner.as_array())
-        {
-            return array.iter().collect();
-        }
-    }
-    Vec::new()
+    super::super::read_result::collection_with_keys(value, keys)
+        .map(|items| items.iter().collect())
+        .unwrap_or_default()
 }
 
 pub(in crate::bridge_runner) fn json_string(

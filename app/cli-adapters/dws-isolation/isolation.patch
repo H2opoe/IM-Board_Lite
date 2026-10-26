@@ -535,3 +535,112 @@
 +		t.Fatal("invented type")
 +	}
 +}
+--- a/internal/shortcut/smart/search_verification.go
++++ b/internal/shortcut/smart/search_verification.go
+@@ -68,6 +68,9 @@
+ 			break
+ 		}
+ 		grouped = child
++	}
++	if imBoardSuccessfulEmptySearch(data) {
++		return []map[string]any{}, nil
+ 	}
+ 	rows, err := chatshortcut.StrictChatCollection(data, "messages", "items", "list")
+ 	if err != nil {
+--- /dev/null
++++ b/internal/shortcut/smart/imboard_empty_search.go
+@@ -0,0 +1,42 @@
++package smart
++
++// The search_messages service omits the collection for an exhausted empty
++// search, while retaining success=true and result.hasMore=false. Accept only
++// that observed envelope; unknown shapes and business failures remain errors.
++func imBoardSuccessfulEmptySearch(data map[string]any) bool {
++	if data["success"] != true || data["errorCode"] != nil || data["errorMsg"] != nil {
++		return false
++	}
++	for key := range data {
++		switch key {
++		case "success", "errorCode", "errorMsg", "arguments", "result":
++		default:
++			return false
++		}
++	}
++	result, ok := data["result"].(map[string]any)
++	if !ok || result["hasMore"] != false {
++		return false
++	}
++	for key, value := range result {
++		switch key {
++		case "hasMore":
++		case "friendlyHint":
++			if value != "" {
++				return false
++			}
++		case "retryable":
++			if value != false {
++				return false
++			}
++		case "nextCursor":
++			// An opaque cursor can remain even when hasMore is false.
++			if _, ok := value.(string); !ok {
++				return false
++			}
++		default:
++			return false
++		}
++	}
++	return true
++}
+--- /dev/null
++++ b/internal/shortcut/smart/imboard_empty_search_test.go
+@@ -0,0 +1,49 @@
++package smart
++
++import (
++	"encoding/json"
++	"testing"
++)
++
++func TestIMBoardSearchEmptySuccessWithoutCollection(t *testing.T) {
++	for _, response := range []string{
++		`{"success":true,"errorCode":null,"errorMsg":null,"arguments":[],"result":{"hasMore":false,"nextCursor":"opaque-terminal-cursor","friendlyHint":"","retryable":false}}`,
++		`{"success":true,"result":{"hasMore":false}}`,
++		`{"result":{"messages":[],"hasMore":false}}`,
++	} {
++		caller := &searchMsgExecutionCaller{searchResponse: response}
++		payload := executeSearchMsg(t, caller, "--start", "2026-10-26T00:00:00+08:00", "--end", "2026-10-27T00:00:00+08:00", "--page-all")
++		if payload["count"] != float64(0) || payload["complete"] != true || payload["hasMore"] != false || payload["failedCount"] != float64(0) {
++			t.Fatalf("empty read was not complete: %#v", payload)
++		}
++		if len(caller.calls) != 1 {
++			t.Fatalf("empty read performed extra calls: %#v", caller.calls)
++		}
++	}
++}
++
++func TestIMBoardSearchUnknownPartialAndDeniedAreNotEmpty(t *testing.T) {
++	for _, response := range []string{
++		`{}`, `{"result":{"hasMore":false}}`,
++		`{"success":true,"result":{"hasMore":false,"friendlyHint":"permission denied","retryable":false}}`,
++		`{"success":true,"result":{"hasMore":false,"friendlyHint":"","retryable":true}}`,
++		`{"success":false,"result":{"hasMore":false}}`,
++		`{"success":true,"errorCode":"Forbidden","result":{"hasMore":false}}`,
++		`{"success":true,"errorMsg":"permission denied","result":{"hasMore":false}}`,
++		`{"success":true,"error":{"code":"forbidden"},"result":{"hasMore":false}}`,
++		`{"success":true,"result":{}}`,
++		`{"success":true,"result":{"hasMore":true,"nextCursor":"next"}}`,
++		`{"success":true,"result":{"hasMore":"false"}}`,
++		`{"success":true,"result":{"hasMore":false,"messages":null}}`,
++		`{"success":true,"result":{"hasMore":false,"nextCursor":{}}}`,
++		`{"success":true,"result":{"hasMore":false,"unexpectedMessages":[{"id":"m1"}]}}`,
++	} {
++		var data map[string]any
++		if err := json.Unmarshal([]byte(response), &data); err != nil {
++			t.Fatal(err)
++		}
++		if _, err := verifiedSearchItems(data); err == nil {
++			t.Fatalf("invalid response accepted as empty: %s", response)
++		}
++	}
++}

@@ -78,6 +78,7 @@ def main():
     checked_run(['git', 'apply', str(patch)], source, env)
     checked_run([go, 'test', '-mod=readonly', './internal/keychain', '-run', '^TestIMBoardNamespace', '-count=1'], source, env)
     checked_run([go, 'test', '-mod=readonly', './internal/security', '-run', '^Test(Encrypt|Decrypt|DeriveKey|IMBoard)', '-count=1'], source, env)
+    checked_run([go, 'test', '-mod=readonly', './internal/shortcut/smart', '-run', '^TestIMBoardSearch', '-count=1'], source, env)
     if args.target == 'macos':
         from dws_macos_bundle import build_macos
         build_macos(go, source, env, lock, work, args.output.resolve(), APP)

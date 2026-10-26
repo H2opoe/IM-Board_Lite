@@ -232,3 +232,38 @@ pub(in crate::bridge_runner) fn feishu_time_arg(value: &str) -> Option<String> {
             .to_string()
     })
 }
+
+/// Validate the source before projection, so unknown payloads and discarded rows
+/// cannot be mistaken for a successful empty search.
+pub(in crate::bridge_runner) fn checked_feishu_read(
+    raw: &serde_json::Value,
+    args: &HashMap<String, String>,
+    command: &str,
+) -> Result<serde_json::Value, super::super::read_result::ReadProblem> {
+    use super::super::read_result::{collection_with_keys, ensure_complete, ReadProblem};
+    ensure_complete(raw)?;
+    let keys: &[&str] = if command == "list-chats" {
+        &["items", "chats", "groups", "data", "list"]
+    } else {
+        &["items", "messages", "data"]
+    };
+    let rows = collection_with_keys(raw, keys)?;
+    let normalized = match command {
+        "list-chats" => normalize_feishu_chats(raw),
+        "fetch-messages" => normalize_feishu_messages(raw, args),
+        "search-messages" => {
+            if rows.iter().any(|message| {
+                feishu_message_chat_id(message).is_none()
+                    || feishu_message_timestamp(message).is_none()
+            }) {
+                return Err(ReadProblem::Invalid);
+            }
+            return Ok(normalize_feishu_message_sessions(raw));
+        }
+        _ => return Err(ReadProblem::Invalid),
+    };
+    if normalized.as_array().map(Vec::len) != Some(rows.len()) {
+        return Err(ReadProblem::Invalid);
+    }
+    Ok(normalized)
+}

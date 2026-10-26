@@ -2,8 +2,8 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AppSettingsPage } from "./AppSettingsPage";
 
-const api = vi.hoisted(() => ({ get: vi.fn(), save: vi.fn(), export: vi.fn(), import: vi.fn(), dialog: vi.fn() }));
-vi.mock("../../api/appSettingsApi", () => ({ getAppSettings: api.get, saveAppSettings: api.save, exportDiagnosticPackage: api.export, importLegacyData: api.import }));
+const api = vi.hoisted(() => ({ get: vi.fn(), save: vi.fn(), export: vi.fn(), dialog: vi.fn() }));
+vi.mock("../../api/appSettingsApi", () => ({ getAppSettings: api.get, saveAppSettings: api.save, exportDiagnosticPackage: api.export }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ save: api.dialog }));
 vi.mock("../../components/AboutModal", () => ({ AboutModal: () => null }));
 vi.mock("../../components/DeveloperFeedbackModal", () => ({ DeveloperFeedbackModal: () => null }));
@@ -20,11 +20,9 @@ it("locks edits and all mutation entries while saving and rejects repeated activ
   await act(async () => { view = create(<AppSettingsPage />); });
   const save = saveButton().props.onClick;
   const exportDiagnostics = exportButton().props.onClick;
-  const importData = view.root.findAllByType("button").find(button => button.children.includes("从旧版目录导入"))?.props.onClick;
-  let pending!: Promise<void>; act(() => { pending = save(); void save(); void exportDiagnostics(); importData?.(); });
+  let pending!: Promise<void>; act(() => { pending = save(); void save(); void exportDiagnostics(); });
   expect(api.save).toHaveBeenCalledTimes(1);
   expect(api.dialog).not.toHaveBeenCalled();
-  expect(api.import).not.toHaveBeenCalled();
   const input = view.root.findByType("input");
   expect(input.props.disabled).toBe(true);
   act(() => input.props.onChange({ target: { value: "02:00" } }));

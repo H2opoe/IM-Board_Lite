@@ -50,6 +50,24 @@ async fn fetch_dingtalk_window_messages(
             .map(|error| error.message)
             .unwrap_or_else(|| "钉钉消息读取失败，平台未返回错误详情。".to_owned()));
     }
+    ensure_sync_not_cancelled(state)?;
+    if value_array(&history.data).is_empty() {
+        // Identity lookup is only needed to classify imported messages. An empty
+        // successful day must not produce an unrelated identity warning.
+        emit_sync_progress(
+            app,
+            profile,
+            "fetch_messages_done",
+            format!(
+                "已读取【{} · {}】0条今天的消息，涉及0个会话。",
+                platform_label(&profile.platform),
+                profile_remark(profile)
+            ),
+            0,
+            0,
+        );
+        return Ok((0, 0, Vec::new()));
+    }
     let identity = run_sync_bridge(
         state,
         BridgeRequest {

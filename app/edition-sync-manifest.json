@@ -2751,6 +2751,69 @@
         "IM-Board-lite",
         "IM-Board-lite-win"
       ]
+    },
+    {
+      "source": "app/shared/read-result-contract.json",
+      "destination": "app/shared/read-result-contract.json",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/read-result-fixtures.json",
+      "destination": "app/shared/read-result-fixtures.json",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/shared/READ-RESULT-CONTRACT.md",
+      "destination": "app/shared/READ-RESULT-CONTRACT.md",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/bridge_runner/read_result.rs",
+      "destination": "app/src-tauri/src/bridge_runner/read_result.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/readResult.ts",
+      "destination": "app/src/api/readResult.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src/api/readResult.test.ts",
+      "destination": "app/src/api/readResult.test.ts",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
+    },
+    {
+      "source": "app/src-tauri/src/sync/read_checkpoint.rs",
+      "destination": "app/src-tauri/src/sync/read_checkpoint.rs",
+      "targets": [
+        "IM-Board-win",
+        "IM-Board-lite",
+        "IM-Board-lite-win"
+      ]
     }
   ],
   "manualReview": [
@@ -3007,10 +3070,9 @@
     {
       "paths": [
         "app/src-tauri/src/storage/action_day_migration_tests.rs",
-        "app/src-tauri/src/storage/legacy_import_day_tests.rs",
         "app/shared/EDITION-MIGRATION.md"
       ],
-      "reason": "Formal editions share action detected-day behavior but Full migration fixtures start at schema v4 with 004 while Lite starts at v3. Keep that version-chain fixture adaptation explicit. Lite/LiteWin legacy import and its new day regression are shared between those editions only; main has no source for automatic copies. Demo must exclude schema, storage, migration and business import code."
+      "reason": "Formal editions share action detected-day behavior; Full migration fixtures start at schema v4 with 004 while Lite starts at v3. Keep version-chain adaptations explicit. Lite data-directory documentation is edition-specific. Demo excludes production storage and migration code."
     },
     {
       "paths": [
@@ -3138,6 +3200,16 @@
         "app/src-tauri/tauri.conf.json"
       ],
       "reason": "Windows releases must use fresh template/resource modes and assemble only declared current source/runtime inputs. Full stages its own production reader modules; Lite omits that source rule. Preserve byte verification, account-data exclusion and platform packaging differences."
+    },
+    {
+      "paths": [
+        "app/src-tauri/src/bridge_runner/mod.rs",
+        "app/src-tauri/src/connectors/mod.rs",
+        "app/src-tauri/src/sync/fetch.rs",
+        "app/src-tauri/src/sync/fetch_recent.rs",
+        "app/src/api/profileReadApi.ts"
+      ],
+      "reason": "All formal editions register the shared read-result contract at the bridge boundary and reuse its zero-result and failure rules. Remove empty-count auth inference and empty-warning connector hooks. Preserve platform auth/pagination and partial-history checkpoint behavior, Full-only local data readers, Lite context differences and Windows native wrappers. Demo excludes live reads."
     }
   ]
 }

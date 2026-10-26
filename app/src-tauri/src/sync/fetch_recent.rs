@@ -13,8 +13,19 @@ async fn fetch_recent_session_messages(
     cache_dir: std::path::PathBuf,
     warnings: &mut Vec<String>,
 ) -> Result<(usize, i64, Vec<String>), String> {
-    let local_latest_by_chat = latest_saved_message_timestamps(state, profile, &window.day)
-        .map_err(|err| err.to_string())?;
+    let retry_failed_read = {
+        let conn = state.db.lock().map_err(|err| err.to_string())?;
+        has_failed_profile_checkpoint(&conn, &profile.id, &window.day)
+            .map_err(|err| err.to_string())?
+    };
+    let local_latest_by_chat = if retry_failed_read {
+        // A partial import can already contain the newest message, while older
+        // shards or records failed. Re-read until this account succeeds fully.
+        HashMap::new()
+    } else {
+        latest_saved_message_timestamps(state, profile, &window.day)
+            .map_err(|err| err.to_string())?
+    };
     let mut jobs = Vec::new();
     for (index, session) in recent_sessions.into_iter().enumerate() {
         ensure_sync_not_cancelled(state)?;
@@ -160,6 +171,15 @@ async fn fetch_recent_session_messages(
                 ));
                 continue;
             }
+
+            let read_failures = crate::bridge_runner::read_result::failure_messages(&history.data);
+            if !read_failures.is_empty() {
+                let conn = state.db.lock().map_err(|err| err.to_string())?;
+                record_history_read_failures(&conn, profile, &window.day, &read_failures)?;
+            }
+            errors.extend(read_failures.into_iter().map(|message| {
+                format!("{} / {}：{}", profile.label, job.chat_name, message)
+            }));
 
             let mut chat_messages = Vec::new();
             for message in value_array(&history.data) {

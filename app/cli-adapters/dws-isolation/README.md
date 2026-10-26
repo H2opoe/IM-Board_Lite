@@ -8,7 +8,7 @@
 
 ## 读取与原生组件
 
-应用使用 `chat +search-msg` 直接按带时区的时间范围搜索消息，不先枚举联系人；`chat +recent-conversations` 可直接发现活跃单聊和群聊。投影补丁保留会话名称与 singleChat 标记。读取必须检查 complete/hasMore/failures/解密失败账本，不能把不完整结果当作空结果成功。适配入口禁用上游遥测。
+应用使用 `chat +search-msg` 直接按带时区的时间范围搜索消息，不先枚举联系人；`chat +recent-conversations` 可直接发现活跃单聊和群聊。投影补丁保留会话名称与 singleChat 标记。读取必须检查 complete/hasMore/failures/解密失败账本，不能把不完整结果当作空结果成功。适配入口禁用上游遥测。消息搜索明确返回 `success=true`、`result.hasMore=false` 且结果只含分页字段（可附带空 friendlyHint 与 retryable=false）时，兼容服务省略空消息集合的响应；权限错误、未知结构和未完成分页仍拒绝作为空结果。
 
 1.0.65 的 SafeChat 解密组件要求 **CGO_ENABLED=1**。CGO=0 会编入不可用的 stub，不可作为本适配的完整发行物。macOS 使用系统 clang，Windows 原生构建需 Go 可用的 C/C++ 编译器；从 macOS 交叉编译 Windows 时须显式设置 `IMBOARD_DWS_WINDOWS_CC` 和可选 `IMBOARD_DWS_WINDOWS_CXX`（本轮使用经官方摘要校验的 Zig 0.17.0，target 为 x86_64-windows-gnu）。
 

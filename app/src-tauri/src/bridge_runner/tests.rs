@@ -461,3 +461,51 @@ fn message_type_boundary_actual_enterprise_adapters_keep_declared_types() {
         }
     }
 }
+
+#[test]
+fn feishu_empty_search_and_missing_search_scope_are_distinct() {
+    let empty = serde_json::json!({"ok":true,"data":{"items":[]}});
+    assert!(classify_feishu_cli_structured_error(&empty, "").is_none());
+    assert_eq!(
+        normalize_feishu_message_sessions(&empty),
+        serde_json::json!([])
+    );
+    let denied = serde_json::json!({"ok":false,"error":{
+        "subtype":"missing_scope","missing_scopes":["search:message"]
+    }});
+    let error = classify_feishu_cli_structured_error(&denied, "").unwrap();
+    assert_eq!(error.code, "FEISHU_MISSING_SCOPE");
+    assert!(error.message.contains("search:message"));
+}
+
+#[test]
+fn feishu_projection_rejects_unknown_and_discarded_rows_but_accepts_empty_reads() {
+    for command in ["list-chats", "fetch-messages", "search-messages"] {
+        for raw in [
+            serde_json::json!([]),
+            serde_json::json!({"data":{"items":[],"has_more":false}}),
+        ] {
+            assert_eq!(
+                checked_feishu_read(&raw, &HashMap::new(), command).unwrap(),
+                serde_json::json!([])
+            );
+        }
+        for raw in [
+            serde_json::json!({}),
+            serde_json::json!({"items":[] ,"has_more":true}),
+            serde_json::json!({"items":[{"unexpected":"private body"}]}),
+        ] {
+            assert!(checked_feishu_read(&raw, &HashMap::new(), command).is_err());
+        }
+    }
+}
+
+#[test]
+fn validated_nested_search_projection_preserves_nonempty_results() {
+    let raw = serde_json::json!({"data":{"result":{"items":[{
+        "chat_id":"chat", "message_id":"message", "create_time":"1792972800000"
+    }]}}});
+    let projected = checked_feishu_read(&raw, &HashMap::new(), "search-messages").unwrap();
+    assert_eq!(projected.as_array().unwrap().len(), 1);
+    assert_eq!(projected[0]["chatId"], "chat");
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "commands": [
+    "list-chats",
+    "list-contacts",
+    "search-messages",
+    "fetch-messages"
+  ],
+  "collectionKeys": [
+    "items",
+    "messages",
+    "sessions",
+    "data",
+    "rows",
+    "results"
+  ],
+  "containerKeys": [
+    "data",
+    "result",
+    "_meta",
+    "pagination"
+  ],
+  "successFlags": [
+    "ok",
+    "success"
+  ],
+  "completionFlags": [
+    "complete",
+    "paginationKnown",
+    "pagination_known"
+  ],
+  "incompleteFlags": [
+    "partial",
+    "hasMore",
+    "has_more",
+    "truncated",
+    "truncatedByPageLimit",
+    "truncatedByResultLimit"
+  ],
+  "failureLists": [
+    "failures",
+    "errors"
+  ],
+  "failureCounts": [
+    "failedCount",
+    "failed_count",
+    "decryptFailedCount"
+  ],
+  "messages": {
+    "invalid": "读取结果格式不完整，无法确认消息数量，请重试。",
+    "incomplete": "本次读取不完整，请检查错误详情后重试。",
+    "api": "读取接口返回失败，请检查账号授权或重试。",
+    "empty": "测试读取成功：当前查询范围内暂无可见消息。",
+    "successPrefix": "测试读取成功："
+  },
+  "failureCodes": [
+    "code",
+    "errcode",
+    "errorCode"
+  ],
+  "errorCodes": {
+    "invalid": "READ_INVALID_RESPONSE",
+    "incomplete": "READ_INCOMPLETE",
+    "api": "READ_API_FAILED"
+  }
+}

@@ -1,7 +1,7 @@
+pub(super) use super::read_checkpoint::record_profile_sync_outcomes;
 use std::fs;
 
 use crate::analysis::orchestrator::{emit_sync_progress, ensure_sync_not_cancelled};
-use rusqlite::params;
 use tauri::{Manager, State};
 
 use crate::analysis::orchestrator::analyze_pending_messages;
@@ -104,43 +104,7 @@ async fn run_manual_sync_inner(
 
     {
         let conn = state.db.lock().map_err(|err| err.to_string())?;
-        daily_cache::ensure_current_day(&conn, &day).map_err(|err| err.to_string())?;
-        let tx = conn
-            .unchecked_transaction()
-            .map_err(|err| err.to_string())?;
-
-        for outcome in &profile_outcomes {
-            if outcome.succeeded {
-                tx.execute(
-                    "insert into sync_state(
-                         profile_id, day, last_sync_at, last_attempt_at, last_success_at,
-                         last_error, cursor_json, updated_at
-                     ) values(?1, ?2, datetime('now'), datetime('now'), datetime('now'), null, '{}', datetime('now'))
-                     on conflict(profile_id, day) do update set
-                       last_sync_at = excluded.last_sync_at,
-                       last_attempt_at = excluded.last_attempt_at,
-                       last_success_at = excluded.last_success_at,
-                       last_error = null,
-                       updated_at = excluded.updated_at",
-                    params![outcome.profile_id, day],
-                )
-                .map_err(|err| err.to_string())?;
-            } else {
-                tx.execute(
-                    "insert into sync_state(
-                         profile_id, day, last_attempt_at, last_error, cursor_json, updated_at
-                     ) values(?1, ?2, datetime('now'), ?3, '{}', datetime('now'))
-                     on conflict(profile_id, day) do update set
-                       last_attempt_at = excluded.last_attempt_at,
-                       last_error = excluded.last_error,
-                       updated_at = excluded.updated_at",
-                    params![outcome.profile_id, day, outcome.error],
-                )
-                .map_err(|err| err.to_string())?;
-            }
-        }
-
-        tx.commit().map_err(|err| err.to_string())?;
+        record_profile_sync_outcomes(&conn, &day, &profile_outcomes)?;
     }
 
     let (ai_status, analyzed_messages) = analyze_pending_messages(

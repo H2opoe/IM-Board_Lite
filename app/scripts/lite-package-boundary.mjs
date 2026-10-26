@@ -27,7 +27,7 @@ export function assertLiteResources(path) {
         // text exception to the exact audited executable; all other markers,
         // paths, dependencies and tampered/new binaries retain the normal gate.
         if (entryPath.replaceAll("\\", "/").endsWith("/runtime/dws/1.0.65-imboard.1/win-x64/dws.exe") &&
-            createHash("sha256").update(bytes).digest("hex") === "36587fa53af02944f0da725ec08ccfb95b4f3a19db247f8815ac238ebf426592") {
+            createHash("sha256").update(bytes).digest("hex") === "acb123c86af6798c42989ef9420f3605da156d3248e9a15781cbde007cf66768") {
           content = content.replaceAll("微信邀请链接", "企业外部邀请链接");
         }
         if (forbiddenContent.some((pattern) => pattern.test(content))) {

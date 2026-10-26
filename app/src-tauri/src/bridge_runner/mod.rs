@@ -19,6 +19,7 @@ mod feishu_runner;
 mod normalizers;
 mod paths;
 mod process;
+pub(crate) mod read_result;
 mod validation;
 mod wecom_runner;
 use dingtalk_runner::run_official_dingtalk_cli;
@@ -71,6 +72,17 @@ pub async fn run_bridge(
 }
 
 pub async fn run_bridge_tracked(
+    request: BridgeRequest,
+    resource_dir: PathBuf,
+    cache_dir: PathBuf,
+    active_bridges: Option<&BridgeRegistry>,
+) -> anyhow::Result<BridgeEnvelope> {
+    let command = request.command.clone();
+    let envelope = run_bridge_inner(request, resource_dir, cache_dir, active_bridges).await?;
+    Ok(read_result::enforce(&command, envelope))
+}
+
+async fn run_bridge_inner(
     request: BridgeRequest,
     resource_dir: PathBuf,
     cache_dir: PathBuf,

@@ -51,13 +51,10 @@ export function useProfilesStore() {
   useEffect(() => {
     mounted.current = true;
     void refreshProfilesForUi();
-    const onProfilesChanged = () => { void refreshProfilesForUi(); };
-    window.addEventListener("im-board-profiles-changed", onProfilesChanged);
     return () => {
       mounted.current = false;
       refreshing.current = false;
       requestSequence.current += 1;
-      window.removeEventListener("im-board-profiles-changed", onProfilesChanged);
     };
   }, [refreshProfilesForUi]);
 

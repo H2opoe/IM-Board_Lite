@@ -1,5 +1,6 @@
 //! Pinned DWS 1.0.65 read contract. All time-window reads avoid name discovery.
 use super::super::normalizers::dingtalk_time_arg;
+use super::super::read_result::ReadProblem;
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -60,35 +61,32 @@ pub(super) fn read_args(kind: &str, args: &HashMap<String, String>) -> Result<Ve
     Ok(result)
 }
 
-pub(super) fn complete_payload<'a>(raw: &'a Value, kind: &str) -> Result<&'a Value, String> {
+pub(super) fn complete_payload<'a>(raw: &'a Value, kind: &str) -> Result<&'a Value, ReadProblem> {
     let payload = raw.get("data").filter(|v| v.is_object()).unwrap_or(raw);
     let field = if kind == "list-chats" {
         "conversations"
     } else {
         "messages"
     };
-    if payload.get(field).and_then(Value::as_array).is_none() {
-        return Err("钉钉CLI返回了不匹配的读取结构，无法确认消息数量，请更新CLI后重试。".into());
-    }
-    let complete = payload.get("complete").and_then(Value::as_bool) == Some(true);
-    let failed = payload
-        .get("failedCount")
-        .and_then(Value::as_u64)
-        .unwrap_or(0)
-        > 0
-        || payload
-            .get("failures")
-            .and_then(Value::as_array)
-            .is_some_and(|v| !v.is_empty())
-        || payload
-            .get("decryptFailedCount")
-            .and_then(Value::as_u64)
-            .unwrap_or(0)
-            > 0;
-    if !complete || failed || payload.get("hasMore").and_then(Value::as_bool) == Some(true) {
-        return Err("钉钉本次读取不完整（分页上限、权限、解密或网络问题）；未将其计为读取成功，请检查CLI详情后重试。".into());
+    super::super::read_result::named_collection(payload, field)
+        .and_then(|_| super::super::read_result::ensure_complete(payload))?;
+    if payload.get("complete").and_then(Value::as_bool) != Some(true) {
+        return Err(ReadProblem::Incomplete);
     }
     Ok(payload)
+}
+
+pub(super) fn failure_summary_from_output(stdout: &str, stderr: &str) -> String {
+    // DWS writes API error envelopes to stderr, including after a partial stdout.
+    for output in [stderr, stdout] {
+        if serde_json::from_str::<Value>(output)
+            .ok()
+            .is_some_and(|raw| raw.get("error").is_some_and(|error| error.is_object()))
+        {
+            return failure_summary(output);
+        }
+    }
+    failure_summary("")
 }
 
 pub(super) fn failure_summary(stdout: &str) -> String {
@@ -96,16 +94,29 @@ pub(super) fn failure_summary(stdout: &str) -> String {
         .ok()
         .and_then(|raw| raw.get("error").cloned())
         .map(|error| {
-            ["code", "message", "reason"]
-                .into_iter()
-                .filter_map(|key| {
-                    error
-                        .get(key)
-                        .and_then(Value::as_str)
-                        .map(crate::security::sanitize_log)
-                })
-                .collect::<Vec<_>>()
-                .join("；")
+            let fields = [
+                "category",
+                "code",
+                "message",
+                "reason",
+                "server_error_code",
+                "server_key",
+                "technical_detail",
+                "friendly_hint",
+                "action_url",
+            ]
+            .into_iter()
+            .filter_map(|key| {
+                error
+                    .get(key)
+                    .filter(|value| value.is_string() || value.is_number())
+                    .map(|value| (key.to_owned(), value.clone()))
+            })
+            .collect::<serde_json::Map<String, Value>>();
+            if fields.is_empty() {
+                return String::new();
+            }
+            crate::security::sanitize_log(&serde_json::json!({"error": fields}).to_string())
         })
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(|| {
@@ -124,6 +135,25 @@ mod tests {
         assert!(text.contains("fixture page failed"));
         assert!(!text.contains("private body fixture"));
         assert!(!failure_summary("private body fixture").contains("private body fixture"));
+    }
+    #[test]
+    fn permission_error_metadata_survives_read_failure_summary() {
+        let raw = serde_json::json!({
+            "error": {"category":"api", "code":1, "reason":"business_error",
+                "server_key":"group-chat", "server_error_code":"1001",
+                "message":"forbidden request", "details":{"partialResult":{"messages":[{"text":"private body"}]}}},
+            "data":{"messages":[{"text":"private body"}]}
+        });
+        let summary = failure_summary_from_output("", &raw.to_string());
+        let error = super::super::super::errors::classify_dingtalk_cli_error(&summary, "").unwrap();
+        assert_eq!(error.code, "DINGTALK_MESSAGE_PERMISSION_MISSING");
+        assert!(!summary.contains("private body"));
+        let partial = r#"{"messages":[{"text":"private body"}]}"#;
+        assert_eq!(
+            failure_summary_from_output(partial, &raw.to_string()),
+            summary
+        );
+        assert!(failure_summary(r#"{"error":{"category":"api","code":1,"message":"下游缺少明确的集合字段，无法判定结果为空"}}"#).contains("下游缺少明确的集合字段"));
     }
     #[test]
     fn direct_search_needs_no_contacts_or_group_names_and_uses_rfc3339() {

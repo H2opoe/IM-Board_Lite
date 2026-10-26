@@ -1,4 +1,5 @@
 use super::outcome::ProfileSyncOutcome;
+use super::read_checkpoint::{has_failed_profile_checkpoint, record_history_read_failures};
 use crate::messages::import_window::MessageImportWindow;
 use std::collections::{HashMap, HashSet};
 
@@ -257,13 +258,6 @@ async fn sync_profile_messages(
         all_sessions.extend(value_array(&sessions.data).into_iter().cloned());
     }
     let all_sessions = dedupe_sessions(all_sessions);
-    if all_sessions.is_empty() {
-        if let Some(warning) = (connector.empty_session_warning)(&profile) {
-            if !warnings.contains(&warning) {
-                warnings.push(warning);
-            }
-        }
-    }
 
     let recent_sessions = all_sessions
         .into_iter()
