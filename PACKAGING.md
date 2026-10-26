@@ -2,7 +2,7 @@
 
 ## 版本与身份
 
-版本以 `app/release-manifest.json` 为来源，通过 `app/scripts/release-config.mjs` 的 `releaseConfig()` 读取。当前应用系统版本为 3.0.0，发布标签为 3.0.0-lite；这是 2026-09-30 的配置快照。
+版本以 `app/release-manifest.json` 为来源，通过 `app/scripts/release-config.mjs` 的 `releaseConfig()` 读取。当前应用系统版本为 3.0.1，发布标签为 3.0.1-lite。
 
 修改版本时同步 npm、Cargo、Tauri 静态清单，并运行 `npm run verify:release-config`。`releaseLabel` 用于展示和产物名；系统版本不含 Lite 或 beta 后缀。Bundle ID 为 `com.local.im-board-lite`，产品名为 `IM-Board Lite`。macOS 构建号由 `macosBundleVersion` 配置，必须递增。
 
