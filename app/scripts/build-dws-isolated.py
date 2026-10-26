@@ -76,9 +76,12 @@ def main():
     source = roots[0]
     checked_run(['git', 'apply', '--check', str(patch)], source, env)
     checked_run(['git', 'apply', str(patch)], source, env)
-    checked_run([go, 'test', '-mod=readonly', './internal/keychain', '-run', '^TestIMBoardNamespace', '-count=1'], source, env)
-    checked_run([go, 'test', '-mod=readonly', './internal/security', '-run', '^Test(Encrypt|Decrypt|DeriveKey|IMBoard)', '-count=1'], source, env)
-    checked_run([go, 'test', '-mod=readonly', './internal/shortcut/smart', '-run', '^TestIMBoardSearch', '-count=1'], source, env)
+    # TestMain cleans up after individual tests restore their environment. Give
+    # that cleanup its own account namespace; never inherit a user's namespace.
+    test_env = {**env, 'IM_BOARD_DWS_NAMESPACE': hashlib.sha256(str(work).encode()).hexdigest()}
+    checked_run([go, 'test', '-mod=readonly', './internal/keychain', '-run', '^TestIMBoardNamespace', '-count=1'], source, test_env)
+    checked_run([go, 'test', '-mod=readonly', './internal/security', '-run', '^Test(Encrypt|Decrypt|DeriveKey|IMBoard)', '-count=1'], source, test_env)
+    checked_run([go, 'test', '-mod=readonly', './internal/shortcut/smart', '-run', '^TestIMBoardSearch', '-count=1'], source, test_env)
     if args.target == 'macos':
         from dws_macos_bundle import build_macos
         build_macos(go, source, env, lock, work, args.output.resolve(), APP)
@@ -99,7 +102,7 @@ def main():
     evidence = {**lock, 'toolchain': version, 'binarySha256': hashlib.sha256(staged.read_bytes()).hexdigest(),
                 'nativeWindowsTestsRun': False, 'windowsTestExecutable': str(tests)}
     if os.name == 'nt':
-        checked_run([str(tests), '-test.run', '^TestIMBoardWindows', '-test.v'], source, env)
+        checked_run([str(tests), '-test.run', '^TestIMBoardWindows', '-test.v'], source, test_env)
         marker = subprocess.check_output([str(staged), '--im-board-isolation-version'], env=env, text=True, timeout=15).strip()
         if marker != 'im-board-dws-isolation-v1':
             raise RuntimeError('DWS isolation capability probe failed')

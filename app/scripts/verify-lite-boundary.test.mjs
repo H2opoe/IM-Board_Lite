@@ -22,10 +22,12 @@ test("history checks only the requested reachable graph and preserves old tags",
     mkdirSync(join(root, "app/src"), { recursive: true });
     copyFileSync(new URL("./verify-lite-boundary.mjs", import.meta.url), join(root, "app/scripts/verify-lite-boundary.mjs"));
     copyFileSync(new URL("./lite-enterprise-domains.mjs", import.meta.url), join(root,"app/scripts/lite-enterprise-domains.mjs"));
+    copyFileSync(new URL("./lite-presentation-content.mjs", import.meta.url), join(root,"app/scripts/lite-presentation-content.mjs"));
     writeFileSync(join(root, "app/src/index.ts"), "export const fixture = true;");
     git("add", "."); git("commit", "-m", "clean public fixture");
     const verify = (...args) => spawnSync(process.execPath, [join(root, "app/scripts/verify-lite-boundary.mjs"), "--history", "--ref", ...args], { encoding: "utf8" });
-    assert.equal(verify("public-lite").status, 0);
+    const clean = verify("public-lite");
+    assert.equal(clean.status, 0, clean.stderr);
     assert.notEqual(verify("old-release").status, 0);
     assert.notEqual(verify("missing-ref").status, 0);
     assert.notEqual(verify("--all").status, 0);
