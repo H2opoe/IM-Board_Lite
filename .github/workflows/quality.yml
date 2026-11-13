@@ -91,27 +91,25 @@ jobs:
         with:
           go-version: '1.27.1'
           cache: false
+      - name: DWS evidence regression tests
+        run: python -m unittest discover -s scripts -p test_dws_build_evidence.py
       - name: Rebuild isolated DWS and run native namespace fixtures
         shell: pwsh
         run: |
           python scripts/build-dws-isolated.py --work-dir "$env:RUNNER_TEMP/dws-build" --output "$env:RUNNER_TEMP/dws-rebuilt.exe" --allow-unverified-vendor-licenses
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $rebuilt = (Get-FileHash "$env:RUNNER_TEMP/dws-rebuilt.exe" -Algorithm SHA256).Hash
-          $bundled = (Get-FileHash "runtime/dws/1.0.65-imboard.1/win-x64/dws.exe" -Algorithm SHA256).Hash
-          if ($rebuilt -cne $bundled) { throw 'DWS reproducible build differs from bundled binary' }
-          foreach ($suffix in @('dependencies.json', 'THIRD-PARTY-NOTICES.txt')) {
-            $generated = (Get-FileHash "$env:RUNNER_TEMP/dws-rebuilt.$suffix" -Algorithm SHA256).Hash
-            $shipped = (Get-FileHash "runtime/dws/1.0.65-imboard.1/win-x64/$suffix" -Algorithm SHA256).Hash
-            if ($generated -cne $shipped) { throw "DWS dependency evidence differs: $suffix" }
-          }
+          python scripts/dws_build_evidence.py --target windows --bundled runtime/dws/1.0.65-imboard.1/win-x64/dws.exe --rebuilt "$env:RUNNER_TEMP/dws-rebuilt.exe" --audit-dir "$env:RUNNER_TEMP/dws-audit"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Audit bundled DWS against the Go vulnerability database
         shell: pwsh
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $scanner = Join-Path (go env GOPATH) 'bin/govulncheck.exe'
-          & $scanner -mode=binary -show=verbose runtime/dws/1.0.65-imboard.1/win-x64/dws.exe | Tee-Object "$env:RUNNER_TEMP/dws-vulnerabilities.log"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($kind in @('bundled', 'rebuilt')) {
+            & $scanner -mode=binary -show=verbose "$env:RUNNER_TEMP/dws-audit/$kind.exe" | Tee-Object -Append "$env:RUNNER_TEMP/dws-vulnerabilities.log"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
       - name: Preserve isolated runtime provenance
         if: always()
