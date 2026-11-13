@@ -91,14 +91,18 @@ jobs:
         with:
           go-version: '1.27.1'
           cache: false
+      - name: DWS evidence regression tests
+        run: python -m unittest discover -s scripts -p test_dws_build_evidence.py
       - name: Rebuild pinned macOS DWS archives
         run: python scripts/build-dws-isolated.py --target macos --work-dir "$RUNNER_TEMP/dws-build" --output "$RUNNER_TEMP/dws-output" --allow-unverified-vendor-licenses
       - name: Compare archives and audit actual binaries
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
           for target in darwin-arm64 darwin-x64; do
-            cmp "$RUNNER_TEMP/dws-output/package-$target.tgz" "runtime/dws/1.0.65-imboard.1/$target/package.tgz"
-            "$(go env GOPATH)/bin/govulncheck" -mode=binary -show=verbose "$RUNNER_TEMP/dws-build/dws-$target"
+            python scripts/dws_build_evidence.py --target "$target" --bundled "runtime/dws/1.0.65-imboard.1/$target/package.tgz" --rebuilt "$RUNNER_TEMP/dws-output/package-$target.tgz" --audit-dir "$RUNNER_TEMP/dws-audit/$target"
+            for kind in bundled rebuilt; do
+              "$(go env GOPATH)/bin/govulncheck" -mode=binary -show=verbose "$RUNNER_TEMP/dws-audit/$target/$kind"
+            done
           done
       - uses: actions/upload-artifact@v4
         if: always()
