@@ -4,7 +4,7 @@ use std::path::Path;
 #[cfg(any(debug_assertions, test))]
 use std::path::PathBuf;
 
-pub const VERSION: &str = "1.0.65-imboard.1";
+pub const VERSION: &str = "1.0.65-imboard.2";
 fn target() -> &'static str {
     if cfg!(target_arch = "aarch64") {
         "darwin-arm64"
@@ -15,12 +15,12 @@ fn target() -> &'static str {
 fn digests() -> (&'static str, &'static str) {
     match target() {
         "darwin-arm64" => (
-            "b1548d349c2bae67e0f250de9d8ce540327a41a52bb2eee77b8390edd526a069",
-            "b5f380564ca7090cea9518ffa0a985ed43bc21e1842053d9cabe15afef5b054c",
+            "7047f6aa69b14a7ee18552163edfa8b0da9d182f15244c1b526e42b5cb4f22eb",
+            "acf14081f80dcd5a360c99fc9cb1b4ae6ad58ee9ac4c4017bb85cc68f192e653",
         ),
         _ => (
-            "8fcb49324dce16ba3c4c4eb56086a9f8fa2cc1275955064c32ad1788da78a39c",
-            "21b9ff57a750865cda94e6677bd83ab4e17e80378ee803a91f3142952ae91e7f",
+            "0fc22857fc03e45b875c406e5d0eb8ffa2dff8716f5b5633c74165b155ce8f97",
+            "a89bbe190f503cf7d30ffe8198f37447f6452b502f5462fea49ffb793aef503b",
         ),
     }
 }

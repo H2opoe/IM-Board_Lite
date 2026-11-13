@@ -1,3 +1,5 @@
+diff --git a/cmd/main.go b/cmd/main.go
+index a499c61..fb8c60b 100644
 --- a/cmd/main.go
 +++ b/cmd/main.go
 @@ -14,6 +14,7 @@
@@ -8,7 +10,7 @@
  	"os"
  	"path/filepath"
  	"slices"
-@@ -39,6 +40,12 @@
+@@ -39,6 +40,12 @@ func main() {
  }
  
  func run() int {
@@ -21,9 +23,11 @@
  	if handled, code := runSchemaCacheBuilder(os.Args[1:], os.Stdout); handled {
  		return code
  	}
+diff --git a/go.mod b/go.mod
+index a7f86cf..61d1f8a 100644
 --- a/go.mod
 +++ b/go.mod
-@@ -20,7 +20,7 @@
+@@ -20,7 +20,7 @@ require (
  	github.com/ebitengine/purego v0.10.2
  	github.com/fatih/color v1.18.0
  	github.com/google/uuid v1.6.0
@@ -32,20 +36,21 @@
  	github.com/itchyny/gojq v0.12.18
  	github.com/mattn/go-isatty v0.0.20
  	github.com/muesli/termenv v0.16.0
-@@ -30,10 +30,9 @@
+@@ -30,10 +30,9 @@ require (
  	github.com/yuin/goldmark v1.8.5
  	github.com/zalando/go-keyring v0.2.8
  	gitlab.alibaba-inc.com/aes/aem-go-sdk v0.4.0
 -	golang.org/x/crypto v0.49.0
- 	golang.org/x/image v0.31.0
+-	golang.org/x/image v0.31.0
 -	golang.org/x/sys v0.42.0
 -	golang.org/x/text v0.35.0
++	golang.org/x/image v0.45.0
 +	golang.org/x/sys v0.47.0
 +	golang.org/x/text v0.41.0
  	google.golang.org/protobuf v1.36.12
  	safechat-go-sdk v0.0.0
  )
-@@ -64,7 +63,7 @@
+@@ -64,7 +63,7 @@ require (
  	github.com/muesli/cancelreader v0.2.2 // indirect
  	github.com/rivo/uniseg v0.4.7 // indirect
  	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
@@ -54,9 +59,11 @@
  )
  
  require (
+diff --git a/go.sum b/go.sum
+index 7ca2fd7..6b6832e 100644
 --- a/go.sum
 +++ b/go.sum
-@@ -67,8 +67,8 @@
+@@ -67,8 +67,8 @@ github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
  github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
  github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
  github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
@@ -67,7 +74,7 @@
  github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
  github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
  github.com/itchyny/gojq v0.12.18 h1:gFGHyt/MLbG9n6dqnvlliiya2TaMMh6FFaR2b1H6Drc=
-@@ -116,21 +116,19 @@
+@@ -116,21 +116,19 @@ github.com/yuin/goldmark v1.8.5/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc
  github.com/zalando/go-keyring v0.2.8 h1:6sD/Ucpl7jNq10rM2pgqTs0sZ9V3qMrqfIIy5YPccHs=
  github.com/zalando/go-keyring v0.2.8/go.mod h1:tsMo+VpRq5NGyKfxoBVjCuMrG47yj8cmakZDO5QGii0=
  go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
@@ -75,10 +82,12 @@
 -golang.org/x/crypto v0.49.0/go.mod h1:ErX4dUh2UM+CFYiXZRTcMpEcN8b/1gxEuv3nODoYtCA=
  golang.org/x/exp v0.0.0-20231006140011-7918f672742d h1:jtJma62tbqLibJ5sFQz8bKtEM8rJBtfilJ2qTU199MI=
  golang.org/x/exp v0.0.0-20231006140011-7918f672742d/go.mod h1:ldy0pHrwJyGW56pPQzzkH36rKxoZW1tw7ZJpeKx+hdo=
- golang.org/x/image v0.31.0 h1:mLChjE2MV6g1S7oqbXC0/UcKijjm5fnJLUYKIYrLESA=
- golang.org/x/image v0.31.0/go.mod h1:R9ec5Lcp96v9FTF+ajwaH3uGxPH4fKfHHAVbUILxghA=
+-golang.org/x/image v0.31.0 h1:mLChjE2MV6g1S7oqbXC0/UcKijjm5fnJLUYKIYrLESA=
+-golang.org/x/image v0.31.0/go.mod h1:R9ec5Lcp96v9FTF+ajwaH3uGxPH4fKfHHAVbUILxghA=
 -golang.org/x/sync v0.20.0 h1:e0PTpb7pjO8GAtTs2dQ6jYa5BWYlMuX047Dco/pItO4=
 -golang.org/x/sync v0.20.0/go.mod h1:9xrNwdLfx4jkKbNva9FpL6vEN7evnE43NNNJQ2LF3+0=
++golang.org/x/image v0.45.0 h1:FMb1nTbH5H9vF55SriQHgFw5GnNL9Jg6L25BwXKzhB0=
++golang.org/x/image v0.45.0/go.mod h1:n62x/7RqlwXDvGsSU4u6IUTUf6KghUZ9Bt7cG/T9Fx4=
 +golang.org/x/sync v0.22.0 h1:SZjpbeLmrCk4xhRSZFNZW5gFUeCeFgjekvI/+gfScek=
 +golang.org/x/sync v0.22.0/go.mod h1:9xrNwdLfx4jkKbNva9FpL6vEN7evnE43NNNJQ2LF3+0=
  golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
@@ -95,9 +104,11 @@
  google.golang.org/protobuf v1.36.12 h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc=
  google.golang.org/protobuf v1.36.12/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
  gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
+diff --git a/internal/keychain/auth_entries_windows.go b/internal/keychain/auth_entries_windows.go
+index 5a0882f..be1cbed 100644
 --- a/internal/keychain/auth_entries_windows.go
 +++ b/internal/keychain/auth_entries_windows.go
-@@ -30,7 +30,10 @@
+@@ -30,7 +30,10 @@ var registryReadValueNames = registry.Key.ReadValueNames
  // every auth-token account so orphaned slots that are not present in
  // profiles.json are still validated before a login can overwrite credentials.
  func platformValidateAuthTokenEntries(service string) error {
@@ -109,6 +120,9 @@
  	k, err := registryOpenReadKey(registry.CURRENT_USER, keyPath, registry.QUERY_VALUE)
  	if err != nil {
  		if errors.Is(err, registry.ErrNotExist) {
+diff --git a/internal/keychain/imboard_namespace.go b/internal/keychain/imboard_namespace.go
+new file mode 100644
+index 0000000..a9126f9
 --- /dev/null
 +++ b/internal/keychain/imboard_namespace.go
 @@ -0,0 +1,19 @@
@@ -131,6 +145,9 @@
 +	}
 +	return `Software\IMBoard\DwsCli\Profiles\` + strings.ToLower(namespace), nil
 +}
+diff --git a/internal/keychain/imboard_namespace_test.go b/internal/keychain/imboard_namespace_test.go
+new file mode 100644
+index 0000000..d7cd230
 --- /dev/null
 +++ b/internal/keychain/imboard_namespace_test.go
 @@ -0,0 +1,25 @@
@@ -159,6 +176,9 @@
 +		t.Fatalf("bad namespace mapping: %s", a)
 +	}
 +}
+diff --git a/internal/keychain/imboard_namespace_windows_test.go b/internal/keychain/imboard_namespace_windows_test.go
+new file mode 100644
+index 0000000..984a5ec
 --- /dev/null
 +++ b/internal/keychain/imboard_namespace_windows_test.go
 @@ -0,0 +1,70 @@
@@ -232,9 +252,11 @@
 +		t.Fatal("account cleanup used a global registry")
 +	}
 +}
+diff --git a/internal/keychain/keychain_windows.go b/internal/keychain/keychain_windows.go
+index 791cb0d..583eb1c 100644
 --- a/internal/keychain/keychain_windows.go
 +++ b/internal/keychain/keychain_windows.go
-@@ -67,11 +67,15 @@
+@@ -67,11 +67,15 @@ func StorageDir(service string) string {
  	return filepath.Join(home, "AppData", "Local", service)
  }
  
@@ -253,7 +275,7 @@
  	}
  
  	// Windows stores credentials in HKCU instead of DWS_KEYCHAIN_DIR. Tests set
-@@ -83,7 +87,7 @@
+@@ -83,7 +87,7 @@ func registryPathForService(service string) string {
  		namespace = absolute
  	}
  	sum := sha256.Sum256([]byte(strings.ToLower(namespace)))
@@ -262,7 +284,7 @@
  }
  
  var safeRegRe = regexp.MustCompile(`[^a-zA-Z0-9._-]`)
-@@ -185,7 +189,10 @@
+@@ -185,7 +189,10 @@ func platformRemove(service, account string) error {
  }
  
  func registryGet(service, account string) (string, bool, error) {
@@ -274,7 +296,7 @@
  	k, err := registryOpenReadKey(registry.CURRENT_USER, keyPath, registry.QUERY_VALUE)
  	if err != nil {
  		if errors.Is(err, registry.ErrNotExist) {
-@@ -221,7 +228,10 @@
+@@ -221,7 +228,10 @@ func registryGetFromKey(k registry.Key, service, account string) (string, bool,
  }
  
  func registrySet(service, account string, protected []byte) error {
@@ -286,7 +308,7 @@
  	k, _, err := registry.CreateKey(registry.CURRENT_USER, keyPath, registry.SET_VALUE)
  	if err != nil {
  		return fmt.Errorf("registry create/open failed: %w", err)
-@@ -236,7 +246,10 @@
+@@ -236,7 +246,10 @@ func registrySet(service, account string, protected []byte) error {
  }
  
  func registryRemove(service, account string) error {
@@ -298,7 +320,7 @@
  	k, err := registryOpenDeleteKey(keyPath, registry.SET_VALUE)
  	if err != nil {
  		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) {
-@@ -259,7 +272,10 @@
+@@ -259,7 +272,10 @@ func deleteRegistryValue(key registry.Key, name string) error {
  }
  
  func registryRemoveAuthTokenEntries(service string) error {
@@ -310,7 +332,7 @@
  	k, err := registryOpenDeleteKey(keyPath, registry.QUERY_VALUE|registry.SET_VALUE)
  	if err != nil {
  		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) {
-@@ -290,7 +306,10 @@
+@@ -290,7 +306,10 @@ func registryRemoveAuthTokenEntries(service string) error {
  }
  
  func registryRemoveAccountEntriesWithPrefixes(service string, prefixes []string) error {
@@ -322,9 +344,11 @@
  	k, err := registryOpenDeleteKey(keyPath, registry.QUERY_VALUE|registry.SET_VALUE)
  	if err != nil {
  		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) {
+diff --git a/internal/keychain/keychain_windows_test.go b/internal/keychain/keychain_windows_test.go
+index f674392..10f0c3f 100644
 --- a/internal/keychain/keychain_windows_test.go
 +++ b/internal/keychain/keychain_windows_test.go
-@@ -25,17 +25,19 @@
+@@ -25,17 +25,19 @@ import (
  )
  
  func TestCrossPlatformCoverageRegistryPathForServiceHonorsTestNamespace(t *testing.T) {
@@ -349,7 +373,7 @@
  
  	if firstPath == defaultPath || secondPath == defaultPath {
  		t.Fatalf("isolated registry paths = %q, %q; want paths distinct from %q", firstPath, secondPath, defaultPath)
-@@ -49,6 +51,7 @@
+@@ -49,6 +51,7 @@ func TestCrossPlatformCoverageRegistryPathForServiceHonorsTestNamespace(t *testi
  }
  
  func TestDeleteRegistryValuePropagatesFailure(t *testing.T) {
@@ -357,7 +381,7 @@
  	originalDelete := registryDeleteValue
  	failure := errors.New("delete failed")
  	registryDeleteValue = func(registry.Key, string) error { return failure }
-@@ -60,6 +63,7 @@
+@@ -60,6 +63,7 @@ func TestDeleteRegistryValuePropagatesFailure(t *testing.T) {
  }
  
  func TestRegistryRemoveAuthTokenEntriesPropagatesOpenFailure(t *testing.T) {
@@ -365,7 +389,7 @@
  	originalOpen := registryOpenDeleteKey
  	failure := windows.ERROR_ACCESS_DENIED
  	registryOpenDeleteKey = func(string, uint32) (registry.Key, error) {
-@@ -73,6 +77,7 @@
+@@ -73,6 +77,7 @@ func TestRegistryRemoveAuthTokenEntriesPropagatesOpenFailure(t *testing.T) {
  }
  
  func TestCrossPlatformCoverageWindowsPrefixCleanupFailureEdges(t *testing.T) {
@@ -373,7 +397,7 @@
  	originalOpen := registryOpenDeleteKey
  	t.Cleanup(func() { registryOpenDeleteKey = originalOpen })
  	failure := windows.ERROR_ACCESS_DENIED
-@@ -89,7 +94,7 @@
+@@ -89,7 +94,7 @@ func TestCrossPlatformCoverageWindowsPrefixCleanupFailureEdges(t *testing.T) {
  	writeRawRegistryString(t, service, "appsecret:id", "value")
  	writeRawRegistryNamedString(t, service, "%%%invalid-account%%%", "value")
  	t.Cleanup(func() { _ = Remove(service, "appsecret:id") })
@@ -382,7 +406,7 @@
  
  	registryOpenDeleteKey = func(string, uint32) (registry.Key, error) {
  		return registry.OpenKey(registry.CURRENT_USER, keyPath, registry.SET_VALUE)
-@@ -107,9 +112,10 @@
+@@ -107,9 +112,10 @@ func TestCrossPlatformCoverageWindowsPrefixCleanupFailureEdges(t *testing.T) {
  }
  
  func TestCrossPlatformCoverageWindowsPrefixCleanupSkipsMalformedAccountNames(t *testing.T) {
@@ -394,9 +418,11 @@
  	const malformedName = "%%%invalid-account%%%"
  	const matchingAccount = "appsecret:client"
  	const unrelatedAccount = "auth-token:corp"
+diff --git a/internal/keychain/keychain_windows_validation_test.go b/internal/keychain/keychain_windows_validation_test.go
+index 92476e2..e77298a 100644
 --- a/internal/keychain/keychain_windows_validation_test.go
 +++ b/internal/keychain/keychain_windows_validation_test.go
-@@ -34,7 +34,7 @@
+@@ -34,7 +34,7 @@ func writeRawRegistryNamedString(t *testing.T, service, name, value string) {
  	t.Helper()
  	k, _, err := registry.CreateKey(
  		registry.CURRENT_USER,
@@ -405,7 +431,7 @@
  		registry.SET_VALUE,
  	)
  	if err != nil {
-@@ -50,7 +50,7 @@
+@@ -50,7 +50,7 @@ func writeRawRegistryDWORD(t *testing.T, service, account string, value uint32)
  	t.Helper()
  	k, _, err := registry.CreateKey(
  		registry.CURRENT_USER,
@@ -414,7 +440,7 @@
  		registry.SET_VALUE,
  	)
  	if err != nil {
-@@ -63,6 +63,7 @@
+@@ -63,6 +63,7 @@ func writeRawRegistryDWORD(t *testing.T, service, account string, value uint32)
  }
  
  func TestCrossPlatformCoverageWindowsRegistryDistinguishesMissingFromUnreadable(t *testing.T) {
@@ -422,7 +448,7 @@
  	service := "test-service-" + t.Name()
  	account := AccountToken + ":legacy-corp"
  	t.Cleanup(func() { _ = Remove(service, account) })
-@@ -98,6 +99,7 @@
+@@ -98,6 +99,7 @@ func TestCrossPlatformCoverageWindowsRegistryDistinguishesMissingFromUnreadable(
  }
  
  func TestCrossPlatformCoverageWindowsAuthTokenInventoryValidatesOrphanSlots(t *testing.T) {
@@ -430,7 +456,7 @@
  	service := "test-service-" + t.Name()
  	const unrelated = "app-secret:client"
  	orphan := AccountToken + ":orphan-corp"
-@@ -137,6 +139,7 @@
+@@ -137,6 +139,7 @@ func TestCrossPlatformCoverageWindowsAuthTokenInventoryValidatesOrphanSlots(t *t
  }
  
  func TestCrossPlatformCoverageWindowsRegistryReadFailuresFailClosed(t *testing.T) {
@@ -438,7 +464,7 @@
  	t.Run("open failure", func(t *testing.T) {
  		originalOpen := registryOpenReadKey
  		failure := windows.ERROR_ACCESS_DENIED
-@@ -192,3 +195,12 @@
+@@ -192,3 +195,12 @@ func TestCrossPlatformCoverageWindowsRegistryReadFailuresFailClosed(t *testing.T
  		}
  	})
  }
@@ -451,9 +477,11 @@
 +	}
 +	return path
 +}
+diff --git a/internal/security/crypto.go b/internal/security/crypto.go
+index 5d767d0..e93ff6c 100644
 --- a/internal/security/crypto.go
 +++ b/internal/security/crypto.go
-@@ -21,7 +21,7 @@
+@@ -21,7 +21,7 @@ import (
  	"fmt"
  	"io"
  
@@ -462,7 +490,7 @@
  )
  
  const (
-@@ -45,7 +45,11 @@
+@@ -45,7 +45,11 @@ type gcmWithNonceSizeFactory func(cipher.Block, int) (cipher.AEAD, error)
  
  // DeriveKey derives a KeySize-byte key from password and salt using PBKDF2-SHA256.
  func DeriveKey(password, salt []byte) []byte {
@@ -475,6 +503,9 @@
  }
  
  // Encrypt encrypts plaintext using PBKDF2-derived AES-256-GCM.
+diff --git a/internal/security/imboard_crypto_test.go b/internal/security/imboard_crypto_test.go
+new file mode 100644
+index 0000000..276caf2
 --- /dev/null
 +++ b/internal/security/imboard_crypto_test.go
 @@ -0,0 +1,23 @@
@@ -501,9 +532,11 @@
 +		}
 +	}
 +}
+diff --git a/internal/shortcut/chatmsg/chatmsg.go b/internal/shortcut/chatmsg/chatmsg.go
+index 97a8dee..0e1f884 100644
 --- a/internal/shortcut/chatmsg/chatmsg.go
 +++ b/internal/shortcut/chatmsg/chatmsg.go
-@@ -357,6 +357,12 @@
+@@ -357,6 +357,12 @@ func ProjectMessageV1(m map[string]any, includeReactions bool) map[string]any {
  	if value := ConversationID(m); value != nil {
  		row["conversationId"] = value
  	}
@@ -516,6 +549,9 @@
  	if value := ThreadID(m); value != nil {
  		row["threadId"] = value
  	}
+diff --git a/internal/shortcut/chatmsg/imboard_projection_test.go b/internal/shortcut/chatmsg/imboard_projection_test.go
+new file mode 100644
+index 0000000..391d7ec
 --- /dev/null
 +++ b/internal/shortcut/chatmsg/imboard_projection_test.go
 @@ -0,0 +1,16 @@
@@ -535,18 +571,9 @@
 +		t.Fatal("invented type")
 +	}
 +}
---- a/internal/shortcut/smart/search_verification.go
-+++ b/internal/shortcut/smart/search_verification.go
-@@ -68,6 +68,9 @@
- 			break
- 		}
- 		grouped = child
-+	}
-+	if imBoardSuccessfulEmptySearch(data) {
-+		return []map[string]any{}, nil
- 	}
- 	rows, err := chatshortcut.StrictChatCollection(data, "messages", "items", "list")
- 	if err != nil {
+diff --git a/internal/shortcut/smart/imboard_empty_search.go b/internal/shortcut/smart/imboard_empty_search.go
+new file mode 100644
+index 0000000..20e98d8
 --- /dev/null
 +++ b/internal/shortcut/smart/imboard_empty_search.go
 @@ -0,0 +1,42 @@
@@ -592,6 +619,9 @@
 +	}
 +	return true
 +}
+diff --git a/internal/shortcut/smart/imboard_empty_search_test.go b/internal/shortcut/smart/imboard_empty_search_test.go
+new file mode 100644
+index 0000000..629beae
 --- /dev/null
 +++ b/internal/shortcut/smart/imboard_empty_search_test.go
 @@ -0,0 +1,49 @@
@@ -644,3 +674,17 @@
 +		}
 +	}
 +}
+diff --git a/internal/shortcut/smart/search_verification.go b/internal/shortcut/smart/search_verification.go
+index 01612e7..f77e026 100644
+--- a/internal/shortcut/smart/search_verification.go
++++ b/internal/shortcut/smart/search_verification.go
+@@ -69,6 +69,9 @@ func verifiedSearchItems(data map[string]any) ([]map[string]any, error) {
+ 		}
+ 		grouped = child
+ 	}
++	if imBoardSuccessfulEmptySearch(data) {
++		return []map[string]any{}, nil
++	}
+ 	rows, err := chatshortcut.StrictChatCollection(data, "messages", "items", "list")
+ 	if err != nil {
+ 		return nil, err

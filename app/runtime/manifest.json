@@ -23,21 +23,21 @@
     },
     {
       "id": "dws",
-      "version": "1.0.65-imboard.1",
+      "version": "1.0.65-imboard.2",
       "platform": "darwin-arm64",
-      "path": "dws/1.0.65-imboard.1/darwin-arm64",
+      "path": "dws/1.0.65-imboard.2/darwin-arm64",
       "fileCount": 1,
-      "sizeBytes": 16449412,
-      "treeSha256": "70e64f611c7564e271f97472549d3f1f512397de924509d062b93b41a3b78dbe"
+      "sizeBytes": 16460222,
+      "treeSha256": "e31a73aab36f157edb18bf8412c9576e8080ee98ec7fab50f41b3ac58be896c4"
     },
     {
       "id": "dws",
-      "version": "1.0.65-imboard.1",
+      "version": "1.0.65-imboard.2",
       "platform": "darwin-x64",
-      "path": "dws/1.0.65-imboard.1/darwin-x64",
+      "path": "dws/1.0.65-imboard.2/darwin-x64",
       "fileCount": 1,
-      "sizeBytes": 17697793,
-      "treeSha256": "cf67c513b61582c9be0719664177d289f74ceb28f8802ce5d2b79825048503da"
+      "sizeBytes": 17707808,
+      "treeSha256": "cb4bb8d128d23178a4693314df85201e0f0a738b1c2e1d722e2b5eabde255f94"
     }
   ]
 }

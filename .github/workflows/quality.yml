@@ -89,7 +89,7 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.27.1'
+          go-version: '1.27.4'
           cache: false
       - name: DWS evidence regression tests
         run: python -m unittest discover -s scripts -p test_dws_build_evidence.py
@@ -99,7 +99,7 @@ jobs:
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
           for target in darwin-arm64 darwin-x64; do
-            python scripts/dws_build_evidence.py --target "$target" --bundled "runtime/dws/1.0.65-imboard.1/$target/package.tgz" --rebuilt "$RUNNER_TEMP/dws-output/package-$target.tgz" --audit-dir "$RUNNER_TEMP/dws-audit/$target"
+            python scripts/dws_build_evidence.py --target "$target" --bundled "runtime/dws/1.0.65-imboard.2/$target/package.tgz" --rebuilt "$RUNNER_TEMP/dws-output/package-$target.tgz" --audit-dir "$RUNNER_TEMP/dws-audit/$target"
             for kind in bundled rebuilt; do
               "$(go env GOPATH)/bin/govulncheck" -mode=binary -show=verbose "$RUNNER_TEMP/dws-audit/$target/$kind"
             done

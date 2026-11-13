@@ -18,7 +18,7 @@
 当前清单来源：
 - 企业微信：<https://registry.npmjs.org/@wecom/cli/1.3.4> 及对应 `@wecom/cli-*` 的 `1.3.4` 元数据。
 - 飞书：<https://registry.npmjs.org/@larksuite/cli/1.0.98>、<https://api.github.com/repos/larksuite/cli/releases/tags/v1.0.98>。
-- 钉钉：上游固定提交 `92c4f8c355c749ec470c68f998d862a00d7d1709`，归档、依赖补丁、Go 工具链见 `cli-adapters/dws-isolation/source-lock.json`；现用 `1.0.65-imboard.1`，不再下载旧 npm 产物。
+- 钉钉：上游固定提交 `92c4f8c355c749ec470c68f998d862a00d7d1709`，归档、依赖补丁、Go 工具链见 `cli-adapters/dws-isolation/source-lock.json`；现用 `1.0.65-imboard.2`，不再下载旧 npm 产物。
 
 ## 共享缓存的生命周期
 
@@ -26,11 +26,11 @@
 
 ## Windows 钉钉隔离适配
 
-Windows 钉钉使用内置 1.0.65-imboard.1，来源和补丁见 cli-adapters/dws-isolation。它不通过 npm 更新为全局授权存储版。宿主核验完整 SHA-256 和隔离能力标记，账号凭据由 DPAPI 保存在独立命名空间。旧账号仅迁移应用配置目录里此前保存的加密 token，校验失败则要求重新授权。
+Windows 钉钉使用内置 1.0.65-imboard.2，来源和补丁见 cli-adapters/dws-isolation。它不通过 npm 更新为全局授权存储版。宿主核验完整 SHA-256 和隔离能力标记，账号凭据由 DPAPI 保存在独立命名空间。旧账号仅迁移应用配置目录里此前保存的加密 token，校验失败则要求重新授权。
 
 ## macOS 钉钉安全适配
 
-macOS 两版使用内置 `1.0.65-imboard.1`。每种架构的包保持压缩状态随应用签名与发布，安装时先核验归档 SHA-256，安全解压后再次核验可执行文件。已安装文件和账号配置中的可执行文件都必须匹配当前架构的固定哈希；旧版本会进入准备流程，读取入口不会绕过验证直接执行。原有 macOS 账号 keychain 行为保持不变。
+macOS 两版使用内置 `1.0.65-imboard.2`。每种架构的包保持压缩状态随应用签名与发布，安装时先核验归档 SHA-256，安全解压后再次核验可执行文件。已安装文件和账号配置中的可执行文件都必须匹配当前架构的固定哈希；旧版本会进入准备流程，读取入口不会绕过验证直接执行。原有 macOS 账号 keychain 行为保持不变。
 
 更新 DWS 时，必须重建四个正式版所需产物，执行已锁定依赖和实际二进制的安全扫描，生成依赖／许可证据，并同时更新资源清单、宿主哈希及连接器兼容版本。`scripts/build-dws-isolated.py --target macos` 生成两种 macOS 归档，默认 `--target windows` 生成 Windows 可执行文件；CI 比较重建产物。
 
