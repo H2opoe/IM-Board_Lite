@@ -26,8 +26,8 @@ export function assertLiteResources(path) {
         // links. It is not a personal-WeChat connector or runtime. Scope this
         // text exception to the exact audited executable; all other markers,
         // paths, dependencies and tampered/new binaries retain the normal gate.
-        if (entryPath.replaceAll("\\", "/").endsWith("/runtime/dws/1.0.65-imboard.1/win-x64/dws.exe") &&
-            createHash("sha256").update(bytes).digest("hex") === "acb123c86af6798c42989ef9420f3605da156d3248e9a15781cbde007cf66768") {
+        if (entryPath.replaceAll("\\", "/").endsWith("/runtime/dws/1.0.65-imboard.2/win-x64/dws.exe") &&
+            createHash("sha256").update(bytes).digest("hex") === "45ea755cde38cefc9787e5b106bd293a11712aded38a5ecb09dd7ecffef5c719") {
           content = content.replaceAll("微信邀请链接", "企业外部邀请链接");
         }
         if (forbiddenContent.some((pattern) => pattern.test(content))) {

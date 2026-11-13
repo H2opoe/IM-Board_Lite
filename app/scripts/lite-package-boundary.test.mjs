@@ -29,9 +29,9 @@ test('generic native file-cipher helper names are not WeChat identifiers',()=>fi
 }));
 
 test('the vetted enterprise invitation metadata exception rejects a modified binary',()=>fixture(root=>{
-  const folder=join(root,'runtime','dws','1.0.65-imboard.1','win-x64');mkdirSync(folder,{recursive:true});
+  const folder=join(root,'runtime','dws','1.0.65-imboard.2','win-x64');mkdirSync(folder,{recursive:true});
   const target=join(folder,'dws.exe');
-  copyFileSync(new URL('../runtime/dws/1.0.65-imboard.1/win-x64/dws.exe',import.meta.url),target);
+  copyFileSync(new URL('../runtime/dws/1.0.65-imboard.2/win-x64/dws.exe',import.meta.url),target);
   assert.doesNotThrow(()=>assertLiteResources(root));
   appendFileSync(target,'tampered');
   assert.throws(()=>assertLiteResources(root),/微信源码标记/);
