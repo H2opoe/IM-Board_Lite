@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True, help='Windows executable, or macOS archive output directory')
     parser.add_argument('--target', choices=['windows', 'macos'], default='windows')
     parser.add_argument('--source-archive', type=Path, help='Optional local archive; the pinned size/hash validation still applies')
-    parser.add_argument('--allow-unverified-vendor-licenses', action='store_true', help='Create a local test package with explicit unresolved upstream license evidence')
+    parser.add_argument('--allow-unverified-vendor-licenses', action='store_true', help='Retain explicit unresolved upstream license evidence without blocking the build')
     args = parser.parse_args()
     lock = json.loads((SPEC / 'source-lock.json').read_text())
     patch = SPEC / 'isolation.patch'

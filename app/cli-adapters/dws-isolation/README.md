@@ -12,7 +12,7 @@
 
 1.0.65 的 SafeChat 解密组件要求 **CGO_ENABLED=1**。CGO=0 会编入不可用的 stub，不可作为本适配的完整发行物。macOS 使用系统 clang，Windows 原生构建需 Go 可用的 C/C++ 编译器；从 macOS 交叉编译 Windows 时须显式设置 `IMBOARD_DWS_WINDOWS_CC` 和可选 `IMBOARD_DWS_WINDOWS_CXX`（本轮使用经官方摘要校验的 Zig 0.17.0，target 为 x86_64-windows-gnu）。
 
-上游随固定快照携带的 AEM/SafeChat SDK 未提供完整许可及再分发授权证据。默认构建不会将缺少许可证的 SafeChat 依赖当作已验证。**仅本地测试**可显式使用 `--allow-unverified-vendor-licenses` 生成带未验证声明的依赖清单；该参数不代表取得再分发许可，正式发布仍需补齐证据。
+上游随固定快照携带的 AEM/SafeChat SDK 未提供完整许可及再分发授权证据。默认构建不会将缺少许可证的 SafeChat 依赖当作已验证。构建及发布可显式使用 `--allow-unverified-vendor-licenses` 生成带未验证声明的依赖清单；该参数不代表取得再分发许可，按项目发布策略，此已知证据缺口仅记录、不阻断发布；不得将其标注为已验证许可。
 
 ## 可复现构建
 

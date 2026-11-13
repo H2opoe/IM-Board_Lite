@@ -58,7 +58,8 @@ mod tests {
             let cases: &[(&str, i64)] = match zone.as_str() {
                 "America/New_York" => &[("2026-03-08", 23), ("2026-11-01", 25)],
                 "Asia/Shanghai" => &[("2026-03-08", 24), ("2026-11-01", 24), ("2024-02-29", 24)],
-                "America/Havana" => &[("2026-03-07", 24), ("2026-03-08", 23), ("2026-11-01", 25)],
+                // Historical transitions remain stable when current timezone rules change.
+                "America/Havana" => &[("2024-03-09", 24), ("2024-03-10", 23), ("2024-11-03", 25)],
                 "Pacific/Apia" => &[],
                 _ => panic!("unknown fixture timezone"),
             };

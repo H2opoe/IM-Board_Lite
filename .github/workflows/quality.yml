@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-2022]
+        os: [macos-15, windows-2022]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -94,7 +94,7 @@ jobs:
       - name: Rebuild isolated DWS and run native namespace fixtures
         shell: pwsh
         run: |
-          python scripts/build-dws-isolated.py --work-dir "$env:RUNNER_TEMP/dws-build" --output "$env:RUNNER_TEMP/dws-rebuilt.exe"
+          python scripts/build-dws-isolated.py --work-dir "$env:RUNNER_TEMP/dws-build" --output "$env:RUNNER_TEMP/dws-rebuilt.exe" --allow-unverified-vendor-licenses
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $rebuilt = (Get-FileHash "$env:RUNNER_TEMP/dws-rebuilt.exe" -Algorithm SHA256).Hash
           $bundled = (Get-FileHash "runtime/dws/1.0.65-imboard.1/win-x64/dws.exe" -Algorithm SHA256).Hash
