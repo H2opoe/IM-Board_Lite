@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "binarySha256": "acb123c86af6798c42989ef9420f3605da156d3248e9a15781cbde007cf66768",
-  "goVersion": "go1.27.1",
+  "binarySha256": "45ea755cde38cefc9787e5b106bd293a11712aded38a5ecb09dd7ecffef5c719",
+  "goVersion": "go1.27.4",
   "modules": [
     {
       "module": "github.com/DingTalk-Real-AI/dingtalk-workspace-cli",
@@ -54,7 +54,7 @@
     },
     {
       "module": "Go standard library",
-      "version": "go1.27.1",
+      "version": "go1.27.4",
       "goSum": null,
       "replacement": null,
       "licenses": [
@@ -672,8 +672,8 @@
     },
     {
       "module": "golang.org/x/image",
-      "version": "v0.31.0",
-      "goSum": "h1:mLChjE2MV6g1S7oqbXC0/UcKijjm5fnJLUYKIYrLESA=",
+      "version": "v0.45.0",
+      "goSum": "h1:FMb1nTbH5H9vF55SriQHgFw5GnNL9Jg6L25BwXKzhB0=",
       "replacement": null,
       "licenses": [
         {

@@ -17,9 +17,9 @@ IM-Board·聊天汇总看板包含或调用以下第三方开源组件。完整�
 ### @DingTalk-Real-AI/dingtalk-workspace-cli
 - License: Apache-2.0
 - Source: https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli
-- Included version: 1.0.65-imboard.1, the IM-Board adaptation of upstream dingtalk-workspace-cli 1.0.65 for account isolation and dependency updates.
+- Included version: 1.0.65-imboard.2, the IM-Board adaptation of upstream dingtalk-workspace-cli 1.0.65 for account isolation and dependency updates.
 - Distribution: bundled in the base installer and deployed into the application support directory when needed.
-- License and inventory files: runtime/dws/1.0.65-imboard.1/win-x64/LICENSE, THIRD-PARTY-NOTICES.txt, and dependencies.json within the bundled resource directory.
+- License and inventory files: runtime/dws/1.0.65-imboard.2/win-x64/LICENSE, THIRD-PARTY-NOTICES.txt, and dependencies.json within the bundled resource directory.
 
 ## Optional Hot-Updated AI Models
 

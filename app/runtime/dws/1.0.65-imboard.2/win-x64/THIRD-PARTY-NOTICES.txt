@@ -1282,7 +1282,7 @@ provider.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 LICENSE
 
 Copyright 2009 The Go Authors.
@@ -1315,7 +1315,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 PATENTS
 
 Additional IP Rights Grant (Patents)
@@ -1343,7 +1343,7 @@ shall terminate as of the date such litigation is filed.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 src/vendor/golang.org/x/crypto/LICENSE
 
 Copyright 2009 The Go Authors.
@@ -1376,7 +1376,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 src/vendor/golang.org/x/crypto/PATENTS
 
 Additional IP Rights Grant (Patents)
@@ -1404,7 +1404,7 @@ shall terminate as of the date such litigation is filed.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 src/vendor/golang.org/x/net/LICENSE
 
 Copyright 2009 The Go Authors.
@@ -1437,7 +1437,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 src/vendor/golang.org/x/net/PATENTS
 
 Additional IP Rights Grant (Patents)
@@ -1465,7 +1465,7 @@ shall terminate as of the date such litigation is filed.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 src/vendor/golang.org/x/sys/LICENSE
 
 Copyright 2009 The Go Authors.
@@ -1498,7 +1498,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 src/vendor/golang.org/x/sys/PATENTS
 
 Additional IP Rights Grant (Patents)
@@ -1526,7 +1526,7 @@ shall terminate as of the date such litigation is filed.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 src/vendor/golang.org/x/text/LICENSE
 
 Copyright 2009 The Go Authors.
@@ -1559,7 +1559,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ========================================================================
-Go standard library@go1.27.1
+Go standard library@go1.27.4
 src/vendor/golang.org/x/text/PATENTS
 
 Additional IP Rights Grant (Patents)
@@ -4110,7 +4110,7 @@ Redistribution authorization is managed by the repository owners.
 
 
 ========================================================================
-golang.org/x/image@v0.31.0
+golang.org/x/image@v0.45.0
 LICENSE
 
 Copyright 2009 The Go Authors.
@@ -4143,7 +4143,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ========================================================================
-golang.org/x/image@v0.31.0
+golang.org/x/image@v0.45.0
 PATENTS
 
 Additional IP Rights Grant (Patents)

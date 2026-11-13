@@ -31,7 +31,7 @@ pub const ADAPTER: ConnectorAdapter = ConnectorAdapter {
         editions: &["full", "lite"],
         operating_systems: &["macos", "windows"],
         architectures: &["aarch64", "x86_64"],
-        compatible_runtime_version: "1.0.65-imboard.1",
+        compatible_runtime_version: "1.0.65-imboard.2",
     },
 };
 

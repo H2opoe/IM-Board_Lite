@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-pub const VERSION: &str = "1.0.65-imboard.1";
-pub const SHA256: &str = "acb123c86af6798c42989ef9420f3605da156d3248e9a15781cbde007cf66768";
+pub const VERSION: &str = "1.0.65-imboard.2";
+pub const SHA256: &str = "45ea755cde38cefc9787e5b106bd293a11712aded38a5ecb09dd7ecffef5c719";
 pub const CAPABILITY: &str = "im-board-dws-isolation-v1";
 
 pub fn verified(path: &Path) -> bool {

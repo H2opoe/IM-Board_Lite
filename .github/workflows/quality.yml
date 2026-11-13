@@ -89,7 +89,7 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.27.1'
+          go-version: '1.27.4'
           cache: false
       - name: DWS evidence regression tests
         run: python -m unittest discover -s scripts -p test_dws_build_evidence.py
@@ -98,7 +98,7 @@ jobs:
         run: |
           python scripts/build-dws-isolated.py --work-dir "$env:RUNNER_TEMP/dws-build" --output "$env:RUNNER_TEMP/dws-rebuilt.exe" --allow-unverified-vendor-licenses
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python scripts/dws_build_evidence.py --target windows --bundled runtime/dws/1.0.65-imboard.1/win-x64/dws.exe --rebuilt "$env:RUNNER_TEMP/dws-rebuilt.exe" --audit-dir "$env:RUNNER_TEMP/dws-audit"
+          python scripts/dws_build_evidence.py --target windows --bundled runtime/dws/1.0.65-imboard.2/win-x64/dws.exe --rebuilt "$env:RUNNER_TEMP/dws-rebuilt.exe" --audit-dir "$env:RUNNER_TEMP/dws-audit"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Audit bundled DWS against the Go vulnerability database
         shell: pwsh

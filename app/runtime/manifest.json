@@ -14,12 +14,12 @@
     },
     {
       "id": "dws",
-      "version": "1.0.65-imboard.1",
+      "version": "1.0.65-imboard.2",
       "platform": "win-x64",
-      "path": "dws/1.0.65-imboard.1/win-x64",
+      "path": "dws/1.0.65-imboard.2/win-x64",
       "fileCount": 5,
-      "sizeBytes": 52744602,
-      "treeSha256": "6aa99055f2934892f9bc3e7949e3c54bc6edf7607971329a2fa5dc1f5d53f0b5"
+      "sizeBytes": 52769160,
+      "treeSha256": "9750dc3c03810e04a3a0123e0f31cbe8eed62e504f6adafb4a7110562e4f08a8"
     }
   ]
 }
