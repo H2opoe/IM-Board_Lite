@@ -29,10 +29,19 @@ pub(crate) fn record_bridge_envelope(
     request: &BridgeRequest,
     envelope: &BridgeEnvelope,
 ) {
-    if envelope.ok {
+    if envelope.ok
+        && !(request.platform == "wecom"
+            && matches!(request.command.as_str(), "auth-status" | "account-identity"))
+    {
         return;
     }
-    record_error_event(state, bridge_error_event(request, envelope));
+    let mut event = bridge_error_event(request, envelope);
+    if envelope.ok {
+        event.category = "auth_check_success";
+        event.user_message = "企业微信授权检查成功。".into();
+        event.severity = "info";
+    }
+    record_error_event(state, event);
 }
 
 pub(crate) fn record_bridge_failure(state: &AppState, request: &BridgeRequest, error: &str) {
@@ -126,6 +135,7 @@ fn bridge_error_event(request: &BridgeRequest, envelope: &BridgeEnvelope) -> Dia
         operation: request.command.clone(),
         user_message: bridge_user_message(&platform, code, category),
         raw_detail: json!({
+            "diagnostic": envelope.meta.get("diagnostic"),
             "code": code,
             "message": envelope.error.as_ref().map(|error| error.message.clone()),
             "warnings": envelope.warnings,

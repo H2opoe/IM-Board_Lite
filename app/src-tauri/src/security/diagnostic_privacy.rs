@@ -11,7 +11,16 @@ pub fn diagnostic_metadata(value: Value) -> Value {
     for (key, value) in object {
         let allowed_number = matches!(
             key.as_str(),
-            "durationMs"
+            "credentialsFileBytes"
+                | "legacyCredentialsFileBytes"
+                | "keyFileBytes"
+                | "credentialsFileModifiedEpoch"
+                | "legacyCredentialsFileModifiedEpoch"
+                | "keyFileModifiedEpoch"
+                | "diagnosticSchema"
+                | "stdoutBytes"
+                | "stderrBytes"
+                | "durationMs"
                 | "maxTokens"
                 | "httpStatus"
                 | "contentLength"
@@ -36,7 +45,9 @@ pub fn diagnostic_metadata(value: Value) -> Value {
         );
         let allowed_bool = matches!(
             key.as_str(),
-            "contentEmpty"
+            "configDirNonAscii"
+                | "accessTokenEnvPresent"
+                | "contentEmpty"
                 | "reasoningContentPresent"
                 | "partial"
                 | "errorPresent"
@@ -60,6 +71,36 @@ pub fn diagnostic_metadata(value: Value) -> Value {
 
 fn allowed_string(key: &str, value: &Value) -> bool {
     match key {
+        "code" => value.as_str().is_some_and(|v| {
+            matches!(
+                v,
+                "WECOM_AUTH_CHECK_FAILED"
+                    | "WECOM_NOT_AUTHENTICATED"
+                    | "WECOM_AUTH_OUTPUT_UNRECOGNIZED"
+                    | "WECOM_IDENTITY_UNAVAILABLE"
+                    | "WECOM_CLI_MISSING"
+            )
+        }),
+        "configPathFingerprint" | "cliPathFingerprint" => value
+            .as_str()
+            .is_some_and(|v| v.len() == 64 && v.bytes().all(|b| b.is_ascii_hexdigit())),
+        "cliPackageVersion" => value.as_str().is_some_and(|v| {
+            v.len() <= 32 && !v.is_empty() && v.bytes().all(|b| b.is_ascii_digit() || b == b'.')
+        }),
+        "authResult" => value.as_str().is_some_and(|v| {
+            matches!(
+                v,
+                "authorized" | "unauthorized" | "unrecognized" | "process_incomplete"
+            )
+        }),
+        "credentialsFile" | "legacyCredentialsFile" | "keyFile" => {
+            value.as_str().is_some_and(|v| {
+                matches!(
+                    v,
+                    "readable" | "unreadable" | "absent" | "symlink" | "not_file"
+                )
+            })
+        }
         "finishReason" => value.as_str().is_some_and(|v| {
             matches!(
                 v,
@@ -122,6 +163,23 @@ pub fn scrub_legacy_diagnostics(conn: &mut Connection) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn binding_diagnostics_preserve_evidence_without_credentials() {
+        let clean = diagnostic_metadata(serde_json::json!({"diagnostic": {
+            "diagnosticSchema":2, "exitCode":0, "authResult":"unauthorized",
+            "credentialsFile":"readable", "keyFile":"unreadable", "cliPackageVersion":"1.3.4",
+            "stdout":"PRIVATE", "secret":"PRIVATE", "configDir":"PRIVATE"
+        }}));
+        assert_eq!(clean["diagnostic"]["authResult"], "unauthorized");
+        assert_eq!(clean["diagnostic"]["cliPackageVersion"], "1.3.4");
+        assert!(!clean.to_string().contains("PRIVATE"));
+        assert_eq!(
+            diagnostic_metadata(
+                serde_json::json!({"authResult":"PRIVATE", "credentialsFile":"PRIVATE", "cliPackageVersion":"SECRET"})
+            ),
+            serde_json::json!({})
+        );
+    }
     #[test]
     fn metadata_uses_a_typed_allowlist_for_every_status() {
         let value = diagnostic_metadata(serde_json::json!({
