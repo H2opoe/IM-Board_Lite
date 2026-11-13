@@ -156,6 +156,7 @@ fn build_diagnostic_json(
 fn collect_app_info(state: &AppState) -> serde_json::Value {
     serde_json::json!({
         "version": app_version(),
+        "diagnosticBuild": "wecom-permissions-20261113",
         "targetOs": std::env::consts::OS,
         "targetArch": std::env::consts::ARCH,
         "appDataDir": state.app_dir.display().to_string(),

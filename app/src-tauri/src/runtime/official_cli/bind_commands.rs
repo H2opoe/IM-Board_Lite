@@ -35,14 +35,62 @@ impl OfficialCliProfileEnv {
     }
 }
 
+// The CLI protects credential DACLs with OWNER RIGHTS. Elevated Windows
+// processes may create files owned by Administrators, making them unreadable
+// to the same user's non-elevated app. Pin an explicit user ACE after auth.
+fn wecom_bind_command(cli_path: &Path, config_dir: &Path) -> String {
+    let sid = application_user_sid()
+        .map(|sid| {
+            format!(
+                "[System.Security.Principal.SecurityIdentifier]::new('{}')",
+                sid
+            )
+        })
+        .unwrap_or_else(|| "[System.Security.Principal.WindowsIdentity]::GetCurrent().User".into());
+    format!(
+        "$env:WECOM_CLI_CONFIG_DIR = {}; {} auth init; if ($LASTEXITCODE -eq 0) {{ $imBoardSid = {}; foreach ($imBoardName in @('credentials.enc', 'bot.enc', '.encryption_key')) {{ $imBoardFile = Join-Path $env:WECOM_CLI_CONFIG_DIR $imBoardName; if (Test-Path -LiteralPath $imBoardFile -PathType Leaf) {{ $imBoardItem = Get-Item -LiteralPath $imBoardFile -Force -ErrorAction Stop; if (($imBoardItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {{ throw 'Invalid credential file' }}; $imBoardAcl = Get-Acl -LiteralPath $imBoardFile -ErrorAction Stop; $imBoardAcl.SetAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($imBoardSid, [System.Security.AccessControl.FileSystemRights]::Modify, [System.Security.AccessControl.AccessControlType]::Allow)); Set-Acl -LiteralPath $imBoardFile -AclObject $imBoardAcl -ErrorAction Stop }} }} }}",
+        powershell_single_quote(config_dir), powershell_cli_invocation(cli_path), sid
+    )
+}
+
+// Resolve under the app's token, so an alternate administrator used for the
+// pasted command grants access to the app user rather than that administrator.
+fn application_user_sid() -> Option<String> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let root = std::env::var_os("SystemRoot")?;
+        let output = std::process::Command::new(Path::new(&root).join("System32/whoami.exe"))
+            .args(["/user", "/fo", "csv", "/nh"])
+            .creation_flags(0x08000000)
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        let text = String::from_utf8_lossy(&output.stdout);
+        return text
+            .split('"')
+            .find(|s| valid_user_sid(s))
+            .map(str::to_owned);
+    }
+    #[cfg(not(windows))]
+    None
+}
+
+#[cfg(any(windows, test))]
+fn valid_user_sid(sid: &str) -> bool {
+    sid.starts_with("S-1-")
+        && sid.len() < 184
+        && sid[4..]
+            .split('-')
+            .all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit()))
+}
+
 fn default_bind_command_windows(platform: &str, cli_path: &Path, config_dir: &Path) -> String {
     let env = OfficialCliProfileEnv::new(config_dir);
     match platform {
-        "wecom" => format!(
-            "$env:WECOM_CLI_CONFIG_DIR = {}; {} auth init",
-            powershell_single_quote(config_dir),
-            powershell_cli_invocation(cli_path)
-        ),
+        "wecom" => wecom_bind_command(cli_path, config_dir),
         "feishu" => {
             // Windows 开发环境可能通过 SMB 访问源码，绑定命令只隔离官方 CLI 自身配置目录，
             // 不再伪造 HOME/USERPROFILE/APPDATA，避免把系统级运行环境改到项目共享目录里。
@@ -141,6 +189,21 @@ mod tests {
             Path::new(r"C:\Tools\cli.exe"),
             Path::new("/Users/me/AppData/Roaming/IMBoard/Profiles/profile-a/feishu"),
         )
+    }
+
+    #[test]
+    fn wecom_permissions_are_scoped_and_run_only_after_success() {
+        let command = command("wecom");
+        assert!(command.contains("if ($LASTEXITCODE -eq 0)"));
+        assert!(command.contains("'credentials.enc', 'bot.enc', '.encryption_key'"));
+        assert!(command.contains("SetAccessRule"));
+        assert!(command.contains("ReparsePoint"));
+        assert!(!command.contains("-Recurse"));
+        assert!(!command.contains("Everyone"));
+        assert!(!command.contains("/reset"));
+        assert!(valid_user_sid("S-1-5-21-123-456-789-1001"));
+        assert!(!valid_user_sid("S-1-5'; bad"));
+        assert!(!valid_user_sid("S-1--5"));
     }
 
     #[test]

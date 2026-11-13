@@ -2,6 +2,12 @@
 use super::platform_label;
 
 pub(super) fn bridge_error_category(code: &str, detail: &str) -> &'static str {
+    if code == "WECOM_AUTH_OUTPUT_UNRECOGNIZED" {
+        return "auth_output_unrecognized";
+    }
+    if code == "WECOM_IDENTITY_UNAVAILABLE" {
+        return "auth_identity_unavailable";
+    }
     let normalized = detail.to_ascii_lowercase();
     if normalized.contains("tls handshake timeout")
         || normalized.contains("mcp请求超时")

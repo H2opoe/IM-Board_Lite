@@ -166,3 +166,36 @@ fn local_model_download_events_preserve_network_category() {
     let event = local_ai_error_event("start_local_runtime", "运行时不可用", json!({}));
     assert_eq!(event.category, "local_runtime");
 }
+
+#[test]
+fn binding_evidence_survives_database_privacy_filter() {
+    let conn = rusqlite::Connection::open_in_memory().unwrap();
+    conn.execute_batch(include_str!("../../migrations/001_init.sql"))
+        .unwrap();
+    let request = BridgeRequest {
+        platform: "wecom".into(),
+        command: "auth-status".into(),
+        profile: None,
+        args: std::collections::HashMap::new(),
+        stdin_secret: None,
+    };
+    let envelope: BridgeEnvelope = serde_json::from_value(json!({
+        "ok":false, "data":null, "warnings":[],
+        "error":{"code":"WECOM_AUTH_OUTPUT_UNRECOGNIZED","message":"PRIVATE","recoverable":true},
+        "meta":{"diagnostic":{"diagnosticSchema":2,"exitCode":0,"authResult":"unrecognized","credentialsFile":"readable","stdout":"PRIVATE"}}
+    })).unwrap();
+    let event = bridge_error_event(&request, &envelope);
+    assert_eq!(event.category, "auth_output_unrecognized");
+    super::repository::record_error_event_conn(&conn, event).unwrap();
+    let raw: String = conn
+        .query_row(
+            "select raw_detail_json from diagnostic_error_events",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let value: serde_json::Value = serde_json::from_str(&raw).unwrap();
+    assert_eq!(value["diagnostic"]["authResult"], "unrecognized");
+    assert_eq!(value["diagnostic"]["credentialsFile"], "readable");
+    assert!(!raw.contains("PRIVATE"));
+}
