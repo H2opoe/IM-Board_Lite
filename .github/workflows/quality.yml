@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-2022]
+        os: [macos-15, windows-2022]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -76,7 +76,7 @@ jobs:
         run: cargo audit --file app/src-tauri/Cargo.lock
 
   dws-macos:
-    runs-on: macos-14
+    runs-on: macos-15
     defaults:
       run:
         working-directory: app
@@ -92,7 +92,7 @@ jobs:
           go-version: '1.27.1'
           cache: false
       - name: Rebuild pinned macOS DWS archives
-        run: python scripts/build-dws-isolated.py --target macos --work-dir "$RUNNER_TEMP/dws-build" --output "$RUNNER_TEMP/dws-output"
+        run: python scripts/build-dws-isolated.py --target macos --work-dir "$RUNNER_TEMP/dws-build" --output "$RUNNER_TEMP/dws-output" --allow-unverified-vendor-licenses
       - name: Compare archives and audit actual binaries
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.8.0

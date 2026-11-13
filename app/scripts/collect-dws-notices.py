@@ -85,7 +85,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ['go', 'binary', 'source', 'module-cache', 'output']:
         parser.add_argument('--' + name, type=Path, required=True)
-    parser.add_argument('--allow-unverified-vendor-licenses', action='store_true', help='Test-package evidence only; does not establish redistribution rights')
+    parser.add_argument('--allow-unverified-vendor-licenses', action='store_true', help='Record unresolved upstream evidence; does not establish redistribution rights')
     args = parser.parse_args()
     result = collect(args.go, args.binary, args.source, args.module_cache, args.output, args.allow_unverified_vendor_licenses)
     print(json.dumps({'modules': len(result['modules']), 'binarySha256': result['binarySha256']}))

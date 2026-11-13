@@ -105,7 +105,7 @@ pub fn retry_pending(
             .prepare("select key,value from app_meta where substr(key,1,?1)=?2 order by key")
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![PREFIX.len(), PREFIX], |row| {
+            .query_map(params![PREFIX.len() as i64, PREFIX], |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
             })
             .map_err(|e| e.to_string())?;
